@@ -121,11 +121,335 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
   Serializable: 'Serializable'
 });
 
-exports.Prisma.PostScalarFieldEnum = {
+exports.Prisma.CompanySettingsScalarFieldEnum = {
   id: 'id',
-  name: 'name',
+  orgId: 'orgId',
+  companyName: 'companyName',
+  logoUrl: 'logoUrl',
+  addressLine1: 'addressLine1',
+  addressLine2: 'addressLine2',
+  city: 'city',
+  postcode: 'postcode',
+  country: 'country',
+  phone: 'phone',
+  email: 'email',
+  website: 'website',
+  defaultVatMode: 'defaultVatMode',
+  defaultVatRateBps: 'defaultVatRateBps',
+  defaultGrouping: 'defaultGrouping',
+  defaultShowQtyToClient: 'defaultShowQtyToClient',
+  defaultShowUnitRatesToClient: 'defaultShowUnitRatesToClient',
+  defaultTermsJson: 'defaultTermsJson',
+  defaultScopeOverviewJson: 'defaultScopeOverviewJson',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ClientScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  name: 'name',
+  email: 'email',
+  phone: 'phone',
+  addressLine1: 'addressLine1',
+  addressLine2: 'addressLine2',
+  city: 'city',
+  postcode: 'postcode',
+  country: 'country',
+  notes: 'notes',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.QuoteScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  clientId: 'clientId',
+  title: 'title',
+  referenceNo: 'referenceNo',
+  projectAddress: 'projectAddress',
+  status: 'status',
+  currentVersion: 'currentVersion',
+  sentAt: 'sentAt',
+  acceptedAt: 'acceptedAt',
+  vatMode: 'vatMode',
+  vatRateBps: 'vatRateBps',
+  depositType: 'depositType',
+  depositAmountPence: 'depositAmountPence',
+  depositPercentBps: 'depositPercentBps',
+  paymentScheduleJson: 'paymentScheduleJson',
+  showQtyToClient: 'showQtyToClient',
+  showUnitRatesToClient: 'showUnitRatesToClient',
+  scopeOverviewJson: 'scopeOverviewJson',
+  termsJson: 'termsJson',
+  estimatedStartDate: 'estimatedStartDate',
+  estimatedDurationWeeks: 'estimatedDurationWeeks',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.QuoteItemScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  parentId: 'parentId',
+  rowType: 'rowType',
+  title: 'title',
+  description: 'description',
+  sortOrder: 'sortOrder',
+  roomTag: 'roomTag',
+  tradeTag: 'tradeTag',
+  phaseTag: 'phaseTag',
+  calcType: 'calcType',
+  qty: 'qty',
+  unit: 'unit',
+  unitPricePence: 'unitPricePence',
+  hours: 'hours',
+  hourlyRatePence: 'hourlyRatePence',
+  sellPricePence: 'sellPricePence',
+  isAllowance: 'isAllowance',
+  costPence: 'costPence',
+  markupPercentBps: 'markupPercentBps',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.QuoteVersionScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  version: 'version',
+  status: 'status',
+  vatMode: 'vatMode',
+  vatRateBps: 'vatRateBps',
+  depositType: 'depositType',
+  depositAmountPence: 'depositAmountPence',
+  depositPercentBps: 'depositPercentBps',
+  showQtyToClient: 'showQtyToClient',
+  showUnitRatesToClient: 'showUnitRatesToClient',
+  title: 'title',
+  referenceNo: 'referenceNo',
+  projectAddress: 'projectAddress',
+  scopeOverviewJson: 'scopeOverviewJson',
+  termsJson: 'termsJson',
+  paymentScheduleJson: 'paymentScheduleJson',
+  subtotalPence: 'subtotalPence',
+  vatPence: 'vatPence',
+  totalPence: 'totalPence',
+  sentAt: 'sentAt',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.QuoteVersionItemScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteVersionId: 'quoteVersionId',
+  parentId: 'parentId',
+  sourceQuoteItemId: 'sourceQuoteItemId',
+  rowType: 'rowType',
+  title: 'title',
+  description: 'description',
+  sortOrder: 'sortOrder',
+  roomTag: 'roomTag',
+  tradeTag: 'tradeTag',
+  phaseTag: 'phaseTag',
+  calcType: 'calcType',
+  qty: 'qty',
+  unit: 'unit',
+  unitPricePence: 'unitPricePence',
+  hours: 'hours',
+  hourlyRatePence: 'hourlyRatePence',
+  sellPricePence: 'sellPricePence',
+  isAllowance: 'isAllowance',
+  lineTotalPence: 'lineTotalPence',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.QuotePublicLinkScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  tokenHash: 'tokenHash',
+  tokenPrefix: 'tokenPrefix',
+  isActive: 'isActive',
+  expiresAt: 'expiresAt',
+  revokedAt: 'revokedAt',
+  firstViewedAt: 'firstViewedAt',
+  lastViewedAt: 'lastViewedAt',
+  viewCount: 'viewCount',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.QuotePdfScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  version: 'version',
+  fileUrl: 'fileUrl',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.QuoteAcceptanceScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  acceptedName: 'acceptedName',
+  acceptedEmail: 'acceptedEmail',
+  acceptedAt: 'acceptedAt',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.PriceBookItemScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  title: 'title',
+  description: 'description',
+  calcType: 'calcType',
+  defaultQty: 'defaultQty',
+  defaultUnit: 'defaultUnit',
+  defaultUnitPricePence: 'defaultUnitPricePence',
+  defaultHours: 'defaultHours',
+  defaultHourlyRatePence: 'defaultHourlyRatePence',
+  defaultSellPricePence: 'defaultSellPricePence',
+  defaultIsAllowance: 'defaultIsAllowance',
+  roomTag: 'roomTag',
+  tradeTag: 'tradeTag',
+  phaseTag: 'phaseTag',
+  isFavorite: 'isFavorite',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TemplateSectionScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  name: 'name',
+  description: 'description',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TemplateSectionItemScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  templateSectionId: 'templateSectionId',
+  title: 'title',
+  description: 'description',
+  sortOrder: 'sortOrder',
+  calcType: 'calcType',
+  qty: 'qty',
+  unit: 'unit',
+  unitPricePence: 'unitPricePence',
+  hours: 'hours',
+  hourlyRatePence: 'hourlyRatePence',
+  sellPricePence: 'sellPricePence',
+  isAllowance: 'isAllowance',
+  roomTag: 'roomTag',
+  tradeTag: 'tradeTag',
+  phaseTag: 'phaseTag',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VariationScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  number: 'number',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  sentAt: 'sentAt',
+  approvedAt: 'approvedAt',
+  vatMode: 'vatMode',
+  vatRateBps: 'vatRateBps',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VariationItemScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  variationId: 'variationId',
+  parentId: 'parentId',
+  rowType: 'rowType',
+  title: 'title',
+  description: 'description',
+  sortOrder: 'sortOrder',
+  calcType: 'calcType',
+  qty: 'qty',
+  unit: 'unit',
+  unitPricePence: 'unitPricePence',
+  hours: 'hours',
+  hourlyRatePence: 'hourlyRatePence',
+  sellPricePence: 'sellPricePence',
+  isAllowance: 'isAllowance',
+  roomTag: 'roomTag',
+  tradeTag: 'tradeTag',
+  phaseTag: 'phaseTag',
+  costPence: 'costPence',
+  markupPercentBps: 'markupPercentBps',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VariationApprovalScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  variationId: 'variationId',
+  approvedName: 'approvedName',
+  approvedEmail: 'approvedEmail',
+  approvedAt: 'approvedAt',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.VariationPublicLinkScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  variationId: 'variationId',
+  tokenHash: 'tokenHash',
+  tokenPrefix: 'tokenPrefix',
+  isActive: 'isActive',
+  expiresAt: 'expiresAt',
+  revokedAt: 'revokedAt',
+  firstViewedAt: 'firstViewedAt',
+  lastViewedAt: 'lastViewedAt',
+  viewCount: 'viewCount',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VariationPdfScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  variationId: 'variationId',
+  stage: 'stage',
+  fileUrl: 'fileUrl',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -133,14 +457,88 @@ exports.Prisma.SortOrder = {
   desc: 'desc'
 };
 
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
+};
+
 exports.Prisma.QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
 };
 
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
+};
+
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
+};
+exports.VatMode = exports.$Enums.VatMode = {
+  NONE: 'NONE',
+  STANDARD: 'STANDARD'
+};
+
+exports.QuoteStatus = exports.$Enums.QuoteStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  ACCEPTED: 'ACCEPTED',
+  DECLINED: 'DECLINED'
+};
+
+exports.DepositType = exports.$Enums.DepositType = {
+  NONE: 'NONE',
+  AMOUNT: 'AMOUNT',
+  PERCENT: 'PERCENT'
+};
+
+exports.ItemRowType = exports.$Enums.ItemRowType = {
+  SECTION_HEADER: 'SECTION_HEADER',
+  LINE_ITEM: 'LINE_ITEM'
+};
+
+exports.CalcType = exports.$Enums.CalcType = {
+  SELL_ONLY: 'SELL_ONLY',
+  UNIT_RATE: 'UNIT_RATE',
+  LABOUR_HOURS: 'LABOUR_HOURS',
+  ALLOWANCE: 'ALLOWANCE'
+};
+
+exports.VariationStatus = exports.$Enums.VariationStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  APPROVED: 'APPROVED',
+  DECLINED: 'DECLINED'
+};
+
+exports.VariationPdfStage = exports.$Enums.VariationPdfStage = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  APPROVED: 'APPROVED',
+  DECLINED: 'DECLINED'
+};
 
 exports.Prisma.ModelName = {
-  Post: 'Post'
+  CompanySettings: 'CompanySettings',
+  Client: 'Client',
+  Quote: 'Quote',
+  QuoteItem: 'QuoteItem',
+  QuoteVersion: 'QuoteVersion',
+  QuoteVersionItem: 'QuoteVersionItem',
+  QuotePublicLink: 'QuotePublicLink',
+  QuotePdf: 'QuotePdf',
+  QuoteAcceptance: 'QuoteAcceptance',
+  PriceBookItem: 'PriceBookItem',
+  TemplateSection: 'TemplateSection',
+  TemplateSectionItem: 'TemplateSectionItem',
+  Variation: 'Variation',
+  VariationItem: 'VariationItem',
+  VariationApproval: 'VariationApproval',
+  VariationPublicLink: 'VariationPublicLink',
+  VariationPdf: 'VariationPdf'
 };
 
 /**

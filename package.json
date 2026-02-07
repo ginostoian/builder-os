@@ -9,6 +9,7 @@
     "db:generate": "prisma migrate dev",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
+    "db:smoke": "node scripts/db-smoke.mjs",
     "db:studio": "prisma studio",
     "dev": "next dev --turbo",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
@@ -21,11 +22,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.37.3",
+    "@clerk/themes": "^2.4.51",
     "@prisma/client": "^6.6.0",
+    "@radix-ui/react-slot": "^1.2.4",
     "@t3-oss/env-nextjs": "^0.12.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.563.0",
     "next": "^15.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.4.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

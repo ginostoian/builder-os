@@ -7,10 +7,13 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
+    CLERK_SECRET_KEY: z.string().min(1),
     DATABASE_URL: z.string().url(),
+    DIRECT_DATABASE_URL: z.string().url().optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    PUBLIC_LINK_TOKEN_SECRET: z.string().min(32).optional(),
   },
 
   /**
@@ -19,6 +22,7 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
   },
 
@@ -27,8 +31,13 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
+    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     DATABASE_URL: process.env.DATABASE_URL,
+    DIRECT_DATABASE_URL: process.env.DIRECT_DATABASE_URL,
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
+      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     NODE_ENV: process.env.NODE_ENV,
+    PUBLIC_LINK_TOKEN_SECRET: process.env.PUBLIC_LINK_TOKEN_SECRET,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**

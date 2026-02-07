@@ -1,21 +1,673 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// BuilderOS v1 schema
+// Multi-tenant via Clerk Organizations (orgId on every persisted model)
 
 generator client {
-    provider = "prisma-client-js"
-    output   = "../generated/prisma"
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+//
+// Enums
+//
 
-    @@index([name])
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+}
+
+enum VatMode {
+  NONE
+  STANDARD
+}
+
+enum DepositType {
+  NONE
+  AMOUNT
+  PERCENT
+}
+
+enum ItemRowType {
+  SECTION_HEADER
+  LINE_ITEM
+}
+
+enum CalcType {
+  SELL_ONLY
+  UNIT_RATE
+  LABOUR_HOURS
+  ALLOWANCE
+}
+
+enum VariationStatus {
+  DRAFT
+  SENT
+  APPROVED
+  DECLINED
+}
+
+enum VariationPdfStage {
+  DRAFT
+  SENT
+  APPROVED
+  DECLINED
+}
+
+//
+// Core tenant settings
+//
+
+model CompanySettings {
+  id    String @id @default(cuid())
+  orgId String @unique // Clerk Organization ID (tenant)
+
+  companyName  String
+  logoUrl      String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  postcode     String?
+  country      String? @default("UK")
+  phone        String?
+  email        String?
+  website      String?
+
+  // Defaults
+  defaultVatMode    VatMode @default(STANDARD)
+  defaultVatRateBps Int     @default(2000) // 20.00% VAT in basis points
+  defaultGrouping   String  @default("ROOMS")
+
+  // Display preferences (builder can override per quote)
+  defaultShowQtyToClient       Boolean @default(false)
+  defaultShowUnitRatesToClient Boolean @default(false)
+
+  // Terms and scope rich text JSON (e.g. Tiptap)
+  defaultTermsJson         Json?
+  defaultScopeOverviewJson Json?
+
+  createdByUserId String?
+  updatedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+}
+
+//
+// Clients (light CRM for MVP)
+//
+
+model Client {
+  id    String @id @default(cuid())
+  orgId String
+
+  name         String
+  email        String?
+  phone        String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  postcode     String?
+  country      String?
+  notes        String?
+
+  createdByUserId String?
+  updatedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quotes Quote[]
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@index([orgId, name])
+}
+
+//
+// Quotes
+//
+
+model Quote {
+  id    String @id @default(cuid())
+  orgId String
+
+  clientId String?
+  client   Client? @relation(fields: [clientId, orgId], references: [id, orgId], onDelete: Restrict, onUpdate: Cascade)
+
+  title          String
+  referenceNo    String?
+  projectAddress String?
+
+  status QuoteStatus @default(DRAFT)
+
+  // Versioning
+  currentVersion Int       @default(1)
+  sentAt         DateTime?
+  acceptedAt     DateTime?
+
+  // VAT
+  vatMode    VatMode @default(STANDARD)
+  vatRateBps Int     @default(2000)
+
+  // Deposit / payment terms (informational only)
+  depositType        DepositType @default(NONE)
+  depositAmountPence Int?
+  depositPercentBps  Int?
+
+  paymentScheduleJson Json?
+
+  // Client-facing display toggles
+  showQtyToClient       Boolean @default(false)
+  showUnitRatesToClient Boolean @default(false)
+
+  scopeOverviewJson Json?
+  termsJson         Json?
+
+  estimatedStartDate     DateTime?
+  estimatedDurationWeeks Int?
+
+  createdByUserId String?
+  updatedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items       QuoteItem[]
+  publicLinks QuotePublicLink[]
+  pdfs        QuotePdf[]
+  acceptance  QuoteAcceptance?
+  variations  Variation[]
+  versions    QuoteVersion[]
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@index([orgId, status])
+  @@index([orgId, clientId])
+  @@index([orgId, referenceNo])
+}
+
+//
+// Quote items (grid rows)
+//
+
+model QuoteItem {
+  id    String @id @default(cuid())
+  orgId String
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  // Optional tree for sections and nested rows
+  parentId String?
+  parent   QuoteItem?  @relation("QuoteItemTree", fields: [parentId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+  children QuoteItem[] @relation("QuoteItemTree")
+
+  rowType ItemRowType @default(LINE_ITEM)
+
+  title       String
+  description String?
+  sortOrder   Int     @default(0)
+
+  roomTag  String?
+  tradeTag String?
+  phaseTag String?
+
+  calcType CalcType @default(SELL_ONLY)
+
+  qty  Decimal? @db.Decimal(12, 3)
+  unit String?
+
+  unitPricePence  Int?
+  hours           Decimal? @db.Decimal(12, 2)
+  hourlyRatePence Int?
+
+  sellPricePence Int?
+  isAllowance    Boolean @default(false)
+
+  // Internal-only costing (never rendered on public/client surfaces)
+  costPence        Int?
+  markupPercentBps Int?
+
+  createdByUserId String?
+  updatedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@index([orgId, quoteId])
+  @@index([quoteId, sortOrder])
+  @@index([orgId, roomTag])
+  @@index([orgId, tradeTag])
+  @@index([orgId, phaseTag])
+}
+
+//
+// Quote versions (immutable snapshot per sent version)
+//
+
+model QuoteVersion {
+  id    String @id @default(cuid())
+  orgId String
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  version Int
+
+  status             QuoteStatus
+  vatMode            VatMode
+  vatRateBps         Int
+  depositType        DepositType
+  depositAmountPence Int?
+  depositPercentBps  Int?
+
+  showQtyToClient       Boolean
+  showUnitRatesToClient Boolean
+
+  title               String
+  referenceNo         String?
+  projectAddress      String?
+  scopeOverviewJson   Json?
+  termsJson           Json?
+  paymentScheduleJson Json?
+
+  // Optional captured totals for audit and PDF parity
+  subtotalPence Int?
+  vatPence      Int?
+  totalPence    Int?
+
+  sentAt DateTime?
+
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  items QuoteVersionItem[]
+
+  @@unique([id, orgId])
+  @@unique([quoteId, version])
+  @@index([orgId])
+  @@index([orgId, quoteId])
+}
+
+model QuoteVersionItem {
+  id    String @id @default(cuid())
+  orgId String
+
+  quoteVersionId String
+  quoteVersion   QuoteVersion @relation(fields: [quoteVersionId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  parentId String?
+  parent   QuoteVersionItem?  @relation("QuoteVersionItemTree", fields: [parentId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+  children QuoteVersionItem[] @relation("QuoteVersionItemTree")
+
+  sourceQuoteItemId String?
+
+  rowType ItemRowType @default(LINE_ITEM)
+
+  title       String
+  description String?
+  sortOrder   Int     @default(0)
+
+  roomTag  String?
+  tradeTag String?
+  phaseTag String?
+
+  calcType CalcType @default(SELL_ONLY)
+
+  qty  Decimal? @db.Decimal(12, 3)
+  unit String?
+
+  unitPricePence  Int?
+  hours           Decimal? @db.Decimal(12, 2)
+  hourlyRatePence Int?
+
+  sellPricePence Int?
+  isAllowance    Boolean @default(false)
+
+  lineTotalPence Int?
+
+  createdAt DateTime @default(now())
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@index([orgId, quoteVersionId])
+  @@index([quoteVersionId, sortOrder])
+}
+
+//
+// Public quote links (unlisted token URLs) + view tracking
+//
+
+model QuotePublicLink {
+  id    String @id @default(cuid())
+  orgId String
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  // Store only token hash for safer DB-at-rest posture.
+  tokenHash   String  @unique
+  tokenPrefix String?
+
+  isActive  Boolean   @default(true)
+  expiresAt DateTime?
+  revokedAt DateTime?
+
+  firstViewedAt DateTime?
+  lastViewedAt  DateTime?
+  viewCount     Int       @default(0)
+
+  createdByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([orgId, quoteId])
+  @@index([orgId, quoteId, isActive])
+}
+
+//
+// Quote PDFs (versioned)
+//
+
+model QuotePdf {
+  id    String @id @default(cuid())
+  orgId String
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  version   Int
+  fileUrl   String
+  createdAt DateTime @default(now())
+
+  @@unique([quoteId, version])
+  @@index([orgId])
+  @@index([orgId, quoteId])
+}
+
+//
+// Quote acceptance (locks quote)
+//
+
+model QuoteAcceptance {
+  id    String @id @default(cuid())
+  orgId String
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  acceptedName  String
+  acceptedEmail String?
+  acceptedAt    DateTime @default(now())
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([quoteId, orgId])
+  @@index([orgId])
+}
+
+//
+// Price book items (saved items/services)
+//
+
+model PriceBookItem {
+  id    String @id @default(cuid())
+  orgId String
+
+  title       String
+  description String?
+
+  calcType CalcType @default(SELL_ONLY)
+
+  defaultQty             Decimal? @db.Decimal(12, 3)
+  defaultUnit            String?
+  defaultUnitPricePence  Int?
+  defaultHours           Decimal? @db.Decimal(12, 2)
+  defaultHourlyRatePence Int?
+  defaultSellPricePence  Int?
+  defaultIsAllowance     Boolean  @default(false)
+
+  roomTag  String?
+  tradeTag String?
+  phaseTag String?
+
+  isFavorite Boolean @default(false)
+
+  createdByUserId String?
+  updatedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([orgId, title])
+  @@index([orgId, isFavorite])
+}
+
+//
+// Template sections (lego blocks inserted into quotes)
+//
+
+model TemplateSection {
+  id    String @id @default(cuid())
+  orgId String
+
+  name        String
+  description String?
+
+  createdByUserId String?
+  updatedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items TemplateSectionItem[]
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@index([orgId, name])
+}
+
+model TemplateSectionItem {
+  id    String @id @default(cuid())
+  orgId String
+
+  templateSectionId String
+  templateSection   TemplateSection @relation(fields: [templateSectionId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  title       String
+  description String?
+  sortOrder   Int     @default(0)
+
+  calcType CalcType @default(SELL_ONLY)
+  qty      Decimal? @db.Decimal(12, 3)
+  unit     String?
+
+  unitPricePence  Int?
+  hours           Decimal? @db.Decimal(12, 2)
+  hourlyRatePence Int?
+  sellPricePence  Int?
+  isAllowance     Boolean  @default(false)
+
+  roomTag  String?
+  tradeTag String?
+  phaseTag String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([orgId, templateSectionId])
+  @@index([templateSectionId, sortOrder])
+}
+
+//
+// Variations (post-acceptance only)
+//
+
+model Variation {
+  id    String @id @default(cuid())
+  orgId String
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  number      Int
+  title       String
+  description String?
+
+  status     VariationStatus @default(DRAFT)
+  sentAt     DateTime?
+  approvedAt DateTime?
+
+  vatMode    VatMode @default(STANDARD)
+  vatRateBps Int     @default(2000)
+
+  createdByUserId String?
+  updatedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  publicLinks VariationPublicLink[]
+  items       VariationItem[]
+  approval    VariationApproval?
+  pdfs        VariationPdf[]
+
+  @@unique([id, orgId])
+  @@unique([quoteId, number])
+  @@index([orgId])
+  @@index([orgId, quoteId])
+  @@index([orgId, status])
+}
+
+model VariationItem {
+  id    String @id @default(cuid())
+  orgId String
+
+  variationId String
+  variation   Variation @relation(fields: [variationId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  parentId String?
+  parent   VariationItem?  @relation("VariationItemTree", fields: [parentId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+  children VariationItem[] @relation("VariationItemTree")
+
+  rowType ItemRowType @default(LINE_ITEM)
+
+  title       String
+  description String?
+  sortOrder   Int     @default(0)
+
+  calcType CalcType @default(SELL_ONLY)
+  qty      Decimal? @db.Decimal(12, 3)
+  unit     String?
+
+  unitPricePence  Int?
+  hours           Decimal? @db.Decimal(12, 2)
+  hourlyRatePence Int?
+  sellPricePence  Int?
+  isAllowance     Boolean  @default(false)
+
+  roomTag  String?
+  tradeTag String?
+  phaseTag String?
+
+  // Internal-only costing (never shown to client)
+  costPence        Int?
+  markupPercentBps Int?
+
+  createdByUserId String?
+  updatedByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@index([orgId, variationId])
+  @@index([variationId, sortOrder])
+}
+
+model VariationApproval {
+  id    String @id @default(cuid())
+  orgId String
+
+  variationId String
+  variation   Variation @relation(fields: [variationId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  approvedName  String
+  approvedEmail String?
+  approvedAt    DateTime @default(now())
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([variationId, orgId])
+  @@index([orgId])
+}
+
+model VariationPublicLink {
+  id    String @id @default(cuid())
+  orgId String
+
+  variationId String
+  variation   Variation @relation(fields: [variationId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  tokenHash   String  @unique
+  tokenPrefix String?
+
+  isActive  Boolean   @default(true)
+  expiresAt DateTime?
+  revokedAt DateTime?
+
+  firstViewedAt DateTime?
+  lastViewedAt  DateTime?
+  viewCount     Int       @default(0)
+
+  createdByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([orgId, variationId])
+  @@index([orgId, variationId, isActive])
+}
+
+//
+// Variation PDFs (one per stage; no numeric versioning)
+//
+
+model VariationPdf {
+  id    String @id @default(cuid())
+  orgId String
+
+  variationId String
+  variation   Variation @relation(fields: [variationId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)
+
+  stage     VariationPdfStage
+  fileUrl   String
+  createdAt DateTime          @default(now())
+
+  @@unique([variationId, stage])
+  @@index([orgId])
+  @@index([orgId, variationId])
 }

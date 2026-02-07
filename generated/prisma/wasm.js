@@ -93,11 +93,335 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
   Serializable: 'Serializable'
 });
 
-exports.Prisma.PostScalarFieldEnum = {
+exports.Prisma.CompanySettingsScalarFieldEnum = {
   id: 'id',
-  name: 'name',
+  orgId: 'orgId',
+  companyName: 'companyName',
+  logoUrl: 'logoUrl',
+  addressLine1: 'addressLine1',
+  addressLine2: 'addressLine2',
+  city: 'city',
+  postcode: 'postcode',
+  country: 'country',
+  phone: 'phone',
+  email: 'email',
+  website: 'website',
+  defaultVatMode: 'defaultVatMode',
+  defaultVatRateBps: 'defaultVatRateBps',
+  defaultGrouping: 'defaultGrouping',
+  defaultShowQtyToClient: 'defaultShowQtyToClient',
+  defaultShowUnitRatesToClient: 'defaultShowUnitRatesToClient',
+  defaultTermsJson: 'defaultTermsJson',
+  defaultScopeOverviewJson: 'defaultScopeOverviewJson',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ClientScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  name: 'name',
+  email: 'email',
+  phone: 'phone',
+  addressLine1: 'addressLine1',
+  addressLine2: 'addressLine2',
+  city: 'city',
+  postcode: 'postcode',
+  country: 'country',
+  notes: 'notes',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.QuoteScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  clientId: 'clientId',
+  title: 'title',
+  referenceNo: 'referenceNo',
+  projectAddress: 'projectAddress',
+  status: 'status',
+  currentVersion: 'currentVersion',
+  sentAt: 'sentAt',
+  acceptedAt: 'acceptedAt',
+  vatMode: 'vatMode',
+  vatRateBps: 'vatRateBps',
+  depositType: 'depositType',
+  depositAmountPence: 'depositAmountPence',
+  depositPercentBps: 'depositPercentBps',
+  paymentScheduleJson: 'paymentScheduleJson',
+  showQtyToClient: 'showQtyToClient',
+  showUnitRatesToClient: 'showUnitRatesToClient',
+  scopeOverviewJson: 'scopeOverviewJson',
+  termsJson: 'termsJson',
+  estimatedStartDate: 'estimatedStartDate',
+  estimatedDurationWeeks: 'estimatedDurationWeeks',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.QuoteItemScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  parentId: 'parentId',
+  rowType: 'rowType',
+  title: 'title',
+  description: 'description',
+  sortOrder: 'sortOrder',
+  roomTag: 'roomTag',
+  tradeTag: 'tradeTag',
+  phaseTag: 'phaseTag',
+  calcType: 'calcType',
+  qty: 'qty',
+  unit: 'unit',
+  unitPricePence: 'unitPricePence',
+  hours: 'hours',
+  hourlyRatePence: 'hourlyRatePence',
+  sellPricePence: 'sellPricePence',
+  isAllowance: 'isAllowance',
+  costPence: 'costPence',
+  markupPercentBps: 'markupPercentBps',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.QuoteVersionScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  version: 'version',
+  status: 'status',
+  vatMode: 'vatMode',
+  vatRateBps: 'vatRateBps',
+  depositType: 'depositType',
+  depositAmountPence: 'depositAmountPence',
+  depositPercentBps: 'depositPercentBps',
+  showQtyToClient: 'showQtyToClient',
+  showUnitRatesToClient: 'showUnitRatesToClient',
+  title: 'title',
+  referenceNo: 'referenceNo',
+  projectAddress: 'projectAddress',
+  scopeOverviewJson: 'scopeOverviewJson',
+  termsJson: 'termsJson',
+  paymentScheduleJson: 'paymentScheduleJson',
+  subtotalPence: 'subtotalPence',
+  vatPence: 'vatPence',
+  totalPence: 'totalPence',
+  sentAt: 'sentAt',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.QuoteVersionItemScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteVersionId: 'quoteVersionId',
+  parentId: 'parentId',
+  sourceQuoteItemId: 'sourceQuoteItemId',
+  rowType: 'rowType',
+  title: 'title',
+  description: 'description',
+  sortOrder: 'sortOrder',
+  roomTag: 'roomTag',
+  tradeTag: 'tradeTag',
+  phaseTag: 'phaseTag',
+  calcType: 'calcType',
+  qty: 'qty',
+  unit: 'unit',
+  unitPricePence: 'unitPricePence',
+  hours: 'hours',
+  hourlyRatePence: 'hourlyRatePence',
+  sellPricePence: 'sellPricePence',
+  isAllowance: 'isAllowance',
+  lineTotalPence: 'lineTotalPence',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.QuotePublicLinkScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  tokenHash: 'tokenHash',
+  tokenPrefix: 'tokenPrefix',
+  isActive: 'isActive',
+  expiresAt: 'expiresAt',
+  revokedAt: 'revokedAt',
+  firstViewedAt: 'firstViewedAt',
+  lastViewedAt: 'lastViewedAt',
+  viewCount: 'viewCount',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.QuotePdfScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  version: 'version',
+  fileUrl: 'fileUrl',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.QuoteAcceptanceScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  acceptedName: 'acceptedName',
+  acceptedEmail: 'acceptedEmail',
+  acceptedAt: 'acceptedAt',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.PriceBookItemScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  title: 'title',
+  description: 'description',
+  calcType: 'calcType',
+  defaultQty: 'defaultQty',
+  defaultUnit: 'defaultUnit',
+  defaultUnitPricePence: 'defaultUnitPricePence',
+  defaultHours: 'defaultHours',
+  defaultHourlyRatePence: 'defaultHourlyRatePence',
+  defaultSellPricePence: 'defaultSellPricePence',
+  defaultIsAllowance: 'defaultIsAllowance',
+  roomTag: 'roomTag',
+  tradeTag: 'tradeTag',
+  phaseTag: 'phaseTag',
+  isFavorite: 'isFavorite',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TemplateSectionScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  name: 'name',
+  description: 'description',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TemplateSectionItemScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  templateSectionId: 'templateSectionId',
+  title: 'title',
+  description: 'description',
+  sortOrder: 'sortOrder',
+  calcType: 'calcType',
+  qty: 'qty',
+  unit: 'unit',
+  unitPricePence: 'unitPricePence',
+  hours: 'hours',
+  hourlyRatePence: 'hourlyRatePence',
+  sellPricePence: 'sellPricePence',
+  isAllowance: 'isAllowance',
+  roomTag: 'roomTag',
+  tradeTag: 'tradeTag',
+  phaseTag: 'phaseTag',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VariationScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  quoteId: 'quoteId',
+  number: 'number',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  sentAt: 'sentAt',
+  approvedAt: 'approvedAt',
+  vatMode: 'vatMode',
+  vatRateBps: 'vatRateBps',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VariationItemScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  variationId: 'variationId',
+  parentId: 'parentId',
+  rowType: 'rowType',
+  title: 'title',
+  description: 'description',
+  sortOrder: 'sortOrder',
+  calcType: 'calcType',
+  qty: 'qty',
+  unit: 'unit',
+  unitPricePence: 'unitPricePence',
+  hours: 'hours',
+  hourlyRatePence: 'hourlyRatePence',
+  sellPricePence: 'sellPricePence',
+  isAllowance: 'isAllowance',
+  roomTag: 'roomTag',
+  tradeTag: 'tradeTag',
+  phaseTag: 'phaseTag',
+  costPence: 'costPence',
+  markupPercentBps: 'markupPercentBps',
+  createdByUserId: 'createdByUserId',
+  updatedByUserId: 'updatedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VariationApprovalScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  variationId: 'variationId',
+  approvedName: 'approvedName',
+  approvedEmail: 'approvedEmail',
+  approvedAt: 'approvedAt',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.VariationPublicLinkScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  variationId: 'variationId',
+  tokenHash: 'tokenHash',
+  tokenPrefix: 'tokenPrefix',
+  isActive: 'isActive',
+  expiresAt: 'expiresAt',
+  revokedAt: 'revokedAt',
+  firstViewedAt: 'firstViewedAt',
+  lastViewedAt: 'lastViewedAt',
+  viewCount: 'viewCount',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VariationPdfScalarFieldEnum = {
+  id: 'id',
+  orgId: 'orgId',
+  variationId: 'variationId',
+  stage: 'stage',
+  fileUrl: 'fileUrl',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -105,14 +429,88 @@ exports.Prisma.SortOrder = {
   desc: 'desc'
 };
 
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
+};
+
 exports.Prisma.QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
 };
 
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
+};
+
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
+};
+exports.QuoteStatus = exports.$Enums.QuoteStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  ACCEPTED: 'ACCEPTED',
+  DECLINED: 'DECLINED'
+};
+
+exports.VatMode = exports.$Enums.VatMode = {
+  NONE: 'NONE',
+  STANDARD: 'STANDARD'
+};
+
+exports.DepositType = exports.$Enums.DepositType = {
+  NONE: 'NONE',
+  AMOUNT: 'AMOUNT',
+  PERCENT: 'PERCENT'
+};
+
+exports.ItemRowType = exports.$Enums.ItemRowType = {
+  SECTION_HEADER: 'SECTION_HEADER',
+  LINE_ITEM: 'LINE_ITEM'
+};
+
+exports.CalcType = exports.$Enums.CalcType = {
+  SELL_ONLY: 'SELL_ONLY',
+  UNIT_RATE: 'UNIT_RATE',
+  LABOUR_HOURS: 'LABOUR_HOURS',
+  ALLOWANCE: 'ALLOWANCE'
+};
+
+exports.VariationStatus = exports.$Enums.VariationStatus = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  APPROVED: 'APPROVED',
+  DECLINED: 'DECLINED'
+};
+
+exports.VariationPdfStage = exports.$Enums.VariationPdfStage = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  APPROVED: 'APPROVED',
+  DECLINED: 'DECLINED'
+};
 
 exports.Prisma.ModelName = {
-  Post: 'Post'
+  CompanySettings: 'CompanySettings',
+  Client: 'Client',
+  Quote: 'Quote',
+  QuoteItem: 'QuoteItem',
+  QuoteVersion: 'QuoteVersion',
+  QuoteVersionItem: 'QuoteVersionItem',
+  QuotePublicLink: 'QuotePublicLink',
+  QuotePdf: 'QuotePdf',
+  QuoteAcceptance: 'QuoteAcceptance',
+  PriceBookItem: 'PriceBookItem',
+  TemplateSection: 'TemplateSection',
+  TemplateSectionItem: 'TemplateSectionItem',
+  Variation: 'Variation',
+  VariationItem: 'VariationItem',
+  VariationApproval: 'VariationApproval',
+  VariationPublicLink: 'VariationPublicLink',
+  VariationPdf: 'VariationPdf'
 };
 /**
  * Create the Client
@@ -162,13 +560,13 @@ const config = {
       }
     }
   },
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Post {\n  id        Int      @id @default(autoincrement())\n  name      String\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([name])\n}\n",
-  "inlineSchemaHash": "4dfee2d805d63053d5ae63a6ff65a5c68e353713bdd4147909d9158ea83d8e0f",
+  "inlineSchema": "// BuilderOS v1 schema\n// Multi-tenant via Clerk Organizations (orgId on every persisted model)\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider  = \"postgresql\"\n  url       = env(\"DATABASE_URL\")\n  directUrl = env(\"DIRECT_DATABASE_URL\")\n}\n\n//\n// Enums\n//\n\nenum QuoteStatus {\n  DRAFT\n  SENT\n  ACCEPTED\n  DECLINED\n}\n\nenum VatMode {\n  NONE\n  STANDARD\n}\n\nenum DepositType {\n  NONE\n  AMOUNT\n  PERCENT\n}\n\nenum ItemRowType {\n  SECTION_HEADER\n  LINE_ITEM\n}\n\nenum CalcType {\n  SELL_ONLY\n  UNIT_RATE\n  LABOUR_HOURS\n  ALLOWANCE\n}\n\nenum VariationStatus {\n  DRAFT\n  SENT\n  APPROVED\n  DECLINED\n}\n\nenum VariationPdfStage {\n  DRAFT\n  SENT\n  APPROVED\n  DECLINED\n}\n\n//\n// Core tenant settings\n//\n\nmodel CompanySettings {\n  id    String @id @default(cuid())\n  orgId String @unique // Clerk Organization ID (tenant)\n\n  companyName  String\n  logoUrl      String?\n  addressLine1 String?\n  addressLine2 String?\n  city         String?\n  postcode     String?\n  country      String? @default(\"UK\")\n  phone        String?\n  email        String?\n  website      String?\n\n  // Defaults\n  defaultVatMode    VatMode @default(STANDARD)\n  defaultVatRateBps Int     @default(2000) // 20.00% VAT in basis points\n  defaultGrouping   String  @default(\"ROOMS\")\n\n  // Display preferences (builder can override per quote)\n  defaultShowQtyToClient       Boolean @default(false)\n  defaultShowUnitRatesToClient Boolean @default(false)\n\n  // Terms and scope rich text JSON (e.g. Tiptap)\n  defaultTermsJson         Json?\n  defaultScopeOverviewJson Json?\n\n  createdByUserId String?\n  updatedByUserId String?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([orgId])\n}\n\n//\n// Clients (light CRM for MVP)\n//\n\nmodel Client {\n  id    String @id @default(cuid())\n  orgId String\n\n  name         String\n  email        String?\n  phone        String?\n  addressLine1 String?\n  addressLine2 String?\n  city         String?\n  postcode     String?\n  country      String?\n  notes        String?\n\n  createdByUserId String?\n  updatedByUserId String?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  quotes Quote[]\n\n  @@unique([id, orgId])\n  @@index([orgId])\n  @@index([orgId, name])\n}\n\n//\n// Quotes\n//\n\nmodel Quote {\n  id    String @id @default(cuid())\n  orgId String\n\n  clientId String?\n  client   Client? @relation(fields: [clientId, orgId], references: [id, orgId], onDelete: Restrict, onUpdate: Cascade)\n\n  title          String\n  referenceNo    String?\n  projectAddress String?\n\n  status QuoteStatus @default(DRAFT)\n\n  // Versioning\n  currentVersion Int       @default(1)\n  sentAt         DateTime?\n  acceptedAt     DateTime?\n\n  // VAT\n  vatMode    VatMode @default(STANDARD)\n  vatRateBps Int     @default(2000)\n\n  // Deposit / payment terms (informational only)\n  depositType        DepositType @default(NONE)\n  depositAmountPence Int?\n  depositPercentBps  Int?\n\n  paymentScheduleJson Json?\n\n  // Client-facing display toggles\n  showQtyToClient       Boolean @default(false)\n  showUnitRatesToClient Boolean @default(false)\n\n  scopeOverviewJson Json?\n  termsJson         Json?\n\n  estimatedStartDate     DateTime?\n  estimatedDurationWeeks Int?\n\n  createdByUserId String?\n  updatedByUserId String?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  items       QuoteItem[]\n  publicLinks QuotePublicLink[]\n  pdfs        QuotePdf[]\n  acceptance  QuoteAcceptance?\n  variations  Variation[]\n  versions    QuoteVersion[]\n\n  @@unique([id, orgId])\n  @@index([orgId])\n  @@index([orgId, status])\n  @@index([orgId, clientId])\n  @@index([orgId, referenceNo])\n}\n\n//\n// Quote items (grid rows)\n//\n\nmodel QuoteItem {\n  id    String @id @default(cuid())\n  orgId String\n\n  quoteId String\n  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  // Optional tree for sections and nested rows\n  parentId String?\n  parent   QuoteItem?  @relation(\"QuoteItemTree\", fields: [parentId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n  children QuoteItem[] @relation(\"QuoteItemTree\")\n\n  rowType ItemRowType @default(LINE_ITEM)\n\n  title       String\n  description String?\n  sortOrder   Int     @default(0)\n\n  roomTag  String?\n  tradeTag String?\n  phaseTag String?\n\n  calcType CalcType @default(SELL_ONLY)\n\n  qty  Decimal? @db.Decimal(12, 3)\n  unit String?\n\n  unitPricePence  Int?\n  hours           Decimal? @db.Decimal(12, 2)\n  hourlyRatePence Int?\n\n  sellPricePence Int?\n  isAllowance    Boolean @default(false)\n\n  // Internal-only costing (never rendered on public/client surfaces)\n  costPence        Int?\n  markupPercentBps Int?\n\n  createdByUserId String?\n  updatedByUserId String?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@unique([id, orgId])\n  @@index([orgId])\n  @@index([orgId, quoteId])\n  @@index([quoteId, sortOrder])\n  @@index([orgId, roomTag])\n  @@index([orgId, tradeTag])\n  @@index([orgId, phaseTag])\n}\n\n//\n// Quote versions (immutable snapshot per sent version)\n//\n\nmodel QuoteVersion {\n  id    String @id @default(cuid())\n  orgId String\n\n  quoteId String\n  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  version Int\n\n  status             QuoteStatus\n  vatMode            VatMode\n  vatRateBps         Int\n  depositType        DepositType\n  depositAmountPence Int?\n  depositPercentBps  Int?\n\n  showQtyToClient       Boolean\n  showUnitRatesToClient Boolean\n\n  title               String\n  referenceNo         String?\n  projectAddress      String?\n  scopeOverviewJson   Json?\n  termsJson           Json?\n  paymentScheduleJson Json?\n\n  // Optional captured totals for audit and PDF parity\n  subtotalPence Int?\n  vatPence      Int?\n  totalPence    Int?\n\n  sentAt DateTime?\n\n  createdByUserId String?\n  createdAt       DateTime @default(now())\n\n  items QuoteVersionItem[]\n\n  @@unique([id, orgId])\n  @@unique([quoteId, version])\n  @@index([orgId])\n  @@index([orgId, quoteId])\n}\n\nmodel QuoteVersionItem {\n  id    String @id @default(cuid())\n  orgId String\n\n  quoteVersionId String\n  quoteVersion   QuoteVersion @relation(fields: [quoteVersionId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  parentId String?\n  parent   QuoteVersionItem?  @relation(\"QuoteVersionItemTree\", fields: [parentId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n  children QuoteVersionItem[] @relation(\"QuoteVersionItemTree\")\n\n  sourceQuoteItemId String?\n\n  rowType ItemRowType @default(LINE_ITEM)\n\n  title       String\n  description String?\n  sortOrder   Int     @default(0)\n\n  roomTag  String?\n  tradeTag String?\n  phaseTag String?\n\n  calcType CalcType @default(SELL_ONLY)\n\n  qty  Decimal? @db.Decimal(12, 3)\n  unit String?\n\n  unitPricePence  Int?\n  hours           Decimal? @db.Decimal(12, 2)\n  hourlyRatePence Int?\n\n  sellPricePence Int?\n  isAllowance    Boolean @default(false)\n\n  lineTotalPence Int?\n\n  createdAt DateTime @default(now())\n\n  @@unique([id, orgId])\n  @@index([orgId])\n  @@index([orgId, quoteVersionId])\n  @@index([quoteVersionId, sortOrder])\n}\n\n//\n// Public quote links (unlisted token URLs) + view tracking\n//\n\nmodel QuotePublicLink {\n  id    String @id @default(cuid())\n  orgId String\n\n  quoteId String\n  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  // Store only token hash for safer DB-at-rest posture.\n  tokenHash   String  @unique\n  tokenPrefix String?\n\n  isActive  Boolean   @default(true)\n  expiresAt DateTime?\n  revokedAt DateTime?\n\n  firstViewedAt DateTime?\n  lastViewedAt  DateTime?\n  viewCount     Int       @default(0)\n\n  createdByUserId String?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([orgId])\n  @@index([orgId, quoteId])\n  @@index([orgId, quoteId, isActive])\n}\n\n//\n// Quote PDFs (versioned)\n//\n\nmodel QuotePdf {\n  id    String @id @default(cuid())\n  orgId String\n\n  quoteId String\n  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  version   Int\n  fileUrl   String\n  createdAt DateTime @default(now())\n\n  @@unique([quoteId, version])\n  @@index([orgId])\n  @@index([orgId, quoteId])\n}\n\n//\n// Quote acceptance (locks quote)\n//\n\nmodel QuoteAcceptance {\n  id    String @id @default(cuid())\n  orgId String\n\n  quoteId String\n  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  acceptedName  String\n  acceptedEmail String?\n  acceptedAt    DateTime @default(now())\n\n  ipAddress String?\n  userAgent String?\n\n  createdAt DateTime @default(now())\n\n  @@unique([quoteId, orgId])\n  @@index([orgId])\n}\n\n//\n// Price book items (saved items/services)\n//\n\nmodel PriceBookItem {\n  id    String @id @default(cuid())\n  orgId String\n\n  title       String\n  description String?\n\n  calcType CalcType @default(SELL_ONLY)\n\n  defaultQty             Decimal? @db.Decimal(12, 3)\n  defaultUnit            String?\n  defaultUnitPricePence  Int?\n  defaultHours           Decimal? @db.Decimal(12, 2)\n  defaultHourlyRatePence Int?\n  defaultSellPricePence  Int?\n  defaultIsAllowance     Boolean  @default(false)\n\n  roomTag  String?\n  tradeTag String?\n  phaseTag String?\n\n  isFavorite Boolean @default(false)\n\n  createdByUserId String?\n  updatedByUserId String?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([orgId])\n  @@index([orgId, title])\n  @@index([orgId, isFavorite])\n}\n\n//\n// Template sections (lego blocks inserted into quotes)\n//\n\nmodel TemplateSection {\n  id    String @id @default(cuid())\n  orgId String\n\n  name        String\n  description String?\n\n  createdByUserId String?\n  updatedByUserId String?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  items TemplateSectionItem[]\n\n  @@unique([id, orgId])\n  @@index([orgId])\n  @@index([orgId, name])\n}\n\nmodel TemplateSectionItem {\n  id    String @id @default(cuid())\n  orgId String\n\n  templateSectionId String\n  templateSection   TemplateSection @relation(fields: [templateSectionId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  title       String\n  description String?\n  sortOrder   Int     @default(0)\n\n  calcType CalcType @default(SELL_ONLY)\n  qty      Decimal? @db.Decimal(12, 3)\n  unit     String?\n\n  unitPricePence  Int?\n  hours           Decimal? @db.Decimal(12, 2)\n  hourlyRatePence Int?\n  sellPricePence  Int?\n  isAllowance     Boolean  @default(false)\n\n  roomTag  String?\n  tradeTag String?\n  phaseTag String?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([orgId])\n  @@index([orgId, templateSectionId])\n  @@index([templateSectionId, sortOrder])\n}\n\n//\n// Variations (post-acceptance only)\n//\n\nmodel Variation {\n  id    String @id @default(cuid())\n  orgId String\n\n  quoteId String\n  quote   Quote  @relation(fields: [quoteId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  number      Int\n  title       String\n  description String?\n\n  status     VariationStatus @default(DRAFT)\n  sentAt     DateTime?\n  approvedAt DateTime?\n\n  vatMode    VatMode @default(STANDARD)\n  vatRateBps Int     @default(2000)\n\n  createdByUserId String?\n  updatedByUserId String?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  publicLinks VariationPublicLink[]\n  items       VariationItem[]\n  approval    VariationApproval?\n  pdfs        VariationPdf[]\n\n  @@unique([id, orgId])\n  @@unique([quoteId, number])\n  @@index([orgId])\n  @@index([orgId, quoteId])\n  @@index([orgId, status])\n}\n\nmodel VariationItem {\n  id    String @id @default(cuid())\n  orgId String\n\n  variationId String\n  variation   Variation @relation(fields: [variationId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  parentId String?\n  parent   VariationItem?  @relation(\"VariationItemTree\", fields: [parentId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n  children VariationItem[] @relation(\"VariationItemTree\")\n\n  rowType ItemRowType @default(LINE_ITEM)\n\n  title       String\n  description String?\n  sortOrder   Int     @default(0)\n\n  calcType CalcType @default(SELL_ONLY)\n  qty      Decimal? @db.Decimal(12, 3)\n  unit     String?\n\n  unitPricePence  Int?\n  hours           Decimal? @db.Decimal(12, 2)\n  hourlyRatePence Int?\n  sellPricePence  Int?\n  isAllowance     Boolean  @default(false)\n\n  roomTag  String?\n  tradeTag String?\n  phaseTag String?\n\n  // Internal-only costing (never shown to client)\n  costPence        Int?\n  markupPercentBps Int?\n\n  createdByUserId String?\n  updatedByUserId String?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@unique([id, orgId])\n  @@index([orgId])\n  @@index([orgId, variationId])\n  @@index([variationId, sortOrder])\n}\n\nmodel VariationApproval {\n  id    String @id @default(cuid())\n  orgId String\n\n  variationId String\n  variation   Variation @relation(fields: [variationId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  approvedName  String\n  approvedEmail String?\n  approvedAt    DateTime @default(now())\n\n  ipAddress String?\n  userAgent String?\n\n  createdAt DateTime @default(now())\n\n  @@unique([variationId, orgId])\n  @@index([orgId])\n}\n\nmodel VariationPublicLink {\n  id    String @id @default(cuid())\n  orgId String\n\n  variationId String\n  variation   Variation @relation(fields: [variationId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  tokenHash   String  @unique\n  tokenPrefix String?\n\n  isActive  Boolean   @default(true)\n  expiresAt DateTime?\n  revokedAt DateTime?\n\n  firstViewedAt DateTime?\n  lastViewedAt  DateTime?\n  viewCount     Int       @default(0)\n\n  createdByUserId String?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([orgId])\n  @@index([orgId, variationId])\n  @@index([orgId, variationId, isActive])\n}\n\n//\n// Variation PDFs (one per stage; no numeric versioning)\n//\n\nmodel VariationPdf {\n  id    String @id @default(cuid())\n  orgId String\n\n  variationId String\n  variation   Variation @relation(fields: [variationId, orgId], references: [id, orgId], onDelete: Cascade, onUpdate: Cascade)\n\n  stage     VariationPdfStage\n  fileUrl   String\n  createdAt DateTime          @default(now())\n\n  @@unique([variationId, stage])\n  @@index([orgId])\n  @@index([orgId, variationId])\n}\n",
+  "inlineSchemaHash": "c7a41642961a657ea8921e08bfb3bd32167c47c1bf05a5d3bb855027851c084b",
   "copyEngine": true
 }
 config.dirname = '/'
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"Post\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"CompanySettings\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"companyName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"logoUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"addressLine1\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"addressLine2\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"city\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"postcode\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"country\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"phone\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"website\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"defaultVatMode\",\"kind\":\"enum\",\"type\":\"VatMode\"},{\"name\":\"defaultVatRateBps\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"defaultGrouping\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"defaultShowQtyToClient\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"defaultShowUnitRatesToClient\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"defaultTermsJson\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"defaultScopeOverviewJson\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"createdByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updatedByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Client\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"phone\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"addressLine1\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"addressLine2\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"city\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"postcode\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"country\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"notes\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updatedByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"quotes\",\"kind\":\"object\",\"type\":\"Quote\",\"relationName\":\"ClientToQuote\"}],\"dbName\":null},\"Quote\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clientId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"client\",\"kind\":\"object\",\"type\":\"Client\",\"relationName\":\"ClientToQuote\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"referenceNo\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"projectAddress\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"QuoteStatus\"},{\"name\":\"currentVersion\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"sentAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"acceptedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"vatMode\",\"kind\":\"enum\",\"type\":\"VatMode\"},{\"name\":\"vatRateBps\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"depositType\",\"kind\":\"enum\",\"type\":\"DepositType\"},{\"name\":\"depositAmountPence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"depositPercentBps\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"paymentScheduleJson\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"showQtyToClient\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"showUnitRatesToClient\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"scopeOverviewJson\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"termsJson\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"estimatedStartDate\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"estimatedDurationWeeks\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updatedByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"items\",\"kind\":\"object\",\"type\":\"QuoteItem\",\"relationName\":\"QuoteToQuoteItem\"},{\"name\":\"publicLinks\",\"kind\":\"object\",\"type\":\"QuotePublicLink\",\"relationName\":\"QuoteToQuotePublicLink\"},{\"name\":\"pdfs\",\"kind\":\"object\",\"type\":\"QuotePdf\",\"relationName\":\"QuoteToQuotePdf\"},{\"name\":\"acceptance\",\"kind\":\"object\",\"type\":\"QuoteAcceptance\",\"relationName\":\"QuoteToQuoteAcceptance\"},{\"name\":\"variations\",\"kind\":\"object\",\"type\":\"Variation\",\"relationName\":\"QuoteToVariation\"},{\"name\":\"versions\",\"kind\":\"object\",\"type\":\"QuoteVersion\",\"relationName\":\"QuoteToQuoteVersion\"}],\"dbName\":null},\"QuoteItem\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quoteId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quote\",\"kind\":\"object\",\"type\":\"Quote\",\"relationName\":\"QuoteToQuoteItem\"},{\"name\":\"parentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"parent\",\"kind\":\"object\",\"type\":\"QuoteItem\",\"relationName\":\"QuoteItemTree\"},{\"name\":\"children\",\"kind\":\"object\",\"type\":\"QuoteItem\",\"relationName\":\"QuoteItemTree\"},{\"name\":\"rowType\",\"kind\":\"enum\",\"type\":\"ItemRowType\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sortOrder\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"roomTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"tradeTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"phaseTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"calcType\",\"kind\":\"enum\",\"type\":\"CalcType\"},{\"name\":\"qty\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"unit\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"unitPricePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"hours\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"hourlyRatePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"sellPricePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"isAllowance\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"costPence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"markupPercentBps\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updatedByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"QuoteVersion\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quoteId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quote\",\"kind\":\"object\",\"type\":\"Quote\",\"relationName\":\"QuoteToQuoteVersion\"},{\"name\":\"version\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"QuoteStatus\"},{\"name\":\"vatMode\",\"kind\":\"enum\",\"type\":\"VatMode\"},{\"name\":\"vatRateBps\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"depositType\",\"kind\":\"enum\",\"type\":\"DepositType\"},{\"name\":\"depositAmountPence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"depositPercentBps\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"showQtyToClient\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"showUnitRatesToClient\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"referenceNo\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"projectAddress\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"scopeOverviewJson\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"termsJson\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"paymentScheduleJson\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"subtotalPence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"vatPence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"totalPence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"sentAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"items\",\"kind\":\"object\",\"type\":\"QuoteVersionItem\",\"relationName\":\"QuoteVersionToQuoteVersionItem\"}],\"dbName\":null},\"QuoteVersionItem\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quoteVersionId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quoteVersion\",\"kind\":\"object\",\"type\":\"QuoteVersion\",\"relationName\":\"QuoteVersionToQuoteVersionItem\"},{\"name\":\"parentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"parent\",\"kind\":\"object\",\"type\":\"QuoteVersionItem\",\"relationName\":\"QuoteVersionItemTree\"},{\"name\":\"children\",\"kind\":\"object\",\"type\":\"QuoteVersionItem\",\"relationName\":\"QuoteVersionItemTree\"},{\"name\":\"sourceQuoteItemId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"rowType\",\"kind\":\"enum\",\"type\":\"ItemRowType\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sortOrder\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"roomTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"tradeTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"phaseTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"calcType\",\"kind\":\"enum\",\"type\":\"CalcType\"},{\"name\":\"qty\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"unit\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"unitPricePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"hours\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"hourlyRatePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"sellPricePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"isAllowance\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"lineTotalPence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"QuotePublicLink\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quoteId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quote\",\"kind\":\"object\",\"type\":\"Quote\",\"relationName\":\"QuoteToQuotePublicLink\"},{\"name\":\"tokenHash\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"tokenPrefix\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"isActive\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"expiresAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"revokedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"firstViewedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"lastViewedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"viewCount\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"QuotePdf\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quoteId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quote\",\"kind\":\"object\",\"type\":\"Quote\",\"relationName\":\"QuoteToQuotePdf\"},{\"name\":\"version\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"fileUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"QuoteAcceptance\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quoteId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quote\",\"kind\":\"object\",\"type\":\"Quote\",\"relationName\":\"QuoteToQuoteAcceptance\"},{\"name\":\"acceptedName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"acceptedEmail\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"acceptedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"ipAddress\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userAgent\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"PriceBookItem\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"calcType\",\"kind\":\"enum\",\"type\":\"CalcType\"},{\"name\":\"defaultQty\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"defaultUnit\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"defaultUnitPricePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"defaultHours\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"defaultHourlyRatePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"defaultSellPricePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"defaultIsAllowance\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"roomTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"tradeTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"phaseTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"isFavorite\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"createdByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updatedByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"TemplateSection\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updatedByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"items\",\"kind\":\"object\",\"type\":\"TemplateSectionItem\",\"relationName\":\"TemplateSectionToTemplateSectionItem\"}],\"dbName\":null},\"TemplateSectionItem\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"templateSectionId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"templateSection\",\"kind\":\"object\",\"type\":\"TemplateSection\",\"relationName\":\"TemplateSectionToTemplateSectionItem\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sortOrder\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"calcType\",\"kind\":\"enum\",\"type\":\"CalcType\"},{\"name\":\"qty\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"unit\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"unitPricePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"hours\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"hourlyRatePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"sellPricePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"isAllowance\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"roomTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"tradeTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"phaseTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Variation\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quoteId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quote\",\"kind\":\"object\",\"type\":\"Quote\",\"relationName\":\"QuoteToVariation\"},{\"name\":\"number\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"VariationStatus\"},{\"name\":\"sentAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"approvedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"vatMode\",\"kind\":\"enum\",\"type\":\"VatMode\"},{\"name\":\"vatRateBps\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updatedByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"publicLinks\",\"kind\":\"object\",\"type\":\"VariationPublicLink\",\"relationName\":\"VariationToVariationPublicLink\"},{\"name\":\"items\",\"kind\":\"object\",\"type\":\"VariationItem\",\"relationName\":\"VariationToVariationItem\"},{\"name\":\"approval\",\"kind\":\"object\",\"type\":\"VariationApproval\",\"relationName\":\"VariationToVariationApproval\"},{\"name\":\"pdfs\",\"kind\":\"object\",\"type\":\"VariationPdf\",\"relationName\":\"VariationToVariationPdf\"}],\"dbName\":null},\"VariationItem\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variationId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variation\",\"kind\":\"object\",\"type\":\"Variation\",\"relationName\":\"VariationToVariationItem\"},{\"name\":\"parentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"parent\",\"kind\":\"object\",\"type\":\"VariationItem\",\"relationName\":\"VariationItemTree\"},{\"name\":\"children\",\"kind\":\"object\",\"type\":\"VariationItem\",\"relationName\":\"VariationItemTree\"},{\"name\":\"rowType\",\"kind\":\"enum\",\"type\":\"ItemRowType\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sortOrder\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"calcType\",\"kind\":\"enum\",\"type\":\"CalcType\"},{\"name\":\"qty\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"unit\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"unitPricePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"hours\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"hourlyRatePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"sellPricePence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"isAllowance\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"roomTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"tradeTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"phaseTag\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"costPence\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"markupPercentBps\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updatedByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"VariationApproval\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variationId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variation\",\"kind\":\"object\",\"type\":\"Variation\",\"relationName\":\"VariationToVariationApproval\"},{\"name\":\"approvedName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"approvedEmail\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"approvedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"ipAddress\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userAgent\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"VariationPublicLink\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variationId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variation\",\"kind\":\"object\",\"type\":\"Variation\",\"relationName\":\"VariationToVariationPublicLink\"},{\"name\":\"tokenHash\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"tokenPrefix\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"isActive\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"expiresAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"revokedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"firstViewedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"lastViewedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"viewCount\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdByUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"VariationPdf\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"orgId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variationId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variation\",\"kind\":\"object\",\"type\":\"Variation\",\"relationName\":\"VariationToVariationPdf\"},{\"name\":\"stage\",\"kind\":\"enum\",\"type\":\"VariationPdfStage\"},{\"name\":\"fileUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = {
   getRuntime: async () => require('./query_engine_bg.js'),
