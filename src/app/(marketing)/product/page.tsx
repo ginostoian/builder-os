@@ -9,14 +9,14 @@ export default function ProductPage() {
     <div>
       <PageHero
         label="Product"
-        title="A structured workflow for quote and change control."
-        description="BuilderOS gives renovation teams one place to manage draft scope, accepted scope, and approved variations."
+        title="An operating system for commercial control."
+        description="BuilderOS gives renovation teams a clear structure for pricing work, confirming scope, and handling changes after acceptance."
         primaryAction={{ href: "/request-access", label: "Request access" }}
         secondaryAction={{ href: "/how-it-works", label: "How it works" }}
-        note="Focused on renovation quoting, acceptance, and post-acceptance changes."
+        note="Built for focused quoting and change control workflows."
       />
 
-      <section className="border-y bg-[#fcfcfc]">
+      <section className="border-y bg-[#fafafa]">
         <div className="mx-auto w-full max-w-6xl px-[var(--spacing-page-x)] py-[var(--spacing-section-y)]">
           <div className="mx-auto max-w-3xl text-center">
             <div className="space-y-4">
@@ -36,7 +36,9 @@ export default function ProductPage() {
               </div>
               <div className="min-w-0 space-y-3">
                 <span className="section-label">01</span>
-                <h3 className="text-[var(--foreground)]">Quotes</h3>
+                <h3 className="text-[2rem] leading-tight tracking-[-0.02em] text-[var(--foreground)]">
+                  Quotes
+                </h3>
                 <p>Build clear, versioned quotes with structured line items.</p>
               </div>
             </article>
@@ -44,7 +46,9 @@ export default function ProductPage() {
             <article className="grid gap-8 lg:grid-cols-2 lg:items-center">
               <div className="min-w-0 space-y-3 lg:order-1">
                 <span className="section-label">02</span>
-                <h3 className="text-[var(--foreground)]">Acceptance</h3>
+                <h3 className="text-[2rem] leading-tight tracking-[-0.02em] text-[var(--foreground)]">
+                  Acceptance
+                </h3>
                 <p>Capture client approval online and lock the agreed quote.</p>
               </div>
               <div className="panel-card min-w-0 overflow-hidden lg:order-2">
@@ -58,7 +62,9 @@ export default function ProductPage() {
               </div>
               <div className="min-w-0 space-y-3">
                 <span className="section-label">03</span>
-                <h3 className="text-[var(--foreground)]">Variations</h3>
+                <h3 className="text-[2rem] leading-tight tracking-[-0.02em] text-[var(--foreground)]">
+                  Variations
+                </h3>
                 <p>Handle post-acceptance changes through formal approvals.</p>
               </div>
             </article>
@@ -89,7 +95,7 @@ export default function ProductPage() {
       <FeatureGridSection
         label="Boundaries"
         title="What it's not"
-        description="BuilderOS is focused by design. It is not intended to replace every back-office system."
+        description="BuilderOS is focused by design. It is not intended to be an all-in-one back office."
         background="muted"
         items={[
           {
@@ -136,12 +142,12 @@ export default function ProductPage() {
       />
 
       <FinalCtaSection
-        title="Request access to review the product workflow."
-        description="We can run through your current process and confirm whether BuilderOS fits."
+        title="Keep projects moving with cleaner commercial decisions."
+        description="If your team wants a more consistent quote-to-variation process, BuilderOS is ready to review."
         primaryHref="/request-access"
-        primaryLabel="Request access"
+        primaryLabel="Get started"
         secondaryHref="/how-it-works"
-        secondaryLabel="Join beta"
+        secondaryLabel="See workflow"
       />
     </div>
   );

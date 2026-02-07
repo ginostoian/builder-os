@@ -16,9 +16,9 @@ export default function PricingPage() {
     <div>
       <PageHero
         label="Pricing"
-        title="Pricing for UK renovation teams."
-        description="Monthly and yearly plans include the same product. Yearly billing includes a lower effective monthly cost."
-        primaryAction={{ href: "/request-access", label: "Request access" }}
+        title="Simple pricing for renovation teams."
+        description="Choose monthly or yearly billing. Yearly includes two months free while keeping the same product and support level."
+        primaryAction={{ href: "/request-access", label: "Get started" }}
         secondaryAction={{ href: "/request-access", label: "Talk to us" }}
       />
 
@@ -30,9 +30,12 @@ export default function PricingPage() {
               <h2 className="text-[2.4rem] leading-none tracking-[-0.02em] text-[var(--foreground)]">
                 £99<span className="text-lg font-medium text-[var(--muted-foreground)]"> / month</span>
               </h2>
-              <p>Monthly billing with no annual commitment.</p>
-              <a href="/request-access" className="btn-primary">
-                Request access
+              <p>Flexible monthly billing for teams that want to start immediately.</p>
+              <a
+                href="/request-access"
+                className="inline-flex items-center rounded-xl bg-[#121316] px-5 py-3 text-base font-medium !text-white"
+              >
+                Get started
               </a>
             </div>
 
@@ -51,34 +54,37 @@ export default function PricingPage() {
             </div>
           </article>
 
-          <article className="panel-card">
+          <article className="rounded-2xl border border-[#121316] bg-[#121316] p-[clamp(1.25rem,1.7vw,1.6rem)] text-white shadow-[var(--card-shadow)]">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full border bg-[#fafafa] px-3 py-1 text-xs font-semibold text-[var(--foreground)]">
+                <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#121316]">
                   Yearly
                 </span>
-                <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium text-[var(--muted-foreground)]">
+                <span className="inline-flex items-center rounded-full border border-white/25 px-3 py-1 text-xs font-medium text-white/90">
                   2 months free
                 </span>
               </div>
-              <h2 className="text-[2.4rem] leading-none tracking-[-0.02em] text-[var(--foreground)]">
+              <h2 className="text-[2.4rem] leading-none tracking-[-0.02em] text-white">
                 £990
-                <span className="text-lg font-medium text-[var(--muted-foreground)]"> / year</span>
+                <span className="text-lg font-medium text-white/70"> / year</span>
               </h2>
-              <p>
-                Effective monthly cost is £82.50 for teams planning year-round use.
+              <p className="text-white/80">
+                Effective monthly cost: £82.50. Best value for teams planning to use BuilderOS year-round.
               </p>
-              <a href="/request-access" className="btn-primary">
-                Request access
+              <a
+                href="/request-access"
+                className="inline-flex items-center rounded-xl bg-white px-5 py-3 text-base font-medium !text-[#121316]"
+              >
+                Choose yearly
               </a>
             </div>
 
-            <div className="mt-6 border-t pt-5">
-              <p className="mb-3 text-sm font-semibold text-[var(--foreground)]">Includes:</p>
+            <div className="mt-6 border-t border-white/15 pt-5">
+              <p className="mb-3 text-sm font-semibold text-white">Includes:</p>
               <ul className="space-y-2">
                 {planFeatures.map((feature) => (
-                  <li key={`yearly-${feature}`} className="flex items-start gap-2 text-sm text-[var(--foreground)]">
-                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px]">
+                  <li key={`yearly-${feature}`} className="flex items-start gap-2 text-sm text-white">
+                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/30 text-[11px]">
                       ✓
                     </span>
                     <span>{feature}</span>
@@ -119,12 +125,12 @@ export default function PricingPage() {
       />
 
       <FinalCtaSection
-        title="Request access to review pricing with your team."
-        description="We can confirm billing options and rollout timing based on your workflow."
+        title="Start with the billing model that fits your team."
+        description="Monthly for flexibility, yearly for lower effective cost. Same product and workflow in both plans."
         primaryHref="/request-access"
-        primaryLabel="Request access"
+        primaryLabel="Get started"
         secondaryHref="/request-access"
-        secondaryLabel="Join beta"
+        secondaryLabel="Talk to us"
       />
     </div>
   );

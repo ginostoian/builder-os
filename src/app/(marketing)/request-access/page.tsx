@@ -4,23 +4,30 @@ export default function RequestAccessPage() {
   return (
     <div>
       <section className="mx-auto w-full max-w-6xl px-[var(--spacing-page-x)] py-[var(--spacing-section-y)]">
-        <div className="border bg-white p-6 sm:p-8 lg:p-10">
+        <div className="rounded-3xl border bg-white p-6 shadow-[var(--card-shadow)] sm:p-8 lg:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-            <div className="space-y-6">
+            <div className="space-y-5">
               <span className="section-label">Request access</span>
-              <h1 className="max-w-[15ch]">Request access to the BuilderOS beta.</h1>
+              <h1 className="max-w-[12ch]">Raise your hand when you&apos;re ready.</h1>
               <p className="max-w-[44ch]">
-                Share your details and we&apos;ll follow up with next steps and expected timing.
+                Share a few details and we&apos;ll follow up with next steps. No pressure, no pricing
+                conversation, and no obligation.
               </p>
-              <div className="flex flex-col gap-2 sm:max-w-sm sm:flex-row sm:items-center">
-                <a href="#request-access-form" className="btn-primary">
+              <div className="flex flex-col gap-3 sm:max-w-sm">
+                <a
+                  href="#request-access-form"
+                  className="inline-flex items-center justify-center rounded-xl bg-[#121316] px-5 py-3 text-base font-medium !text-white"
+                >
                   Fill out form
                 </a>
-                <a href="/product" className="btn-secondary">
+                <a
+                  href="/product"
+                  className="inline-flex items-center justify-center rounded-xl border bg-white px-5 py-3 text-base font-medium text-[var(--foreground)]"
+                >
                   View product
                 </a>
               </div>
-              <p className="text-sm text-[var(--muted-foreground)]">No obligation after submitting the form.</p>
+              <p className="text-sm text-[var(--muted-foreground)]">Simple pricing. No sales pressure.</p>
             </div>
 
             <div className="panel-card">
@@ -82,7 +89,7 @@ export default function RequestAccessPage() {
 
                 <button
                   type="submit"
-                  className="btn-primary"
+                  className="inline-flex items-center rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white"
                 >
                   Request access
                 </button>

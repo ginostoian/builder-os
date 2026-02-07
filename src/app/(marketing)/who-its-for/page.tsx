@@ -8,8 +8,8 @@ export default function WhoItsForPage() {
     <div>
       <PageHero
         label="Who it's for"
-        title="A fit check for renovation delivery teams."
-        description="Use this page to confirm whether your project type and commercial process match BuilderOS."
+        title="Designed for renovation teams with structured work."
+        description="This page helps you quickly check whether BuilderOS matches the type of jobs and process your business runs."
         primaryAction={{ href: "/request-access", label: "Request access" }}
         secondaryAction={{ href: "/product", label: "See product" }}
       />
@@ -83,12 +83,12 @@ export default function WhoItsForPage() {
       />
 
       <FinalCtaSection
-        title="Request access if the fit looks right."
-        description="If your projects rely on clear approvals and signed changes, we can walk through the workflow."
+        title="Find out if BuilderOS matches your operating model."
+        description="If your projects sit in the £10k–£300k range and rely on clear approvals, we can show you the workflow."
         primaryHref="/request-access"
-        primaryLabel="Request access"
+        primaryLabel="Get started"
         secondaryHref="/product"
-        secondaryLabel="Join beta"
+        secondaryLabel="See product"
       />
     </div>
   );

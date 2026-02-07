@@ -12,18 +12,18 @@ export default function HomePage() {
     <div>
       <PageHero
         label="BuilderOS"
-        title="Quoting, acceptance, and variations in one workflow."
-        description="For UK renovation and design & build teams that need a clear commercial record from first quote to approved change."
+        title="Quote clearly. Lock scope. Manage changes."
+        description="BuilderOS is built for UK renovation companies that want cleaner quoting and tighter control once work starts."
         primaryAction={{ href: "/request-access", label: "Request access" }}
-        secondaryAction={{ href: "/product", label: "View product" }}
-        note="Designed for teams running repeatable project delivery workflows."
+        secondaryAction={{ href: "/product", label: "Explore product" }}
+        note="Straightforward pricing. No pushy sales flow."
         visual={
           <Image
             src="/images/marketing/hero-product-screenshot.svg"
             alt="BuilderOS product overview screenshot placeholder"
             width={1600}
             height={1000}
-            className="h-auto w-full rounded-lg border"
+            className="h-auto w-full rounded-xl border"
             priority
           />
         }
@@ -31,33 +31,35 @@ export default function HomePage() {
 
       <FeatureGridSection
         label="The problem"
-        title="Common observations in live projects"
-        description="These patterns appear when quoting, acceptance, and changes are handled across email threads and spreadsheets."
+        title="Common issues in day-to-day delivery"
+        description="These are recurring commercial issues for renovation teams working from ad-hoc quote and approval workflows."
+        primaryCta={{ href: "/request-access", label: "Request access" }}
+        secondaryCta={{ href: "/how-it-works", label: "How it works" }}
         background="muted"
         items={[
           {
-            title: "Quote details vary by project",
-            description: "Different formats make totals and scope harder to compare.",
+            title: "Underquoting",
+            description: "Small scope misses reduce margin over the full project.",
           },
           {
-            title: "Accepted scope is hard to reference",
-            description: "Teams and clients often work from different versions.",
+            title: "Scope creep",
+            description: "Work expands without a clean record of what was agreed.",
           },
           {
-            title: "Change requests arrive informally",
-            description: "Extra work can begin before a formal approval is recorded.",
+            title: "Unpaid variations",
+            description: "Extra work is done before approvals are formally captured.",
           },
           {
-            title: "Approval history is fragmented",
-            description: "Key decisions are spread across email, calls, and documents.",
+            title: "Version confusion",
+            description: "Teams and clients reference different quote versions at the same time.",
           },
           {
-            title: "Status is not always visible",
-            description: "It can be unclear which items are pending or fully agreed.",
+            title: "Unclear approvals",
+            description: "It is hard to confirm who approved what and when.",
           },
           {
-            title: "Reporting takes extra reconciliation",
-            description: "Commercial summaries require manual review across multiple tools.",
+            title: "Margin leakage",
+            description: "Small undocumented changes accumulate across long projects.",
           },
         ]}
       />
@@ -66,18 +68,25 @@ export default function HomePage() {
 
       <section className="mx-auto w-full max-w-6xl px-[var(--spacing-page-x)] py-[var(--spacing-section-y)]">
         <div className="mx-auto max-w-3xl text-center">
-          <div className="space-y-5">
+          <div className="space-y-4">
             <span className="section-label">The solution</span>
-            <h2>One commercial system across the project lifecycle</h2>
+            <h2>A straightforward commercial flow</h2>
             <p>
-              BuilderOS keeps draft scope, accepted scope, and approved changes in one continuous record.
+              BuilderOS keeps quoting, acceptance, and changes in one process so decisions stay clear
+              from first draft to final variation.
             </p>
           </div>
-          <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row">
-            <Link href="/request-access" className="btn-primary">
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/request-access"
+              className="inline-flex items-center rounded-xl bg-[#121316] px-5 py-3 text-base font-medium !text-white"
+            >
               Request access
             </Link>
-            <Link href="/how-it-works" className="btn-secondary">
+            <Link
+              href="/how-it-works"
+              className="inline-flex items-center rounded-xl border bg-white px-5 py-3 text-base font-medium text-[var(--foreground)]"
+            >
               See how it works
             </Link>
           </div>
@@ -90,16 +99,20 @@ export default function HomePage() {
             </div>
             <div className="min-w-0 space-y-3">
               <span className="section-label">01</span>
-              <h3 className="text-[var(--foreground)]">Create structured quotes</h3>
-              <p>Line items, totals, and revisions stay in one format.</p>
+              <h3 className="text-[2rem] leading-tight tracking-[-0.02em] text-[var(--foreground)]">
+                Quote properly
+              </h3>
+              <p>Build clear quotes with structured items, totals, and version history.</p>
             </div>
           </article>
 
           <article className="grid gap-8 lg:grid-cols-2 lg:items-center">
             <div className="min-w-0 space-y-3 lg:order-1">
               <span className="section-label">02</span>
-              <h3 className="text-[var(--foreground)]">Confirm accepted scope</h3>
-              <p>Once accepted, the agreed version is fixed for reference.</p>
+              <h3 className="text-[2rem] leading-tight tracking-[-0.02em] text-[var(--foreground)]">
+                Lock scope
+              </h3>
+              <p>Once accepted, the quote becomes fixed so the agreed scope is protected.</p>
             </div>
             <div className="panel-card min-w-0 overflow-hidden lg:order-2">
               <AcceptanceMock />
@@ -112,30 +125,44 @@ export default function HomePage() {
             </div>
             <div className="min-w-0 space-y-3">
               <span className="section-label">03</span>
-              <h3 className="text-[var(--foreground)]">Record approved changes</h3>
-              <p>Post-acceptance variations capture status, value, and approval history.</p>
+              <h3 className="text-[2rem] leading-tight tracking-[-0.02em] text-[var(--foreground)]">
+                Manage variations
+              </h3>
+              <p>Changes move through a formal variation approval process with a clear paper trail.</p>
             </div>
           </article>
         </div>
       </section>
 
-      <section className="border-y bg-[#fcfcfc]">
+      <section className="border-y bg-[#fafafa]">
         <div className="mx-auto w-full max-w-6xl px-[var(--spacing-page-x)] py-[var(--spacing-section-y)]">
-          <div className="section-head space-y-5">
+          <div className="section-head space-y-4">
             <span className="section-label">Product preview</span>
-            <h2>Interface example</h2>
+            <h2>What the workflow looks like</h2>
           </div>
-          <div className="grid gap-6">
-            <figure className="space-y-3">
+          <div className="grid gap-6 md:grid-cols-2">
+            <figure className="panel-card space-y-3">
               <Image
                 src="/images/marketing/quote-builder-screenshot.svg"
                 alt="Quote builder screenshot placeholder"
                 width={1600}
                 height={1000}
-                className="h-auto w-full rounded-md border"
+                className="h-auto w-full rounded-lg border"
               />
               <figcaption className="text-sm text-[var(--muted-foreground)]">
-                Quote builder view with line items, totals, and revision context.
+                Quote builder with structured line items and clear totals.
+              </figcaption>
+            </figure>
+            <figure className="panel-card space-y-3">
+              <Image
+                src="/images/marketing/variation-flow-screenshot.svg"
+                alt="Variation flow screenshot placeholder"
+                width={1600}
+                height={1000}
+                className="h-auto w-full rounded-lg border"
+              />
+              <figcaption className="text-sm text-[var(--muted-foreground)]">
+                Variation flow showing approvals, status, and updated value.
               </figcaption>
             </figure>
           </div>
@@ -144,28 +171,28 @@ export default function HomePage() {
 
       <FeatureGridSection
         label="Who it's for"
-        title="Teams that run formal quote and change control"
-        description="Use this as a fit check rather than a checklist."
+        title="Teams handling renovation projects end to end"
+        description="BuilderOS is designed for businesses where scope, approval, and change control are central to delivery."
         items={[
           {
             title: "Renovation companies",
-            description: "Teams with repeatable quoting and approval steps.",
+            description: "Teams managing quoting, approvals, and live jobs.",
           },
           {
             title: "Design & build",
-            description: "Businesses managing scope through design and delivery.",
+            description: "Businesses running design responsibility and delivery together.",
           },
           {
             title: "Extensions & refurbishments",
-            description: "Projects where signed changes are part of normal delivery.",
+            description: "Projects where scope detail and signed changes matter.",
           },
         ]}
       />
 
       <FaqSection
-        title="Common implementation questions"
-        description="Questions teams usually ask when reviewing fit."
-        primaryCta={{ href: "/request-access", label: "Request access" }}
+        title="Questions before you start?"
+        description="These are common questions from renovation teams reviewing BuilderOS."
+        primaryCta={{ href: "/request-access", label: "Get started" }}
         secondaryCta={{ href: "/pricing", label: "View pricing" }}
         background="muted"
         items={[
@@ -193,12 +220,12 @@ export default function HomePage() {
       />
 
       <FinalCtaSection
-        title="Request access to review BuilderOS with your team."
-        description="We can walk through your current workflow and confirm whether the product is a practical fit."
+        title="Free up your team. Keep your commercial process clear."
+        description="Move from ad-hoc quoting to a structured flow for scope, acceptance, and approved changes."
         primaryHref="/request-access"
-        primaryLabel="Request access"
+        primaryLabel="Get started"
         secondaryHref="/product"
-        secondaryLabel="Join beta"
+        secondaryLabel="Talk to us"
       />
     </div>
   );

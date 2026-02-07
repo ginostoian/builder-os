@@ -8,7 +8,7 @@ export default function HowItWorksPage() {
     <div>
       <PageHero
         label="How it works"
-        title="A three-stage commercial workflow."
+        title="A clear three-step process."
         description="BuilderOS follows a practical flow from quote creation to accepted changes."
         primaryAction={{ href: "/request-access", label: "Request access" }}
         secondaryAction={{ href: "/product", label: "View product" }}
@@ -78,7 +78,7 @@ export default function HowItWorksPage() {
 
       <FaqSection
         title="Workflow FAQs"
-        description="Common process questions from teams moving from spreadsheet and email workflows."
+        description="Common process questions from teams moving from ad-hoc tools to a structured flow."
         items={[
           {
             question: "How long does setup usually take?",
@@ -104,12 +104,12 @@ export default function HowItWorksPage() {
       />
 
       <FinalCtaSection
-        title="Request access if this workflow matches your process."
-        description="We can review your current setup and map it to BuilderOS."
+        title="Run each project with a repeatable process."
+        description="From first quote to final change, BuilderOS keeps the commercial flow explicit and trackable."
         primaryHref="/request-access"
-        primaryLabel="Request access"
+        primaryLabel="Get started"
         secondaryHref="/product"
-        secondaryLabel="Join beta"
+        secondaryLabel="View product"
       />
     </div>
   );

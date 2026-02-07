@@ -3,7 +3,7 @@ function Pill({ label, dark = false }: { label: string; dark?: boolean }) {
     <span
       className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium ${
         dark
-          ? "border-[#d1d5db] bg-[#f3f4f6] text-[#111111]"
+          ? "border-[#121316] bg-[#121316] text-white"
           : "border-[var(--border)] bg-white text-[var(--muted-foreground)]"
       }`}
     >
@@ -14,7 +14,7 @@ function Pill({ label, dark = false }: { label: string; dark?: boolean }) {
 
 export function QuoteBuilderMock() {
   return (
-    <div className="rounded-xl border bg-[#fafafa] p-4">
+    <div className="rounded-xl border bg-[#fbfcfe] p-4">
       <div className="mb-3 flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold text-[var(--foreground)]">Quote draft v3</p>
@@ -55,7 +55,7 @@ export function QuoteBuilderMock() {
 
 export function AcceptanceMock() {
   return (
-    <div className="rounded-xl border bg-[#fafafa] p-4">
+    <div className="rounded-xl border bg-[#fbfcfe] p-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs font-semibold text-[var(--foreground)]">Client view</p>
         <Pill label="Updated on 12 Feb" />
@@ -90,7 +90,7 @@ export function AcceptanceMock() {
 
 export function VariationsMock() {
   return (
-    <div className="rounded-xl border bg-[#fafafa] p-4">
+    <div className="rounded-xl border bg-[#fbfcfe] p-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs font-semibold text-[var(--foreground)]">Variations</p>
         <Pill label="Post-acceptance only" />

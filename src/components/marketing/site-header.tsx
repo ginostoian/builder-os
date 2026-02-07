@@ -17,11 +17,11 @@ export function SiteHeader() {
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <header className="border-b px-4 py-3 sm:px-6">
+    <header className="px-4 pt-4 sm:px-6">
       <div className="mx-auto w-full max-w-7xl">
-        <div className="bg-white px-1 py-1 sm:px-2">
+        <div className="rounded-3xl border bg-white px-4 py-3 shadow-[var(--card-shadow)] sm:px-6">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-[1.5rem] font-semibold leading-none tracking-[-0.02em]">
+            <Link href="/" className="text-[2rem] font-semibold leading-none tracking-[-0.03em]">
               BuilderOS
             </Link>
 
@@ -36,12 +36,15 @@ export function SiteHeader() {
             <div className="hidden items-center gap-5 lg:flex">
               <Link
                 href="/request-access"
-                className="text-[1rem] font-medium text-[var(--muted-foreground)] transition hover:text-[var(--foreground)]"
+                className="text-[1.05rem] font-semibold text-[var(--foreground)] transition hover:opacity-70"
               >
                 Sign in
               </Link>
-              <Link href="/request-access" className="btn-primary">
-                Request access
+              <Link
+                href="/request-access"
+                className="inline-flex items-center rounded-2xl bg-[#121316] px-6 py-3 text-[1.05rem] font-medium !text-white"
+              >
+                Get started
               </Link>
             </div>
 
@@ -80,8 +83,12 @@ export function SiteHeader() {
                 >
                   Sign in
                 </Link>
-                <Link href="/request-access" onClick={closeMenu} className="btn-primary">
-                  Request access
+                <Link
+                  href="/request-access"
+                  onClick={closeMenu}
+                  className="inline-flex items-center justify-center rounded-xl bg-[#121316] px-4 py-2.5 text-sm font-medium !text-white"
+                >
+                  Get started
                 </Link>
               </div>
             </div>
