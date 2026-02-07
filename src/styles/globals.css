@@ -3,20 +3,20 @@
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --color-accent: #3f5f7a;
-  --color-border-subtle: #e6e8eb;
-  --color-surface: #f4f5f7;
-  --color-text-strong: #111827;
-  --color-text-muted: #5f6673;
+  --color-accent: #1f2937;
+  --color-border-subtle: #e5e7eb;
+  --color-surface: #ffffff;
+  --color-text-strong: #111111;
+  --color-text-muted: #4b5563;
   --spacing-page-x: 1.5rem;
-  --spacing-section-y: clamp(4.5rem, 8vw, 7rem);
+  --spacing-section-y: clamp(3rem, 5vw, 4.5rem);
   --spacing-stack-sm: 0.75rem;
-  --spacing-stack-md: 1.25rem;
-  --spacing-stack-lg: 2rem;
-  --text-h1: clamp(2.75rem, 5.8vw, 4.5rem);
-  --text-h2: clamp(1.75rem, 2.8vw, 2.5rem);
+  --spacing-stack-md: 1.5rem;
+  --spacing-stack-lg: 2.25rem;
+  --text-h1: clamp(2.2rem, 4.8vw, 3.5rem);
+  --text-h2: clamp(1.65rem, 2.4vw, 2.2rem);
   --text-h3: clamp(1.05rem, 1.5vw, 1.2rem);
-  --text-body: 1.0625rem;
+  --text-body: 1.125rem;
 }
 
 :root {
@@ -24,9 +24,9 @@
   --foreground: var(--color-text-strong);
   --muted-foreground: var(--color-text-muted);
   --border: var(--color-border-subtle);
-  --heading-tight: 1.12;
-  --body-leading: 1.7;
-  --card-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 20px rgba(16, 24, 40, 0.04);
+  --heading-tight: 1.15;
+  --body-leading: 1.68;
+  --card-shadow: none;
 }
 
 * {
@@ -84,9 +84,9 @@ a {
   border-radius: 9999px;
   background: #ffffff;
   padding: 0.2rem 0.65rem;
-  color: var(--color-accent);
+  color: var(--muted-foreground);
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.01em;
 }
 
@@ -100,20 +100,52 @@ a {
 .marketing-site .feature-card {
   border: 1px solid var(--border);
   background: #ffffff;
-  border-radius: 0.9rem;
+  border-radius: 0.75rem;
   box-shadow: var(--card-shadow);
 }
 
 .marketing-site .hero-card {
-  padding: clamp(0.8rem, 1.5vw, 1rem);
+  padding: 0.5rem;
 }
 
 .marketing-site .panel-card {
-  padding: clamp(1.25rem, 1.7vw, 1.6rem);
+  padding: clamp(1.4rem, 1.9vw, 1.9rem);
 }
 
 .marketing-site .feature-card {
-  padding: clamp(1rem, 1.6vw, 1.3rem);
+  padding: clamp(1.25rem, 1.8vw, 1.6rem);
+}
+
+.marketing-site .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.65rem;
+  border: 1px solid var(--border);
+  background: #f9fafb;
+  padding: 0.62rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.marketing-site .btn-primary:hover {
+  background: #f3f4f6;
+}
+
+.marketing-site .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.65rem;
+  padding: 0.62rem 0.3rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.marketing-site .btn-secondary:hover {
+  color: var(--foreground);
 }
 
 .hide-scrollbar {

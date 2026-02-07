@@ -19,34 +19,23 @@ const legalLinks = [
 
 const supportLinks = [
   { href: "/request-access", label: "Talk to us" },
-  { href: "/request-access", label: "Get started" },
+  { href: "/request-access", label: "Request access" },
 ];
 
 export function SiteFooter() {
   return (
-    <footer className="border-t bg-[#f4f5f7]">
+    <footer className="border-t bg-white">
       <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6">
-        <div className="rounded-3xl border bg-white p-6 shadow-[var(--card-shadow)] sm:p-8">
+        <div className="border bg-white p-6 sm:p-8">
           <div className="grid gap-8 lg:grid-cols-[1.35fr_1fr_1fr_1fr_1fr]">
             <div className="space-y-5">
-              <Link href="/" className="inline-block text-[2rem] font-semibold leading-none tracking-[-0.03em]">
+              <Link href="/" className="inline-block text-[1.5rem] font-semibold leading-none tracking-[-0.02em]">
                 BuilderOS
               </Link>
               <p className="max-w-[34ch] text-sm text-[var(--muted-foreground)]">
                 Commercial workflow software for UK renovation teams managing quotes, acceptance, and
                 approved variations.
               </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex rounded-full border bg-[#fafafa] px-3 py-1 text-xs font-medium text-[var(--foreground)]">
-                  Quotes
-                </span>
-                <span className="inline-flex rounded-full border bg-[#fafafa] px-3 py-1 text-xs font-medium text-[var(--foreground)]">
-                  Acceptance
-                </span>
-                <span className="inline-flex rounded-full border bg-[#fafafa] px-3 py-1 text-xs font-medium text-[var(--foreground)]">
-                  Variations
-                </span>
-              </div>
             </div>
 
             <FooterColumn title="Product" links={productLinks} />

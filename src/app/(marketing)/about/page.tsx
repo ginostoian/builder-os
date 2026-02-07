@@ -8,8 +8,8 @@ export default function AboutPage() {
     <div>
       <PageHero
         label="About"
-        title="Software shaped by real renovation operations."
-        description="BuilderOS was designed around how renovation businesses actually work: quoted scope, client approval, and controlled change once the project is live."
+        title="Software for practical commercial control."
+        description="BuilderOS is built around day-to-day renovation workflows: quoted scope, accepted scope, and approved changes."
         primaryAction={{ href: "/request-access", label: "Request access" }}
         secondaryAction={{ href: "/how-it-works", label: "How it works" }}
       />
@@ -41,8 +41,8 @@ export default function AboutPage() {
         description="BuilderOS keeps workflow boundaries explicit: what is drafted, what is accepted, and what must be approved as a change."
         items={[
           {
-            title: "Calm software for serious work",
-            description: "The interface is intentionally calm and direct, so teams can make decisions quickly without noise.",
+            title: "Calm interface decisions",
+            description: "The interface stays plain so operational details remain easy to review.",
           },
           {
             title: "Clear commercial checkpoints",
@@ -65,14 +65,14 @@ export default function AboutPage() {
               "Those are the core commercial control points in renovation work, and they benefit most from clear structure.",
           },
           {
-            question: "Is BuilderOS trying to be an all-in-one platform?",
+            question: "Is BuilderOS trying to replace every back-office tool?",
             answer:
               "No. The product is intentionally focused to keep workflows clear and maintainable for real teams.",
           },
           {
             question: "How do you decide what features to build?",
             answer:
-              "Feature decisions are based on practical workflow needs and repeated operational pain points from renovation businesses.",
+              "Feature decisions are based on practical workflow needs and recurring operational issues from renovation businesses.",
           },
           {
             question: "Does the design intentionally stay minimal?",
@@ -83,12 +83,12 @@ export default function AboutPage() {
       />
 
       <FinalCtaSection
-        title="Use software that stays calm when the work gets complex."
-        description="BuilderOS is built for teams that value clear process, clear records, and clear decisions."
+        title="Request access to review the product in context."
+        description="If your team values explicit process and clear records, we can run through the workflow."
         primaryHref="/request-access"
-        primaryLabel="Get started"
+        primaryLabel="Request access"
         secondaryHref="/how-it-works"
-        secondaryLabel="How it works"
+        secondaryLabel="Join beta"
       />
     </div>
   );
