@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,9 +14,11 @@
     "test:db": "vitest run --config vitest.db.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
-    "db:migrate": "tsx --env-file-if-exists=.env.local src/db/migrate.ts"
+    "db:migrate": "tsx --env-file-if-exists=.env.local src/db/migrate.ts",
+    "clerk:roles": "tsx scripts/clerk-roles.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "7.9.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "0.45.3",
@@ -31,6 +34,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@clerk/backend": "3.22.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",

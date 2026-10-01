@@ -44,6 +44,17 @@ export function parsePence(input: string): Pence | null {
   return Math.abs(pence) <= MAX_RATE_PENCE ? pence : null;
 }
 
+/**
+ * Parse "15", "12.5%" or "17.25" into basis points. Returns null for anything else, including negatives,
+ * more than 2 decimals, or more than `maxBps`.
+ */
+export function parsePercentToBps(input: string, maxBps: Bps): Bps | null {
+  const cleaned = input.replace(/[%\s]/g, "");
+  if (!/^(\d+(\.\d{0,2})?|\.\d{1,2})$/.test(cleaned)) return null;
+  const bps = Math.round(Number(cleaned) * 100);
+  return bps <= maxBps ? bps : null;
+}
+
 /** Percentage of an amount, rounded to the nearest penny. */
 export function applyBps(amount: Pence, bps: Bps): Pence {
   return Math.round((amount * bps) / 10_000);

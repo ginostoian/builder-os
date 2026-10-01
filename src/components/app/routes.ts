@@ -6,9 +6,11 @@ export const appRoutes = {
   project: "/app/projects/elm-road",
   payments: "/app/payments",
   clients: "/app/clients",
+  settings: "/app/settings",
+  team: "/app/settings/team",
   clientQuote: "/q/hale-sons/1042",
   employee: "/m",
 } as const;
 
-export type AdminScreen = "dashboard" | "quote" | "templates" | "board" | "invoices" | "crm";
-export type ScreenId = AdminScreen | "client" | "mobile";
+export type AdminScreen = "dashboard" | "quote" | "templates" | "board" | "invoices" | "crm" | "settings";
+export type ScreenId = Exclude<AdminScreen, "settings"> | "client" | "mobile";

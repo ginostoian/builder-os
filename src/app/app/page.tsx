@@ -1,10 +1,10 @@
-import { AppShell } from "@/components/app/app-shell";
+import { LiveAppShell } from "@/components/app/live-app-shell";
 import { DashboardScreen } from "@/components/app/screens/dashboard";
 
 export default function DashboardPage() {
   return (
-    <AppShell active="dashboard">
+    <LiveAppShell active="dashboard">
       <DashboardScreen />
-    </AppShell>
+    </LiveAppShell>
   );
 }

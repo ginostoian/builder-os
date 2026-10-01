@@ -58,7 +58,7 @@ Companion to the Design Guidelines (`/design-guidelines`, prototype in `project/
 
 - Fastest route to the shipped product: sign-in, invites, roles and the workspace switcher (sidebar top-left in the app design) come prebuilt and restylable.
 - **Cost check:** the B2B add-on becomes necessary at about 100 paying firms, or as soon as one firm has more than 20 staff on the platform. At £49–£119 per company per month, ~$1 per org is negligible. Budget the add-on from public launch.
-- **Escape hatch:** keep every auth call behind `src/auth` (`getSession()`, `requireRole()`, `currentOrgId()`). If Clerk pricing or limits change, Better Auth's organization plugin on our own Neon DB is the migration target.
+- **Escape hatch:** keep every auth call behind `src/auth` (`getSession()`, `requirePermission()`, `withSession()`; lint blocks `@clerk/*` elsewhere). If Clerk pricing or limits change, Better Auth's organization plugin on our own Neon DB is the migration target.
 
 ### Identity model
 
@@ -81,7 +81,7 @@ Keeping homeowners out of Clerk keeps them out of the member limits, removes sig
      using (org_id = current_setting('app.org_id')::uuid);
    ```
 3. A single DB entry point `withTenant(orgId, tx => …)` runs `set_config('app.org_id', $1, true)` inside the transaction. The app connects as a non-owner role that **cannot bypass RLS**.
-4. Clerk org ID → our `organizations.id` mapping is synced by webhook (`organization.created/updated`, `organizationMembership.*`).
+4. Clerk org ID → our `organizations.id` mapping is synced by webhook (`organization.*`, `organizationMembership.*`, `user.updated/deleted`), with a first-sign-in fallback. See `docs/auth.md`.
 5. Automated test: a Playwright and Vitest suite that tries to read and write across two seeded tenants on every PR.
 
 ---
@@ -197,8 +197,8 @@ Each phase ends in something sellable. Phases line up with the pricing tiers on 
 1. Single-app structure with lint-enforced boundaries (`src/core`, `src/db`, `src/auth`), CI, Vercel + Neon + Clerk projects, Sentry, PostHog.
 2. Design Guidelines tokens → `src/app/globals.css`. Geist fonts via `next/font`.
 3. `src/components/ui`: install and restyle shadcn primitives (Button, Input, Select, Dialog, Popover, Command, Table, Tabs, Badge, Tooltip, Sheet, DropdownMenu, Toast/Sonner, Calendar). Build composites: `AppShell`, `Sidebar`, `TopBar`, `StatusPill`, `MoneyCell`, `KpiCard`, `EmptyState`, `BrowserFrame` (marketing screenshots).
-4. Auth + orgs, Clerk webhooks → `organizations`/`members`, RLS + `withTenant`, tenant-isolation tests.
-5. Company settings: profile, logo, VAT number, default markup, terms.
+4. ✅ Auth + orgs, Clerk webhooks → `organizations`/`members`, RLS + `withTenant`, tenant-isolation tests.
+5. ✅ Company settings: profile, logo link, VAT number, default markup and VAT rate, terms. (Logo upload comes with file storage.)
 
 ### Phase 1: Quoting (Free tier). Private beta (weeks 4–9)
 1. Clients (basic records).

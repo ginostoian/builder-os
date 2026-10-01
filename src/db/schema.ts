@@ -37,6 +37,15 @@ import { LINE_KINDS, QUOTE_STATUSES, ROLES, SERVICE_KINDS, type Address } from "
 /** Runtime role. Created (NOLOGIN) in migration 0000; login roles per environment are granted membership. */
 export const appRole = pgRole("builderos_app").existing();
 
+/**
+ * Owner of the two Clerk lookup functions (migration 0004). NOLOGIN, no BYPASSRLS. It can read only the id
+ * columns of organizations and members, through the `clerk_lookup` policies below, and nothing else.
+ */
+export const lookupRole = pgRole("builderos_lookup").existing();
+
+/** Read-only, all rows, for the lookup role only. Column grants (migration 0004) limit what it can see. */
+const lookupPolicy = () => pgPolicy("clerk_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` });
+
 /** The tenant for the current transaction, or NULL if `withTenant` didn't set one. */
 const currentOrg = sql`(select nullif(current_setting('app.org_id', true), '')::uuid)`;
 
@@ -90,6 +99,10 @@ export const organizations = pgTable(
     defaultMarkupBps: integer("default_markup_bps").notNull().default(0),
     defaultVatRateBps: integer("default_vat_rate_bps").notNull().default(2000),
     quoteTerms: text("quote_terms"),
+    /** Clerk event time of the last sync. Webhooks older than this are ignored (Svix can deliver out of order). */
+    clerkSyncedAt: timestamp("clerk_synced_at", { withTimezone: true }),
+    /** Set when the Clerk organization is deleted. Data is kept for a grace period, then purged (plan §7). */
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -100,6 +113,7 @@ export const organizations = pgTable(
       using: sql`${t.id} = ${currentOrg}`,
       withCheck: sql`${t.id} = ${currentOrg}`,
     }),
+    lookupPolicy(),
     len("organizations_name_len", t.name, TEXT.name),
     len("organizations_trading_name_len", t.tradingName, TEXT.name),
     check("organizations_logo_https", sql`${t.logoUrl} is null or ${t.logoUrl} like 'https://%'`),
@@ -125,10 +139,13 @@ export const members = pgTable(
     trade: text("trade"),
     dayRatePence: integer("day_rate_pence"),
     active: boolean("active").notNull().default(true),
+    /** Clerk event time of the last sync, as on organizations. */
+    clerkSyncedAt: timestamp("clerk_synced_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
     tenantPolicy(t.orgId),
+    lookupPolicy(),
     unique("members_org_id_id_key").on(t.orgId, t.id),
     unique("members_org_clerk_user_key").on(t.orgId, t.clerkUserId),
     len("members_name_len", t.name, TEXT.name),

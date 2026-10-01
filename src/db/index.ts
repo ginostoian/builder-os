@@ -8,6 +8,7 @@ import "server-only";
 import { sql } from "drizzle-orm";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { clerkOrgId, clerkUserId } from "@/core/clerk";
 import { id } from "@/core/schemas";
 import { databaseUrl } from "./env";
 import * as schema from "./schema";
@@ -68,18 +69,43 @@ async function assertRestrictedRole(database: Db): Promise<void> {
  */
 export async function withTenant<T>(orgId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
   const tenant = id.parse(orgId);
-  const database = getDb();
-  roleCheck ??= assertRestrictedRole(database).catch((error: unknown) => {
-    roleCheck = undefined;
-    throw error;
-  });
-  await roleCheck;
+  const database = await checkedDb();
   return database.transaction(async (tx) => {
     await tx.execute(
       sql`select set_config('app.org_id', ${tenant}, true), set_config('statement_timeout', ${STATEMENT_TIMEOUT}, true)`,
     );
     return fn(tx);
   });
+}
+
+async function checkedDb(): Promise<Db> {
+  const database = getDb();
+  roleCheck ??= assertRestrictedRole(database).catch((error: unknown) => {
+    roleCheck = undefined;
+    throw error;
+  });
+  await roleCheck;
+  return database;
+}
+
+/**
+ * Our organization for a Clerk organization ID, across tenants. Used by the session (to pick the tenant)
+ * and the Clerk webhook. Returns only the id and whether it was deleted: the lookup runs as
+ * `builderos_lookup` (migration 0005), which can't read anything else.
+ */
+export async function findOrgByClerkId(clerkId: string): Promise<{ id: string; deleted: boolean } | null> {
+  const key = clerkOrgId.parse(clerkId);
+  const database = await checkedDb();
+  const rows = await database.execute<{ id: string; deleted: boolean }>(sql`select id, deleted from app_org_for_clerk(${key})`);
+  return rows[0] ? { id: rows[0].id, deleted: rows[0].deleted } : null;
+}
+
+/** Every organization a Clerk user has (or had) a member row in. Used to copy profile changes. */
+export async function findOrgsForClerkUser(clerkId: string): Promise<string[]> {
+  const key = clerkUserId.parse(clerkId);
+  const database = await checkedDb();
+  const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_orgs_for_clerk_user(${key}) as org_id`);
+  return rows.map((row) => row.org_id);
 }
 
 /** Close the pool (scripts and tests; Next.js keeps it for the process lifetime). */

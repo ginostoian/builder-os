@@ -15,7 +15,8 @@ type Seed = { orgId: string; clientId: string; quoteId: string; sectionId: strin
 async function seedTenant(name: string): Promise<Seed> {
   const orgId = randomUUID();
   return withTenant(orgId, async (tx) => {
-    await tx.insert(organizations).values({ id: orgId, clerkOrgId: `org_${orgId}`, name });
+    // The app role may only insert these organization columns (migration 0005), as the Clerk sync does.
+    await tx.execute(sql`insert into organizations (id, clerk_org_id, name) values (${orgId}, ${clerkId(orgId)}, ${name})`);
     const [client] = await tx.insert(clients).values({ orgId, name: `${name} client` }).returning();
     const [service] = await tx
       .insert(services)
@@ -33,6 +34,8 @@ async function seedTenant(name: string): Promise<Seed> {
     return { orgId, clientId: client.id, quoteId: quote.id, sectionId: section.id, lineId: line.id, serviceId: service.id };
   });
 }
+
+const clerkId = (uuid: string) => `org_${uuid.replaceAll("-", "")}`;
 
 /** Postgres error code from a rejected promise (drizzle wraps driver errors in `cause`). */
 async function pgError(promise: Promise<unknown>): Promise<string | undefined> {
@@ -109,7 +112,7 @@ describe("writes", () => {
     await withTenant(a.orgId, async (tx) => {
       expect(await tx.update(quotes).set({ title: "Hacked" }).where(eq(quotes.id, b.quoteId)).returning()).toEqual([]);
       expect(await tx.delete(quoteLines).where(eq(quoteLines.id, b.lineId)).returning()).toEqual([]);
-      expect(await tx.update(organizations).set({ plan: "pro" }).where(eq(organizations.id, b.orgId)).returning()).toEqual([]);
+      expect(await tx.update(organizations).set({ name: "Hacked" }).where(eq(organizations.id, b.orgId)).returning()).toEqual([]);
     });
     await withTenant(b.orgId, async (tx) => {
       const [quote] = await tx.select().from(quotes).where(eq(quotes.id, b.quoteId));
@@ -125,8 +128,23 @@ describe("writes", () => {
 
   it("can't create another organization", async () => {
     const other = randomUUID();
-    const code = await pgError(withTenant(a.orgId, (tx) => tx.insert(organizations).values({ id: other, clerkOrgId: `org_${other}`, name: "x" })));
+    const code = await pgError(
+      withTenant(a.orgId, (tx) => tx.execute(sql`insert into organizations (id, clerk_org_id, name) values (${other}, ${clerkId(other)}, 'x')`)),
+    );
     expect(code).toBe(INSUFFICIENT_PRIVILEGE);
+  });
+
+  it("can't change billing columns or delete an organization, even its own", async () => {
+    // Column grants: plan and Stripe IDs belong to the billing webhooks; Clerk deletions are soft.
+    for (const change of [{ plan: "pro" as const }, { stripeCustomerId: "cus_x" }, { connectAccountId: "acct_x" }]) {
+      expect(await pgError(withTenant(a.orgId, (tx) => tx.update(organizations).set(change).where(eq(organizations.id, a.orgId))))).toBe(
+        INSUFFICIENT_PRIVILEGE,
+      );
+    }
+    expect(await pgError(withTenant(a.orgId, (tx) => tx.delete(organizations).where(eq(organizations.id, a.orgId))))).toBe(INSUFFICIENT_PRIVILEGE);
+    expect(
+      await pgError(withTenant(a.orgId, (tx) => tx.update(organizations).set({ clerkOrgId: "org_stolen" }).where(eq(organizations.id, a.orgId)))),
+    ).toBe(INSUFFICIENT_PRIVILEGE);
   });
 });
 

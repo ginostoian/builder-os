@@ -8,7 +8,7 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
 |---|---|
 | `src/core/` | Pure domain logic: money, quote maths, limits, Zod input schemas. No React, no database. Lint enforces this. |
 | `src/db/schema.ts` | Drizzle tables, RLS policies, CHECK constraints (limits come from `src/core/limits.ts`). |
-| `src/db/migrations/` | SQL migrations. `0000` creates the `builderos_app` role, `0001` is generated from the schema, `0002` forces RLS and sets grants. |
+| `src/db/migrations/` | SQL migrations. `0000` creates the `builderos_app` role, `0001` is generated from the schema, `0002` forces RLS and sets grants, `0003`–`0005` add Clerk sync columns, the Clerk lookup functions and column-level grants on `organizations`. |
 | `src/db/index.ts` | `withTenant(orgId, tx => …)`, the only way app code queries the database. Server-only. |
 | `src/db/tenant-isolation.db.test.ts` | Cross-tenant attack tests against real Postgres. |
 
@@ -31,7 +31,16 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
    - Money, markup and quantity are bounded.
 
    The same limits exist as CHECK constraints in the database.
-7. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
+7. **Clerk lookups.** RLS hides every organization until one is selected, so mapping a Clerk ID to ours needs a narrow cross-tenant read. `app_org_for_clerk(text)` and `app_orgs_for_clerk_user(text)` are `SECURITY DEFINER` functions owned by `builderos_lookup`:
+   - It is a NOLOGIN role with no BYPASSRLS.
+   - It can read only `organizations (id, clerk_org_id, deleted_at)` and `members (org_id, clerk_user_id)`, through read-only `clerk_lookup` policies.
+   - The app role can call these functions but can't become that role.
+8. **Column grants on `organizations`.**
+   - The app role may insert only `id, clerk_org_id, name, clerk_synced_at, deleted_at`.
+   - It may update only the settings columns and sync columns.
+   - It may never update `plan`, `stripe_customer_id`, `connect_account_id` or `clerk_org_id`, and may never delete a company (Clerk deletions are soft).
+   - Billing webhooks will get their own role in Phase 2.
+9. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
 
 **Adding a table:**
 - Give it `org_id`, `tenantPolicy(t.orgId)`, `.enableRLS()`, and a `unique(org_id, id)` if anything references it.
@@ -49,6 +58,12 @@ Migrations create `builderos_app` as a NOLOGIN group role. Each environment then
 -- Runtime login role, with a long random password stored only in Vercel env vars:
 CREATE ROLE builderos_app_prod LOGIN PASSWORD '<random>';
 GRANT builderos_app TO builderos_app_prod;
+```
+
+Roles are shared by every database on a Postgres server. On Neon each branch is its own server, so nothing more is needed. Locally, if you have several databases with different owners (dev and `_test`, say), migration `0004` stops with a hint. Run its suggested line once, as a superuser:
+
+```sql
+GRANT builderos_lookup TO builderos_owner_local WITH ADMIN OPTION;
 ```
 
 - `DATABASE_URL` is the runtime role, using the **pooled** Neon endpoint with `sslmode=require`. Production refuses to start without TLS.
@@ -74,7 +89,5 @@ TEST_DATABASE_URL_ADMIN=postgres://postgres:postgres@localhost:5432/builderos_te
 
 ## Still to do
 
-- Step 4 (auth): sync Clerk organizations and members into `organizations` and `members` with a signature-verified webhook.
-  - Mapping a Clerk org ID to our `organizations.id` needs a narrow `SECURITY DEFINER` lookup, because RLS hides every org until one is selected.
-- Webhook-only columns: `plan`, `stripe_customer_id` and `connect_account_id` should only change through webhooks. Server Actions must update organizations through `orgSettingsInput`, which doesn't include those columns. Consider column-level grants once webhooks have their own role.
-- CI: run `lint`, `typecheck`, `test`, `db:check` and `test:db`, with a Postgres service container.
+- Phase 2: a separate database role for the Stripe billing webhooks, the only role allowed to update `plan`, `stripe_customer_id` and `connect_account_id`.
+- A purge job for soft-deleted companies after the grace period, built with the per-company GDPR export (plan §7).
