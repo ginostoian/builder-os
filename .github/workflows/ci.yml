@@ -20,7 +20,9 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_PASSWORD: postgres
+          # Throwaway database that only exists inside this job, so no password at all (and nothing for
+          # secret scanners to flag). The test roles' passwords are ignored under trust auth.
+          POSTGRES_HOST_AUTH_METHOD: trust
           POSTGRES_DB: builderos_test
         ports: ["5432:5432"]
         options: >-
@@ -29,7 +31,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      TEST_DATABASE_URL_ADMIN: postgres://postgres:postgres@localhost:5432/builderos_test
+      TEST_DATABASE_URL_ADMIN: postgres://postgres@localhost:5432/builderos_test
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4
