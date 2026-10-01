@@ -1,7 +1,7 @@
 # Builder OS: Technical Implementation Plan
 
 **Version 1.0, October 2026**
-Companion to `Design Guidelines.dc.html`. The designs in this project (`Home`, `Features`, `Pricing`, `Builder OS App`, etc.) are the target product.
+Companion to the Design Guidelines (`/design-guidelines`, prototype in `project/Design Guidelines.dc.html`). The designs in `project/` (`Home`, `Features`, `Pricing`, `Builder OS App`, etc.) are the target product.
 
 ---
 

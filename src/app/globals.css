@@ -1,0 +1,196 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * Builder OS design tokens. Source of truth: project/Design Guidelines.dc.html §10.
+ * shadcn/ui reads the semantic variables; the Builder OS palette below adds the
+ * warm neutrals, dark-section and status colours the designs use.
+ */
+:root {
+  --radius: 0.625rem; /* 10px base: sm 6, md 8, lg 10, xl 14 */
+
+  --background: #ffffff;
+  --foreground: #111110;
+  --card: #ffffff;
+  --card-foreground: #111110;
+  --popover: #ffffff;
+  --popover-foreground: #111110;
+  --primary: #111110; /* primary buttons are ink, never orange */
+  --primary-foreground: #ffffff;
+  --secondary: #f6f5f2;
+  --secondary-foreground: #111110;
+  --muted: #f6f5f2;
+  --muted-foreground: #5c5b57;
+  --accent: #f1f0ed;
+  --accent-foreground: #111110;
+  --destructive: #b13b22;
+  --border: #e8e7e3;
+  --input: #e2e1dc;
+  --ring: #111110;
+
+  --surface: #fafaf9;
+  --surface-2: #fcfcfb;
+  --subtle: #8a8984;
+  --brand: oklch(0.66 0.17 42);
+  --brand-soft: #fcebe2;
+  --brand-ink: #b7471a;
+  --success: #2f7a4b;
+  --success-soft: #e8f3ec;
+  --warning: #93630f;
+  --warning-soft: #fbf1de;
+  --danger: #b13b22;
+  --danger-soft: #fbe9e5;
+  --info: #2f5da8;
+  --info-soft: #e7eef9;
+}
+
+.dark,
+[data-surface="dark"] {
+  --background: #111110;
+  --foreground: #ffffff;
+  --card: #1b1b19;
+  --muted: #1f1f1d;
+  --muted-foreground: #a3a29c;
+  --border: #262624;
+  --input: #34342f;
+  --primary: #ffffff;
+  --primary-foreground: #111110;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-subtle: var(--subtle);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ink: var(--brand-ink);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Fixed palette (Design Guidelines §02). Named so they never collide with shadcn's semantic tokens. */
+@theme {
+  --color-ink: #111110;
+  --color-ink-2: #5c5b57;
+  --color-ink-3: #3e3d39;
+  --color-ink-4: #262624;
+  --color-faint: #c9c8c2;
+  --color-faint-2: #b5b4ae;
+  --color-grip: #d6d5cf;
+  --color-pebble: #deddd8;
+  --color-hairline: #ecebe7;
+  --color-line: #f1f0ed;
+
+  --color-brand-tint: #fffaf6;
+  --color-brand-deep: #8a3a15;
+
+  /* Marketing dark sections */
+  --color-night: #111110;
+  --color-night-tile: #151514;
+  --color-night-raised: #1b1b19;
+  --color-night-well: #1f1f1d;
+  --color-night-edge: #262624;
+  --color-night-line: #2a2a27;
+  --color-night-ring: #34342f;
+  --color-night-text: #a3a29c;
+  --color-night-ink: #ededea;
+
+  /* Avatar tints */
+  --color-av-sand: #e6e1d8;
+  --color-av-sage: #dce5df;
+  --color-av-lilac: #e3e0ee;
+  --color-av-oat: #e9e3d6;
+
+  --shadow-ring: 0 0 0 1px #e8e7e3;
+  --shadow-ring-input: 0 0 0 1px #e2e1dc;
+  --shadow-card: 0 0 0 1px #e8e7e3, 0 1px 2px rgb(16 16 15 / 0.04);
+  --shadow-card-soft: 0 0 0 1px #e8e7e3, 0 1px 2px rgb(16 16 15 / 0.03);
+  --shadow-pop: 0 0 0 1px #e8e7e3, 0 12px 32px -8px rgb(16 16 15 / 0.18);
+  --shadow-shot: 0 0 0 1px rgb(16 16 15 / 0.08), 0 2px 4px rgb(16 16 15 / 0.04), 0 24px 60px -24px rgb(16 16 15 / 0.22);
+  --shadow-cta: inset 0 1px 0 rgb(255 255 255 / 0.14), 0 6px 16px -6px rgb(16 16 15 / 0.4);
+  --shadow-selected: 0 0 0 1.5px #111110;
+
+  --font-weight-medium: 500;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    font-feature-settings: "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: oklch(0.9 0.06 42);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 4px rgb(16 16 15 / 0.08);
+  }
+  button {
+    cursor: pointer;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 135° stripe used for every photo placeholder until real assets exist. */
+@utility stripes {
+  background: repeating-linear-gradient(135deg, #eeede9 0 8px, #f5f4f1 8px 16px);
+}
+@utility stripes-sm {
+  background: repeating-linear-gradient(135deg, #eeede9 0 7px, #f5f4f1 7px 14px);
+}
+@utility stripes-xs {
+  background: repeating-linear-gradient(135deg, #eeede9 0 6px, #f6f5f2 6px 12px);
+}
+@utility stripes-night {
+  background: repeating-linear-gradient(135deg, #1c1c1a 0 8px, #222220 8px 16px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

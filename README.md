@@ -1,25 +1,46 @@
-# CODING AGENTS: READ THIS FIRST
+# Builder OS
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+The operating system for UK renovation companies: spreadsheet-fast quoting, client sign-off, stage payments and invoicing, with projects, team and pipeline in the same place.
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+This repo holds the marketing site and the app UI, built from the Claude Design handoff in `project/` (design prototypes) and `chats/` (the design conversation). The app runs on typed demo data for now. Auth, database and payments come next (see `docs/technical-implementation-plan.md`).
 
-## What you should do — IMPORTANT
+## Run it
 
-**Read the chat transcripts first.** There are 1 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+```bash
+pnpm install
+pnpm dev          # http://localhost:3000
+pnpm test         # quote maths (vitest)
+pnpm typecheck && pnpm lint && pnpm build
+```
 
-**Find the primary design file under `project/` and read it top to bottom.** The chat transcripts will tell you which file the user was last iterating on. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+## What's where
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+| URL | What | Source |
+|---|---|---|
+| `/` | Home | `src/app/(marketing)/page.tsx` |
+| `/features` | One section per module | `src/app/(marketing)/features` |
+| `/pricing` | Plans, comparison table, FAQs | `src/app/(marketing)/pricing` |
+| `/blog`, `/blog/[slug]` | Blog with category filter and search, article | `src/app/(marketing)/blog` |
+| `/customers` | Customer stories with filter | `src/app/(marketing)/customers` |
+| `/about` | About, team, contact form | `src/app/(marketing)/about` |
+| `/demo` | Book a demo calendar | `src/app/(marketing)/demo` |
+| `/design-guidelines` | Design system (internal, not indexed) | `src/app/design-guidelines` |
+| `/app` | Dashboard / reporting | `src/components/app/screens/dashboard.tsx` |
+| `/app/quotes/Q-1042` | Quote builder (editable grid) | `src/components/app/screens/quote-builder.tsx` |
+| `/app/library` | Service library | `src/components/app/screens/service-library.tsx` |
+| `/app/projects/elm-road` | Project board (drag cards between columns) | `src/components/app/screens/project-board.tsx` |
+| `/app/payments` | Payment plan + invoices | `src/components/app/screens/payments.tsx` |
+| `/app/clients` | CRM pipeline | `src/components/app/screens/pipeline.tsx` |
+| `/q/hale-sons/1042` | Client-facing quote link (accept & sign) | `src/components/app/screens/client-quote.tsx` |
+| `/m` | Employee app (phone) | `src/components/app/screens/employee-app.tsx` |
 
-## About the design files
+## How it fits together
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+- **One source of demo data.** `src/lib/demo-data.ts` feeds every app screen. Marketing screenshots (`src/components/app/screenshot.tsx`) render the real screens at 1280×800 and scale them down, so changing a screen or a figure updates every screenshot.
+- **Money.** Integer pence and basis points throughout. All totals come from `src/lib/quote.ts` (tested in `quote.test.ts`).
+- **Design tokens.** `src/app/globals.css` is the Tailwind v4 + shadcn theme from the Design Guidelines. `/design-guidelines` prints this file, so the docs can't drift from the code.
+- **Components.** shadcn-style primitives in `src/components/ui` (restyled Button, Badge, Input, Accordion, Dialog…), brand pieces in `src/components/brand.tsx`, app shell in `src/components/app/app-shell.tsx`.
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+## Placeholders to replace before launch
 
-## Bundle contents
-
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `# UK Construction Management Platform` project files (HTML prototypes, assets, components)
+The founder note, customer names and results, testimonials, team, contact details, blog posts and photos (striped boxes) are all placeholders from the design. Free plan limits and the 14-day trial are unconfirmed. Only the featured article has a body; other blog cards link to it until posts move to MDX.
