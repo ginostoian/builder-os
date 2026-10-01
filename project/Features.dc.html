@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>body{margin:0;background:#FAFAF9;-webkit-font-smoothing:antialiased}a{color:#111110}a:hover{color:#5C5B57}html{scroll-behavior:smooth}</style>
+</helmet>
+<div style="font-family:Geist,system-ui,sans-serif;color:#111110;background:#FAFAF9;overflow-x:clip">
+<dc-import name="Site Nav" active="Features" hint-size="100%,64px"></dc-import>
+
+<section style="padding:88px 24px 48px">
+  <div style="max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+    <span style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">Features</span>
+    <h1 style="margin:0;font-size:clamp(40px,5.6vw,68px);line-height:1;font-weight:600;letter-spacing:-0.045em;max-width:900px;text-wrap:balance">Built around the way a renovation job actually runs.</h1>
+    <p style="margin:0;font-size:18px;line-height:1.55;color:#5C5B57;max-width:640px">Quote, agree changes, schedule the work, get paid. Each module works on its own, and they're better together.</p>
+  </div>
+</section>
+
+<div style="position:sticky;top:64px;z-index:40;background:rgba(250,250,249,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid #ECEBE7;border-top:1px solid #ECEBE7">
+  <div style="max-width:1200px;margin:0 auto;padding:10px 24px;display:flex;gap:6px;overflow-x:auto">
+    <sc-for list="{{ jump }}" as="j" hint-placeholder-count="8">
+      <a href="{{ j.href }}" style="flex:none;height:32px;padding:0 12px;border-radius:9px;display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:500;color:#3E3D39;text-decoration:none;background:#fff;box-shadow:0 0 0 1px #E8E7E3"><i class="{{ j.icon }}" style="font-size:14px;color:#8A8984"></i>{{ j.label }}</a>
+    </sc-for>
+  </div>
+</div>
+
+<sc-for list="{{ before }}" as="m" hint-placeholder-count="2">
+  <section id="{{ m.id }}" style="padding:112px 24px 0;scroll-margin-top:100px">
+    <div style="max-width:1200px;margin:0 auto">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:24px 64px;margin-bottom:44px">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <span style="display:flex;align-items:center;gap:8px;font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984"><i class="{{ m.icon }}" style="font-size:14px"></i>{{ m.eyebrow }}</span>
+          <h2 style="margin:0;font-size:clamp(30px,3.6vw,44px);line-height:1.05;font-weight:600;letter-spacing:-0.035em;text-wrap:balance">{{ m.title }}</h2>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px;padding-top:4px">
+          <p style="margin:0;font-size:17px;line-height:1.6;color:#5C5B57;text-wrap:pretty">{{ m.body }}</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 20px">
+            <sc-for list="{{ m.points }}" as="p" hint-placeholder-count="4"><div style="display:flex;gap:10px;font-size:15px;line-height:1.45;color:#262624"><i class="icon-check" style="font-size:15px;margin-top:2px;color:#111110"></i>{{ p }}</div></sc-for>
+          </div>
+        </div>
+      </div>
+      <dc-import name="Screenshot" screen="{{ m.screen }}" url="{{ m.url }}" hint-size="100%,700px"></dc-import>
+    </div>
+  </section>
+</sc-for>
+
+<section id="variations" style="margin-top:112px;padding:112px 24px;background:#111110;color:#EDEDEA;scroll-margin-top:100px">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:56px;align-items:center">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <span style="display:flex;align-items:center;gap:8px;font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984"><i class="icon-file-diff" style="font-size:14px"></i>Variations</span>
+      <h2 style="margin:0;font-size:clamp(30px,3.6vw,44px);line-height:1.05;font-weight:600;letter-spacing:-0.035em;color:#fff;text-wrap:balance">Every change, priced and agreed in writing.</h2>
+      <p style="margin:0;font-size:17px;line-height:1.6;color:#A3A29C">Add a variation from the office or the van. Your client gets a notification, sees the price and photos, and approves with one tap. Approved variations flow straight into the payment plan.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 20px;margin-top:6px">
+        <sc-for list="{{ varPoints }}" as="p" hint-placeholder-count="4"><div style="display:flex;gap:10px;font-size:15px;line-height:1.45;color:#EDEDEA"><i class="icon-check" style="font-size:15px;margin-top:2px"></i>{{ p }}</div></sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:460px;width:100%;justify-self:center">
+      <div style="background:#fff;color:#111110;border-radius:18px;padding:22px;box-shadow:0 30px 60px -30px rgba(0,0,0,.7)">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#8A8984">V-03 · 14 Elm Road</span><span style="font-size:12px;font-weight:500;padding:3px 9px;border-radius:999px;background:#FBF1DE;color:#93630F">Awaiting you</span></div>
+        <div style="font-size:19px;font-weight:600;letter-spacing:-0.015em;margin:10px 0 6px">Move island socket 600mm left</div>
+        <div style="font-size:14.5px;line-height:1.55;color:#5C5B57">To line up with the new hob position you chose on Friday. Re-route under the slab before the screed goes down.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0">
+          <div style="aspect-ratio:4/3;border-radius:10px;background:repeating-linear-gradient(135deg,#EEEDE9 0 6px,#F6F5F2 6px 12px);display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:11px;color:#8A8984">site photo</div>
+          <div style="aspect-ratio:4/3;border-radius:10px;background:repeating-linear-gradient(135deg,#EEEDE9 0 6px,#F6F5F2 6px 12px);display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:11px;color:#8A8984">marked-up plan</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-top:1px solid #ECEBE7"><span style="color:#5C5B57;font-size:14px">Change to contract</span><span style="font-size:22px;font-weight:600;letter-spacing:-0.02em">+£102.00</span></div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;height:44px;border-radius:11px;background:#111110;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:500"><i class="icon-check" style="font-size:16px"></i>Approve</div>
+          <div style="flex:1;height:44px;border-radius:11px;box-shadow:0 0 0 1px #E2E1DC;display:flex;align-items:center;justify-content:center;font-weight:500">Discuss</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;padding:12px 16px;border-radius:14px;background:#1A1A18;box-shadow:inset 0 0 0 1px #2A2A27;font-size:14px;color:#A3A29C"><i class="icon-receipt" style="font-size:15px;color:#EDEDEA"></i>Added to stage 3 invoice when approved</div>
+    </div>
+  </div>
+</section>
+
+<sc-for list="{{ after }}" as="m" hint-placeholder-count="4">
+  <section id="{{ m.id }}" style="padding:112px 24px 0;scroll-margin-top:100px">
+    <div style="max-width:1200px;margin:0 auto">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:24px 64px;margin-bottom:44px">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <span style="display:flex;align-items:center;gap:8px;font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984"><i class="{{ m.icon }}" style="font-size:14px"></i>{{ m.eyebrow }}</span>
+          <h2 style="margin:0;font-size:clamp(30px,3.6vw,44px);line-height:1.05;font-weight:600;letter-spacing:-0.035em;text-wrap:balance">{{ m.title }}</h2>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px;padding-top:4px">
+          <p style="margin:0;font-size:17px;line-height:1.6;color:#5C5B57;text-wrap:pretty">{{ m.body }}</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 20px">
+            <sc-for list="{{ m.points }}" as="p" hint-placeholder-count="4"><div style="display:flex;gap:10px;font-size:15px;line-height:1.45;color:#262624"><i class="icon-check" style="font-size:15px;margin-top:2px;color:#111110"></i>{{ p }}</div></sc-for>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ m.isPhone }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px;align-items:stretch">
+          <div style="border-radius:22px;background:#F1F0ED;box-shadow:inset 0 0 0 1px #E8E7E3;display:flex;justify-content:center;padding:40px 20px 0;overflow:hidden">
+            <div style="width:300px;border-radius:46px 46px 0 0;padding:9px 9px 0;background:#111110;height:520px;overflow:hidden">
+              <div style="border-radius:38px 38px 0 0;overflow:hidden"><dc-import name="Screenshot" screen="mobile" chrome="{{ false }}" base-width="{{ 390 }}" base-height="{{ 844 }}" hint-size="100%,580px"></dc-import></div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <sc-for list="{{ teamCards }}" as="t" hint-placeholder-count="3">
+              <div style="flex:1;background:#fff;border-radius:18px;box-shadow:0 0 0 1px #E8E7E3;padding:24px;display:flex;flex-direction:column;gap:8px">
+                <i class="{{ t.icon }}" style="font-size:19px"></i>
+                <div style="font-size:16.5px;font-weight:600;letter-spacing:-0.01em;margin-top:6px">{{ t.title }}</div>
+                <div style="font-size:14.5px;line-height:1.55;color:#5C5B57">{{ t.body }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ m.isShot }}">
+        <dc-import name="Screenshot" screen="{{ m.screen }}" url="{{ m.url }}" hint-size="100%,700px"></dc-import>
+      </sc-if>
+    </div>
+  </section>
+</sc-for>
+
+<section style="padding:128px 24px 112px">
+  <div style="max-width:1200px;margin:0 auto;border-radius:28px;background:#fff;box-shadow:0 0 0 1px #E8E7E3;padding:clamp(40px,6vw,72px) 32px;display:flex;flex-wrap:wrap;gap:28px;align-items:center;justify-content:space-between">
+    <div style="max-width:560px"><h2 style="margin:0;font-size:clamp(28px,3.4vw,40px);line-height:1.08;font-weight:600;letter-spacing:-0.035em">See it with your own jobs.</h2><p style="margin:12px 0 0;color:#5C5B57;font-size:16.5px;line-height:1.55">Send us an old quote and we'll rebuild it in Builder OS on a 20-minute call.</p></div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      <a href="Book a Demo.dc.html" style="height:46px;padding:0 20px;border-radius:12px;background:#111110;color:#fff;font-size:15px;font-weight:500;display:flex;align-items:center;gap:8px;text-decoration:none">Book a demo<i class="icon-arrow-right" style="font-size:15px"></i></a>
+      <a href="Pricing.dc.html" style="height:46px;padding:0 20px;border-radius:12px;background:#fff;color:#111110;font-size:15px;font-weight:500;display:flex;align-items:center;text-decoration:none;box-shadow:0 0 0 1px #E2E1DC">Start free</a>
+    </div>
+  </div>
+</section>
+<dc-import name="Site Footer" hint-size="100%,380px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const M = (id, icon, eyebrow, title, body, points, screen, url) => ({ id, icon: 'icon-' + icon, eyebrow, title, body, points, screen, url, isShot: screen !== 'phone', isPhone: screen === 'phone' });
+    const before = [
+      M('quoting', 'file-spreadsheet', 'Quoting', 'A quote builder that thinks like a spreadsheet.', 'Sections, quantities, units and rates in a grid you can fly through with the keyboard. Set markup per line or per section, add notes clients can see, and watch your margin update as you type.', ['Formulas and per-line markup', 'Notes and attachments on any line', 'Duplicate past quotes in one click', 'Provisional and prime cost sums'], 'quote', 'app.builderos.co.uk/quotes/Q-1042'),
+      M('library', 'library', 'Service library', 'Your price list, finally in one place.', 'Save every service you price — with units, rates and descriptions — and group them into bundles like a standard bathroom refit. Start typing in a quote and the right item appears.', ['Services and multi-item bundles', 'Import your rates from CSV', 'Adjust the rate per job', 'See which services win the most work'], 'templates', 'app.builderos.co.uk/library'),
+      M('portal', 'globe', 'Client links & portal', 'Quotes your clients can read on the sofa.', 'Every quote is a private link that looks great on a phone. Clients can expand each section, ask about a line and accept with an e-signature. Once you win the job, the same link becomes their project portal with progress photos.', ['Branded link and PDF export', 'Know when it\'s opened', 'Comments on individual lines', 'Progress photos and documents'], 'client', 'builderos.app/q/hale-sons/1042')
+    ];
+    const after = [
+      M('payments', 'receipt', 'Payment plans & invoicing', 'Stage payments that invoice themselves.', 'Set the payment plan on the quote — deposit, stages, retention — and Builder OS raises each invoice when the stage is ticked off. Clients pay by card or bank transfer, and polite reminders go out for you.', ['Deposit, stage and retention plans', 'VAT and reverse-charge ready', 'Card and open-banking payments', 'Automatic payment reminders'], 'invoices', 'app.builderos.co.uk/payments'),
+      M('projects', 'square-kanban', 'Project management', 'Every job on one board.', 'Turn an accepted quote into a project with tasks already laid out by section. Assign work, set dates, attach drawings and keep a site diary — the office and the site finally see the same thing.', ['Board and timeline views', 'Tasks created from the quote', 'Site diary and photo log', 'Files and drawings per job'], 'board', 'app.builderos.co.uk/projects/elm-road'),
+      M('team', 'hard-hat', 'Team & employee app', 'Your team knows where to be and what to do.', 'Each employee gets their own app with today\'s site, their tasks and anything that changed overnight. They check in, tick things off and upload photos — you see it all in the office.', ['Daily site and task list', 'Check-in and timesheets', 'Photo uploads to the project', 'Certificates and holiday tracking'], 'phone', ''),
+      M('crm', 'chart-column', 'CRM & reporting', 'Know which jobs make you money.', 'Track every enquiry from first call to signed contract, with reminders so nothing goes cold. Then see win rate, cash position and margin by job on a dashboard that updates itself.', ['Pipeline by stage and source', 'Follow-up reminders and email automations', 'Win rate and margin by job type', 'Cash flow forecast from payment plans'], 'crm', 'app.builderos.co.uk/clients')
+    ];
+    const jump = [['Quoting', 'file-spreadsheet', 'quoting'], ['Library', 'library', 'library'], ['Client portal', 'globe', 'portal'], ['Variations', 'file-diff', 'variations'], ['Payments', 'receipt', 'payments'], ['Projects', 'square-kanban', 'projects'], ['Team', 'hard-hat', 'team'], ['CRM & reporting', 'chart-column', 'crm']].map(j => ({ label: j[0], icon: 'icon-' + j[1], href: '#' + j[2] }));
+    return {
+      before, after, jump,
+      varPoints: ['Create on mobile with photos', 'Client approves in their portal', 'Full audit trail with timestamps', 'Feeds the next stage invoice'],
+      teamCards: [
+        { icon: 'icon-users', title: 'Employees tab', body: 'Contact details, day rates, trades, CSCS cards and certificates with expiry reminders.' },
+        { icon: 'icon-calendar-days', title: 'Who\'s where this week', body: 'A simple schedule across all jobs so you can see gaps and double-bookings at a glance.' },
+        { icon: 'icon-clock', title: 'Timesheets', body: 'Check-ins become timesheets, ready to export for payroll at the end of the week.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

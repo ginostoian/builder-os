@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>body{margin:0;background:#FAFAF9;-webkit-font-smoothing:antialiased}a{color:#111110}a:hover{color:#5C5B57}html{scroll-behavior:smooth}</style>
+</helmet>
+<div style="font-family:Geist,system-ui,sans-serif;color:#111110;background:#FAFAF9;overflow-x:clip">
+<dc-import name="Site Nav" active="Blog" hint-size="100%,64px"></dc-import>
+
+<article>
+<header style="padding:64px 24px 0">
+  <div style="max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#8A8984"><a href="Blog.dc.html" style="color:#8A8984;text-decoration:none">Blog</a><i class="icon-chevron-right" style="font-size:13px"></i><span style="color:#3E3D39">Quoting</span></div>
+    <h1 style="margin:0;font-size:clamp(36px,5vw,56px);line-height:1.04;font-weight:600;letter-spacing:-0.04em;text-wrap:balance">How to quote a kitchen extension without leaving money on the table</h1>
+    <p style="margin:0;font-size:19px;line-height:1.55;color:#5C5B57;text-wrap:pretty">A line-by-line walkthrough of a real £35k extension quote: where firms under-price, how to show provisional sums, and the payment plan that protects your cash flow.</p>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-top:8px">
+      <div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:50%;background:#E6E1D8;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#5C5B57">TA</div><div><div style="font-weight:500;font-size:14.5px">Tom Ashworth</div><div style="color:#8A8984;font-size:13px">Co-founder, ex-renovation firm owner</div></div></div>
+      <div style="color:#8A8984;font-size:14px">24 September 2026 · 9 min read</div>
+    </div>
+  </div>
+  <div style="max-width:1200px;margin:44px auto 0;aspect-ratio:21/9;border-radius:22px;background:repeating-linear-gradient(135deg,#EEEDE9 0 8px,#F5F4F1 8px 16px);box-shadow:0 0 0 1px #E8E7E3;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:12px;color:#8A8984">hero image · rear extension, steel going in</div>
+</header>
+
+<div style="padding:64px 24px 0">
+  <div style="max-width:1200px;margin:0 auto;display:flex;gap:64px;align-items:flex-start;justify-content:center">
+    <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+    <aside style="width:220px;flex:none;position:sticky;top:96px;display:flex;flex-direction:column;gap:4px">
+      <div style="font-size:12.5px;color:#8A8984;font-family:'Geist Mono',monospace;margin-bottom:8px">On this page</div>
+      <sc-for list="{{ toc }}" as="t" hint-placeholder-count="6">
+        <a href="{{ t.href }}" style="font-size:14px;line-height:1.4;padding:6px 0 6px 12px;text-decoration:none;color:{{ t.color }};box-shadow:{{ t.line }}">{{ t.label }}</a>
+      </sc-for>
+      <div style="margin-top:24px;padding:18px;border-radius:14px;background:#fff;box-shadow:0 0 0 1px #E8E7E3;display:flex;flex-direction:column;gap:10px">
+        <div style="font-weight:600;font-size:14.5px">Use this quote as a template</div>
+        <div style="font-size:13.5px;color:#5C5B57;line-height:1.5">Every line below, ready to load into your Builder OS library.</div>
+        <a href="Pricing.dc.html" style="height:36px;border-radius:10px;background:#111110;color:#fff;font-size:13.5px;font-weight:500;display:flex;align-items:center;justify-content:center;text-decoration:none">Start free</a>
+      </div>
+    </aside>
+    </sc-if>
+    <div style="flex:1;max-width:680px;min-width:0;font-size:17.5px;line-height:1.72;color:#262624">
+      <p style="margin:0 0 24px">Most extension quotes I see are priced well on the big stuff — steel, brickwork, the roof — and quietly lose money on everything around it. The spoil removal that turned into three grab lorries. The worktop the client upgraded twice. The building control visit nobody priced.</p>
+      <p style="margin:0 0 24px">This guide walks through a real quote we built for a rear kitchen extension in Bristol: roughly 22m², flat roof with a lantern, knock-through to the existing kitchen. Contract value about £35k including VAT.</p>
+
+      <h2 id="structure" style="margin:56px 0 16px;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-0.025em;scroll-margin-top:96px">1. Structure it the way it'll be built</h2>
+      <p style="margin:0 0 24px">Group your quote into the sections you'll actually work through on site: groundworks, structure and envelope, kitchen fit, electrics and heating. It reads better for the client, and it means each section can become a payment stage later without rework.</p>
+      <div style="margin:32px 0;border-radius:16px;background:#fff;box-shadow:0 0 0 1px #E8E7E3;overflow:hidden;font-size:14.5px;line-height:1.4">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px 90px;padding:12px 18px;background:#FAFAF9;color:#8A8984;font-size:12.5px;border-bottom:1px solid #ECEBE7"><span>Section</span><span style="text-align:right">Ex VAT</span><span style="text-align:right">Share</span></div>
+        <sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px 90px;padding:12px 18px;border-bottom:1px solid #F1F0ED;font-variant-numeric:tabular-nums"><span>{{ b.s }}</span><span style="text-align:right;font-weight:500">{{ b.v }}</span><span style="text-align:right;color:#8A8984">{{ b.p }}</span></div>
+        </sc-for>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px 90px;padding:12px 18px;font-weight:600;font-variant-numeric:tabular-nums"><span>Total</span><span style="text-align:right">£29,043</span><span style="text-align:right;color:#8A8984">100%</span></div>
+      </div>
+
+      <h2 id="hidden" style="margin:56px 0 16px;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-0.025em;scroll-margin-top:96px">2. Price the lines everyone forgets</h2>
+      <p style="margin:0 0 20px">These are the items that most often go missing from extension quotes we review. None of them are big on their own. Together they're often your whole margin.</p>
+      <ul style="margin:0 0 24px;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ forgot }}" as="f" hint-placeholder-count="5"><li style="display:flex;gap:12px"><i class="icon-check" style="font-size:16px;margin-top:6px"></i><span>{{ f }}</span></li></sc-for>
+      </ul>
+
+      <h2 id="pc" style="margin:56px 0 16px;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-0.025em;scroll-margin-top:96px">3. Be honest about provisional sums</h2>
+      <p style="margin:0 0 24px">If the client hasn't chosen their worktop, don't guess and absorb the difference. Put in a clearly labelled provisional sum with a note explaining what it covers and when it'll be confirmed. Clients trust a quote more when it tells them where the uncertainty is.</p>
+      <blockquote style="margin:36px 0;padding:0 0 0 24px;box-shadow:inset 2px 0 0 #111110;font-size:24px;line-height:1.4;font-weight:500;letter-spacing:-0.02em;color:#111110">A quote that admits what it doesn't know yet is a quote the client believes about everything else.</blockquote>
+
+      <h2 id="markup" style="margin:56px 0 16px;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-0.025em;scroll-margin-top:96px">4. Mark up per line, not per job</h2>
+      <p style="margin:0 0 24px">A flat 15% across everything sounds tidy, but it over-prices client-supplied items and under-prices the risky ones. On this job we ran 0% on fitting client-supplied units, 8% on the roof lantern (a supplied item with little risk), and 15% on groundworks, where surprises live.</p>
+      <div style="margin:32px 0;padding:22px 24px;border-radius:16px;background:#111110;color:#EDEDEA;display:flex;gap:16px;align-items:flex-start">
+        <i class="icon-lightbulb" style="font-size:18px;margin-top:3px"></i>
+        <div style="font-size:15.5px;line-height:1.6"><b style="font-weight:600;color:#fff">In Builder OS:</b> set a default markup on the quote, then override any line. Your gross margin updates live in the summary panel as you type.</div>
+      </div>
+
+      <h2 id="plan" style="margin:56px 0 16px;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-0.025em;scroll-margin-top:96px">5. Attach the payment plan to the quote</h2>
+      <p style="margin:0 0 24px">The time to agree how you'll get paid is before the client signs, not after. We used four stages tied to visible milestones — deposit on booking, groundworks complete, watertight, practical completion — so nobody can argue a stage hasn't been reached.</p>
+
+      <h2 id="send" style="margin:56px 0 16px;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-0.025em;scroll-margin-top:96px">6. Send it while they're still excited</h2>
+      <p style="margin:0 0 24px">Speed wins work. A clear quote the evening after the site visit beats a slightly cheaper one a fortnight later. Send it as a link so you can see when it's been opened, and follow up the day after they've read it — not before.</p>
+
+      <div style="margin:56px 0 0;padding:28px;border-radius:20px;background:#fff;box-shadow:0 0 0 1px #E8E7E3;display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between">
+        <div style="max-width:380px"><div style="font-weight:600;font-size:18px;letter-spacing:-0.015em">Build your next extension quote in Builder OS</div><div style="color:#5C5B57;font-size:15px;line-height:1.5;margin-top:6px">Free plan, no card. Load this exact quote as a starting point.</div></div>
+        <a href="Pricing.dc.html" style="height:44px;padding:0 18px;border-radius:12px;background:#111110;color:#fff;font-size:15px;font-weight:500;display:flex;align-items:center;gap:8px;text-decoration:none">Start free<i class="icon-arrow-right" style="font-size:15px"></i></a>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:48px;padding-top:28px;border-top:1px solid #ECEBE7">
+        <div style="width:48px;height:48px;border-radius:50%;background:#E6E1D8;display:flex;align-items:center;justify-content:center;font-weight:600;color:#5C5B57">TA</div>
+        <div style="font-size:15px;line-height:1.5"><b style="font-weight:600">Tom Ashworth</b> ran a renovation firm in Bristol for twelve years before co-founding Builder OS. <span style="color:#5C5B57">He still prices the odd loft for friends.</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</article>
+
+<section style="padding:112px 24px 112px">
+  <div style="max-width:1200px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:24px"><h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-0.025em">Keep reading</h2><a href="Blog.dc.html" style="font-size:15px;font-weight:500;text-decoration:none;display:flex;align-items:center;gap:6px">All articles<i class="icon-arrow-right" style="font-size:14px"></i></a></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px">
+      <sc-for list="{{ related }}" as="p" hint-placeholder-count="3">
+        <a href="Article.dc.html" style="display:flex;flex-direction:column;gap:12px;text-decoration:none;color:#111110">
+          <div style="aspect-ratio:16/10;border-radius:16px;background:repeating-linear-gradient(135deg,#EEEDE9 0 7px,#F5F4F1 7px 14px);box-shadow:0 0 0 1px #E8E7E3;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:11.5px;color:#8A8984">{{ p.img }}</div>
+          <div style="font-size:13px;color:#8A8984"><span style="color:#3E3D39;font-weight:500">{{ p.cat }}</span> · {{ p.read }}</div>
+          <div style="font-size:18px;font-weight:600;line-height:1.25;letter-spacing:-0.02em">{{ p.title }}</div>
+        </a>
+      </sc-for>
+    </div>
+  </div>
+</section>
+<dc-import name="Site Footer" hint-size="100%,380px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { w: typeof window !== 'undefined' ? window.innerWidth : 1200 };
+  componentDidMount() { this.onR = () => this.setState({ w: window.innerWidth }); window.addEventListener('resize', this.onR); }
+  componentWillUnmount() { window.removeEventListener('resize', this.onR); }
+  renderVals() {
+    const toc = [['structure', 'Structure it the way it\'ll be built'], ['hidden', 'Price the lines everyone forgets'], ['pc', 'Be honest about provisional sums'], ['markup', 'Mark up per line, not per job'], ['plan', 'Attach the payment plan'], ['send', 'Send it while they\'re excited']].map((t, i) => ({ href: '#' + t[0], label: t[1], color: i === 0 ? '#111110' : '#8A8984', line: i === 0 ? 'inset 2px 0 0 #111110' : 'inset 1px 0 0 #E2E1DC' }));
+    return {
+      wide: this.state.w >= 1000, toc,
+      breakdown: [['Groundworks & foundations', '£4,178', '14%'], ['Structure & envelope', '£13,468', '46%'], ['Kitchen installation', '£6,635', '23%'], ['Electrics & heating', '£4,761', '17%']].map(b => ({ s: b[0], v: b[1], p: b[2] })),
+      forgot: ['Spoil removal — price per load, and say how many loads you\'ve allowed.', 'Building Control fees and inspection visits.', 'Temporary kitchen or protection for the client\'s existing rooms.', 'Making good where the knock-through meets the old house.', 'Skip permits and parking suspensions where the council needs them.'],
+      related: [['Quoting', 'Provisional sums vs PC sums: how to show them so clients get it', '5 min read', 'worktop samples'], ['Cash flow', 'The payment plan that stopped us chasing the last 10%', '6 min read', 'site handover'], ['Quoting', 'Five lines every bathroom quote forgets', '4 min read', 'bathroom strip-out']].map(p => ({ cat: p[0], title: p[1], read: p[2], img: p[3] }))
+    };
+  }
+}
+</script>
+</body>
+</html>

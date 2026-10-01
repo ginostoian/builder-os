@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>body{margin:0;background:#FAFAF9;-webkit-font-smoothing:antialiased}a{color:#111110}a:hover{color:#5C5B57}input::placeholder{color:#8A8984}</style>
+</helmet>
+<div style="font-family:Geist,system-ui,sans-serif;color:#111110;background:#FAFAF9;overflow-x:clip">
+<dc-import name="Site Nav" active="Blog" hint-size="100%,64px"></dc-import>
+
+<section style="padding:80px 24px 0">
+  <div style="max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:space-between">
+    <div style="display:flex;flex-direction:column;gap:16px;max-width:640px">
+      <span style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">Blog</span>
+      <h1 style="margin:0;font-size:clamp(40px,5.4vw,60px);line-height:1;font-weight:600;letter-spacing:-0.045em">Notes from the site office.</h1>
+      <p style="margin:0;font-size:17px;line-height:1.55;color:#5C5B57">Practical guides on pricing, cash flow and running a renovation firm — plus what's new in Builder OS.</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;height:42px;width:300px;max-width:100%;padding:0 14px;border-radius:12px;background:#fff;box-shadow:0 0 0 1px #E2E1DC">
+      <i class="icon-search" style="font-size:15px;color:#8A8984"></i>
+      <input value="{{ q }}" onChange="{{ onSearch }}" placeholder="Search articles" style="flex:1;border:0;outline:none;background:transparent;font:15px Geist,sans-serif;color:#111110;min-width:0">
+    </div>
+  </div>
+</section>
+
+<section style="padding:36px 24px 0">
+  <div style="max-width:1200px;margin:0 auto;display:flex;gap:6px;flex-wrap:wrap;padding-bottom:24px;border-bottom:1px solid #ECEBE7">
+    <sc-for list="{{ cats }}" as="c" hint-placeholder-count="7">
+      <button onClick="{{ c.go }}" style="border:0;cursor:pointer;height:34px;padding:0 14px;border-radius:999px;font:500 14px Geist,sans-serif;display:flex;align-items:center;gap:7px;background:{{ c.bg }};color:{{ c.color }};box-shadow:{{ c.ring }}">{{ c.label }}<span style="font-size:12px;opacity:.6">{{ c.n }}</span></button>
+    </sc-for>
+  </div>
+</section>
+
+<sc-if value="{{ showFeatured }}" hint-placeholder-val="{{ true }}">
+<section style="padding:40px 24px 0">
+  <a href="Article.dc.html" style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:32px 48px;align-items:center;text-decoration:none;color:#111110">
+    <div style="aspect-ratio:16/10;border-radius:20px;background:repeating-linear-gradient(135deg,#EEEDE9 0 8px,#F5F4F1 8px 16px);box-shadow:0 0 0 1px #E8E7E3;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:12px;color:#8A8984">feature image · kitchen extension site</div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;gap:10px;align-items:center;font-size:13px;color:#8A8984"><span style="padding:3px 10px;border-radius:999px;background:#111110;color:#fff;font-weight:500">Featured</span>Quoting · 9 min read</div>
+      <h2 style="margin:0;font-size:clamp(28px,3.2vw,40px);line-height:1.08;font-weight:600;letter-spacing:-0.035em;text-wrap:balance">How to quote a kitchen extension without leaving money on the table</h2>
+      <p style="margin:0;font-size:16.5px;line-height:1.6;color:#5C5B57">A line-by-line walkthrough of a real £35k extension quote: where firms under-price, how to show provisional sums, and the payment plan that protects your cash flow.</p>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px"><div style="width:32px;height:32px;border-radius:50%;background:#E6E1D8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#5C5B57">TA</div><span style="font-size:14px"><b style="font-weight:500">Tom Ashworth</b><span style="color:#8A8984"> · 24 Sep 2026</span></span></div>
+    </div>
+  </a>
+</section>
+</sc-if>
+
+<section style="padding:56px 24px 0">
+  <div style="max-width:1200px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px"><span style="font-weight:600;font-size:16px">{{ heading }}</span><span style="color:#8A8984;font-size:14px">{{ countLabel }}</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:36px 20px">
+      <sc-for list="{{ posts }}" as="p" hint-placeholder-count="6">
+        <a href="Article.dc.html" style="display:flex;flex-direction:column;gap:14px;text-decoration:none;color:#111110">
+          <div style="aspect-ratio:16/10;border-radius:16px;background:{{ p.ph }};box-shadow:0 0 0 1px #E8E7E3;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:11.5px;color:#8A8984">{{ p.img }}</div>
+          <div style="display:flex;gap:8px;align-items:center;font-size:13px;color:#8A8984"><span style="color:#3E3D39;font-weight:500">{{ p.cat }}</span>·<span>{{ p.read }}</span></div>
+          <div style="font-size:19px;font-weight:600;line-height:1.25;letter-spacing:-0.02em;text-wrap:pretty">{{ p.title }}</div>
+          <div style="font-size:15px;line-height:1.55;color:#5C5B57">{{ p.ex }}</div>
+          <div style="font-size:13.5px;color:#8A8984">{{ p.author }} · {{ p.date }}</div>
+        </a>
+      </sc-for>
+    </div>
+    <sc-if value="{{ empty }}">
+      <div style="padding:64px 24px;border-radius:18px;background:#fff;box-shadow:0 0 0 1px #E8E7E3;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <i class="icon-search-x" style="font-size:22px;color:#8A8984"></i>
+        <div style="font-weight:600">Nothing matches that yet</div>
+        <button onClick="{{ reset }}" style="border:0;cursor:pointer;height:36px;padding:0 14px;border-radius:10px;background:#111110;color:#fff;font:500 14px Geist,sans-serif">Clear filters</button>
+      </div>
+    </sc-if>
+  </div>
+</section>
+
+<section style="padding:112px 24px 112px">
+  <div style="max-width:1200px;margin:0 auto;border-radius:24px;background:#fff;box-shadow:0 0 0 1px #E8E7E3;padding:clamp(32px,5vw,56px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:24px 48px;align-items:center">
+    <div><h2 style="margin:0;font-size:clamp(24px,2.8vw,32px);line-height:1.15;font-weight:600;letter-spacing:-0.03em">One useful email a fortnight.</h2><p style="margin:10px 0 0;color:#5C5B57;font-size:15.5px;line-height:1.55">Pricing tips, templates and the odd war story. No fluff, unsubscribe in one click.</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px;height:46px;border-radius:12px;box-shadow:0 0 0 1px #E2E1DC;display:flex;align-items:center;padding:0 14px;color:#8A8984;font-size:15px;background:#FAFAF9">you@yourcompany.co.uk</div>
+      <div style="height:46px;padding:0 20px;border-radius:12px;background:#111110;color:#fff;font-size:15px;font-weight:500;display:flex;align-items:center">Subscribe</div>
+    </div>
+  </div>
+</section>
+<dc-import name="Site Footer" hint-size="100%,380px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { cat: 'All', q: '' };
+  renderVals() {
+    const ph = 'repeating-linear-gradient(135deg,#EEEDE9 0 7px,#F5F4F1 7px 14px)';
+    const all = [
+      ['Cash flow', 'The payment plan that stopped us chasing the last 10%', 'Why we moved retention into a snagging stage, and the wording clients actually agree to.', 'Tom Ashworth', '17 Sep 2026', '6 min', 'site handover'],
+      ['Quoting', 'Provisional sums vs PC sums: how to show them so clients get it', 'Two terms clients never understand, and a simple way to present both on a quote.', 'Hannah Cole', '10 Sep 2026', '5 min', 'worktop samples'],
+      ['Running a team', 'Daily site diaries your lads will actually fill in', 'Three questions, one photo, done before the van leaves. Here\'s the template.', 'Marcus Reid', '3 Sep 2026', '4 min', 'site diary on phone'],
+      ['Client experience', 'What homeowners really read in your quote', 'We looked at how clients scroll through 2,000 quotes. They skip more than you\'d think.', 'Hannah Cole', '27 Aug 2026', '7 min', 'homeowner on sofa'],
+      ['Product updates', 'New: variations clients sign from their phone', 'Capture changes on site with photos, get a signature in minutes, and bill it automatically.', 'Builder OS team', '20 Aug 2026', '3 min', 'variation screen'],
+      ['Guides', 'Setting your day rates for 2027', 'A simple method for working out labour rates that actually cover your overheads.', 'Tom Ashworth', '13 Aug 2026', '8 min', 'calculator & notebook'],
+      ['Cash flow', 'Deposits: how much is fair, and how to ask for it', 'Typical deposit sizes for UK renovation work, and how to explain yours without awkwardness.', 'Priya Nair', '6 Aug 2026', '5 min', 'signed contract'],
+      ['Quoting', 'Five lines every bathroom quote forgets', 'Small items that turn a good margin into a break-even job. Add them to your library now.', 'Marcus Reid', '30 Jul 2026', '4 min', 'bathroom strip-out'],
+      ['Running a team', 'Hiring your first project manager', 'When it makes sense, what to pay, and how to hand over without losing control.', 'Tom Ashworth', '23 Jul 2026', '9 min', 'team on site'],
+      ['Client experience', 'Weekly progress updates in ten minutes', 'A Friday routine that keeps clients calm and cuts the "just checking in" calls.', 'Hannah Cole', '16 Jul 2026', '4 min', 'progress photos'],
+      ['Product updates', 'Service bundles are here', 'Group the services you always quote together and drop them in as one line.', 'Builder OS team', '9 Jul 2026', '2 min', 'service library'],
+      ['Guides', 'Domestic reverse charge VAT, explained for renovators', 'When it applies to your subcontractors, and how to show it on an invoice.', 'Priya Nair', '2 Jul 2026', '6 min', 'invoice close-up']
+    ].map(p => ({ cat: p[0], title: p[1], ex: p[2], author: p[3], date: p[4], read: p[5] + ' read', img: p[6], ph }));
+    const names = ['All', 'Quoting', 'Cash flow', 'Running a team', 'Client experience', 'Guides', 'Product updates'];
+    const q = this.state.q.trim().toLowerCase();
+    const posts = all.filter(p => (this.state.cat === 'All' || p.cat === this.state.cat) && (!q || (p.title + p.ex).toLowerCase().includes(q)));
+    const cats = names.map(n => { const a = n === this.state.cat; return { label: n, n: n === 'All' ? all.length + 1 : all.filter(p => p.cat === n).length + (n === 'Quoting' ? 1 : 0), go: () => this.setState({ cat: n }), bg: a ? '#111110' : '#fff', color: a ? '#fff' : '#3E3D39', ring: a ? 'none' : '0 0 0 1px #E2E1DC' }; });
+    const filtering = this.state.cat !== 'All' || !!q;
+    return {
+      q: this.state.q, onSearch: e => this.setState({ q: e.target.value }),
+      cats, posts, empty: posts.length === 0, showFeatured: !filtering,
+      heading: filtering ? (this.state.cat === 'All' ? 'Search results' : this.state.cat) : 'Latest',
+      countLabel: posts.length + (posts.length === 1 ? ' article' : ' articles'),
+      reset: () => this.setState({ cat: 'All', q: '' })
+    };
+  }
+}
+</script>
+</body>
+</html>

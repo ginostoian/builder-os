@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+</helmet>
+<header style="position:sticky;top:0;z-index:50;background:rgba(250,250,249,.82);backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid rgba(16,16,15,.06);font-family:Geist,system-ui,sans-serif">
+  <div style="max-width:1200px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:28px">
+    <a href="Home.dc.html" style="display:flex;align-items:center;gap:9px;text-decoration:none;color:#111110;flex:none">
+      <span style="width:26px;height:26px;border-radius:7px;background:#111110;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 5.5px;box-sizing:border-box">
+        <span style="height:3px;background:#fff;border-radius:1px"></span>
+        <span style="display:flex;gap:2px"><span style="height:3px;flex:1;background:#fff;border-radius:1px"></span><span style="height:3px;flex:2;background:#fff;border-radius:1px"></span></span>
+        <span style="height:3px;background:oklch(0.66 0.17 42);border-radius:1px"></span>
+      </span>
+      <span style="font-weight:600;font-size:17px;letter-spacing:-0.025em">Builder<span style="color:#8A8984;font-weight:500"> OS</span></span>
+    </a>
+    <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+      <nav style="display:flex;gap:4px;flex:1">
+        <sc-for list="{{ links }}" as="l" hint-placeholder-count="5">
+          <a href="{{ l.href }}" style="padding:7px 11px;border-radius:8px;font-size:14px;font-weight:500;text-decoration:none;color:{{ l.color }};background:{{ l.bg }}">{{ l.label }}</a>
+        </sc-for>
+      </nav>
+      <div style="display:flex;align-items:center;gap:8px">
+        <a href="Builder OS App.dc.html" style="padding:7px 11px;font-size:14px;font-weight:500;color:#5C5B57;text-decoration:none">Sign in</a>
+        <a href="Book a Demo.dc.html" style="height:36px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:500;color:#111110;background:#fff;box-shadow:0 0 0 1px #E2E1DC,0 1px 2px rgba(16,16,15,.05);display:flex;align-items:center;text-decoration:none">Book a demo</a>
+        <a href="Pricing.dc.html" style="height:36px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:500;color:#fff;background:#111110;display:flex;align-items:center;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)">Start free</a>
+      </div>
+    </sc-if>
+    <sc-if value="{{ narrow }}">
+      <div style="flex:1"></div>
+      <a href="Pricing.dc.html" style="height:36px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:500;color:#fff;background:#111110;display:flex;align-items:center;text-decoration:none">Start free</a>
+      <button onClick="{{ toggle }}" style="width:38px;height:38px;border-radius:10px;border:0;background:#fff;box-shadow:0 0 0 1px #E2E1DC;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer"><span style="width:16px;height:1.5px;background:#111110"></span><span style="width:16px;height:1.5px;background:#111110"></span></button>
+    </sc-if>
+  </div>
+  <sc-if value="{{ menu }}">
+    <div style="border-top:1px solid #ECEBE7;padding:12px 24px 20px;display:flex;flex-direction:column;gap:2px;background:#FAFAF9">
+      <sc-for list="{{ links }}" as="l" hint-placeholder-count="5"><a href="{{ l.href }}" style="padding:12px 4px;font-size:16px;font-weight:500;color:#111110;text-decoration:none;border-bottom:1px solid #F1F0ED">{{ l.label }}</a></sc-for>
+      <a href="Book a Demo.dc.html" style="margin-top:12px;height:44px;border-radius:10px;font-size:15px;font-weight:500;color:#111110;background:#fff;box-shadow:0 0 0 1px #E2E1DC;display:flex;align-items:center;justify-content:center;text-decoration:none">Book a demo</a>
+    </div>
+  </sc-if>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:64},&quot;active&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;Features&quot;,&quot;Pricing&quot;,&quot;Customers&quot;,&quot;Blog&quot;,&quot;About&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { w: typeof window !== 'undefined' ? window.innerWidth : 1200, open: false };
+  componentDidMount() { this.onR = () => this.setState({ w: window.innerWidth }); window.addEventListener('resize', this.onR); }
+  componentWillUnmount() { window.removeEventListener('resize', this.onR); }
+  renderVals() {
+    const active = this.props.active || '';
+    const links = [['Features', 'Features.dc.html'], ['Pricing', 'Pricing.dc.html'], ['Customers', 'Customers.dc.html'], ['Blog', 'Blog.dc.html'], ['About', 'About.dc.html']].map(([label, href]) => ({ label, href, color: label === active ? '#111110' : '#5C5B57', bg: label === active ? 'rgba(16,16,15,.05)' : 'transparent' }));
+    const wide = this.state.w >= 900;
+    return { links, wide, narrow: !wide, menu: !wide && this.state.open, toggle: () => this.setState(s => ({ open: !s.open })) };
+  }
+}
+</script>
+</body>
+</html>

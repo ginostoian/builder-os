@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:100%;border-radius:{{ radius }};overflow:hidden;background:#fff;box-shadow:{{ shadow }}">
+  <sc-if value="{{ chrome }}" hint-placeholder-val="{{ true }}">
+    <div style="height:36px;display:flex;align-items:center;gap:12px;padding:0 14px;background:#F6F5F2;border-bottom:1px solid #E8E7E3">
+      <div style="display:flex;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#DEDDD8"></span><span style="width:10px;height:10px;border-radius:50%;background:#DEDDD8"></span><span style="width:10px;height:10px;border-radius:50%;background:#DEDDD8"></span></div>
+      <div style="flex:1;display:flex;justify-content:center"><div style="height:22px;padding:0 14px;border-radius:6px;background:#fff;box-shadow:0 0 0 1px #E8E7E3;display:flex;align-items:center;font:500 11px/1 'Geist Mono',ui-monospace,monospace;color:#8A8984;max-width:60%;overflow:hidden;white-space:nowrap">{{ url }}</div></div>
+      <div style="width:42px"></div>
+    </div>
+  </sc-if>
+  <div ref="{{ ref }}" style="width:100%;height:{{ outerH }};overflow:hidden;position:relative">
+    <div style="{{ inner }}">
+      <dc-import name="Builder OS App" screen="{{ screen }}" embedded="{{ true }}" hint-size="100%,100%"></dc-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:600},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dashboard&quot;,&quot;quote&quot;,&quot;templates&quot;,&quot;board&quot;,&quot;invoices&quot;,&quot;crm&quot;,&quot;client&quot;,&quot;mobile&quot;],&quot;default&quot;:&quot;quote&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;chrome&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;url&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;app.builderos.co.uk&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;baseWidth&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1280,&quot;tsType&quot;:&quot;number&quot;},&quot;baseHeight&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:800,&quot;tsType&quot;:&quot;number&quot;},&quot;radius&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;interactive&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { s: 0.6 };
+  ref = React.createRef();
+  componentDidMount() {
+    this.ro = new ResizeObserver(() => this.measure());
+    if (this.ref.current) this.ro.observe(this.ref.current);
+    this.measure();
+  }
+  componentWillUnmount() { this.ro && this.ro.disconnect(); }
+  measure() {
+    const el = this.ref.current; if (!el) return;
+    const s = el.clientWidth / (this.props.baseWidth || 1280);
+    if (s > 0 && Math.abs(s - this.state.s) > 0.001) this.setState({ s });
+  }
+  renderVals() {
+    const bw = this.props.baseWidth || 1280, bh = this.props.baseHeight || 800;
+    const chrome = this.props.chrome ?? true;
+    return {
+      ref: this.ref, screen: this.props.screen || 'quote', chrome,
+      url: this.props.url || 'app.builderos.co.uk',
+      radius: this.props.radius || (chrome ? '14px' : '0'),
+      shadow: chrome ? '0 0 0 1px rgba(16,16,15,.08), 0 2px 4px rgba(16,16,15,.04), 0 24px 60px -24px rgba(16,16,15,.22)' : 'none',
+      outerH: bh * this.state.s + 'px',
+      inner: { width: bw + 'px', height: bh + 'px', transform: `scale(${this.state.s})`, transformOrigin: '0 0', pointerEvents: this.props.interactive ? 'auto' : 'none' }
+    };
+  }
+}
+</script>
+</body>
+</html>

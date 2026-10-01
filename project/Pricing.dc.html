@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>body{margin:0;background:#FAFAF9;-webkit-font-smoothing:antialiased}a{color:#111110}a:hover{color:#5C5B57}</style>
+</helmet>
+<div style="font-family:Geist,system-ui,sans-serif;color:#111110;background:#FAFAF9;overflow-x:clip">
+<dc-import name="Site Nav" active="Pricing" hint-size="100%,64px"></dc-import>
+
+<section style="padding:88px 24px 0;text-align:center">
+  <div style="max-width:760px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:18px">
+    <span style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">Pricing</span>
+    <h1 style="margin:0;font-size:clamp(40px,5.6vw,64px);line-height:1;font-weight:600;letter-spacing:-0.045em;text-wrap:balance">One price for the whole company.</h1>
+    <p style="margin:0;font-size:18px;line-height:1.55;color:#5C5B57;max-width:560px">No per-seat maths. Start free, upgrade when you need more, cancel any time.</p>
+  </div>
+</section>
+
+<section style="padding:56px 24px 0">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;align-items:stretch">
+    <sc-for list="{{ plans }}" as="p" hint-placeholder-count="3">
+      <div style="border-radius:20px;padding:32px;background:{{ p.bg }};color:{{ p.fg }};box-shadow:{{ p.ring }};display:flex;flex-direction:column;gap:22px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:600;font-size:17px">{{ p.name }}</span><span style="font-size:12px;font-weight:500;padding:3px 9px;border-radius:999px;background:{{ p.tagBg }};color:{{ p.tagFg }}">{{ p.tag }}</span></div>
+        <div>
+          <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:52px;font-weight:600;letter-spacing:-0.045em;line-height:1">{{ p.price }}</span><span style="color:{{ p.muted }};font-size:14.5px">{{ p.per }}</span></div>
+          <div style="color:{{ p.muted }};font-size:13px;margin-top:8px">{{ p.vat }}</div>
+        </div>
+        <div style="color:{{ p.muted }};font-size:15px;line-height:1.55">{{ p.desc }}</div>
+        <a href="{{ p.href }}" style="height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:500;font-size:15px;text-decoration:none;background:{{ p.btnBg }};color:{{ p.btnFg }}">{{ p.cta }}</a>
+        <div style="height:1px;background:{{ p.line }}"></div>
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <div style="font-size:13px;font-weight:500;color:{{ p.muted }}">{{ p.inc }}</div>
+          <sc-for list="{{ p.items }}" as="i" hint-placeholder-count="5"><div style="display:flex;gap:10px;font-size:14.5px;line-height:1.4"><i class="icon-check" style="font-size:15px;margin-top:1px"></i>{{ i }}</div></sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="max-width:1200px;margin:16px auto 0;border-radius:20px;background:#fff;box-shadow:0 0 0 1px #E8E7E3;padding:24px 32px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
+    <div><div style="font-weight:600;font-size:16px">Moving from spreadsheets or another tool?</div><div style="color:#5C5B57;font-size:14.5px;margin-top:4px">We'll import your price list, clients and open jobs for free on any paid plan.</div></div>
+    <a href="Book a Demo.dc.html" style="height:40px;padding:0 16px;border-radius:11px;box-shadow:0 0 0 1px #E2E1DC;display:flex;align-items:center;gap:6px;font-weight:500;font-size:14.5px;text-decoration:none;color:#111110">Talk to us<i class="icon-arrow-right" style="font-size:14px"></i></a>
+  </div>
+</section>
+
+<section style="padding:112px 24px 0">
+  <div style="max-width:1200px;margin:0 auto">
+    <h2 style="margin:0 0 32px;font-size:clamp(28px,3.4vw,40px);line-height:1.1;font-weight:600;letter-spacing:-0.035em">Compare plans</h2>
+    <div style="overflow-x:auto;border-radius:18px;background:#fff;box-shadow:0 0 0 1px #E8E7E3">
+      <div style="min-width:720px">
+        <div style="display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr));padding:18px 24px;border-bottom:1px solid #ECEBE7;position:sticky;top:0;background:#fff;font-weight:600;font-size:15px">
+          <span></span><span style="text-align:center">Free</span><span style="text-align:center">Essentials</span><span style="text-align:center">Pro</span>
+        </div>
+        <sc-for list="{{ table }}" as="g" hint-placeholder-count="4">
+          <div style="padding:22px 24px 8px;font-size:12.5px;font-weight:500;color:#8A8984;font-family:'Geist Mono',monospace">{{ g.group }}</div>
+          <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr));padding:12px 24px;border-top:1px solid #F1F0ED;font-size:14.5px;align-items:center">
+              <span style="color:#262624">{{ r.label }}</span>
+              <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="3">
+                <span style="text-align:center;color:{{ c.color }}"><i class="{{ c.icon }}" style="font-size:16px"></i>{{ c.text }}</span>
+              </sc-for>
+            </div>
+          </sc-for>
+        </sc-for>
+        <div style="height:12px"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:112px 24px 0">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:40px 64px">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <h2 style="margin:0;font-size:clamp(28px,3.4vw,40px);line-height:1.1;font-weight:600;letter-spacing:-0.035em">Questions</h2>
+      <p style="margin:0;color:#5C5B57;font-size:16px;line-height:1.55;max-width:360px">Can't find what you're after? Email <a href="About.dc.html#contact" style="color:#111110">hello@builderos.co.uk</a> — a real person replies, usually within the hour.</p>
+    </div>
+    <div style="border-top:1px solid #E8E7E3">
+      <sc-for list="{{ faqs }}" as="f" hint-placeholder-count="6">
+        <div style="border-bottom:1px solid #E8E7E3">
+          <button onClick="{{ f.toggle }}" style="width:100%;border:0;background:none;padding:20px 0;display:flex;align-items:center;gap:16px;cursor:pointer;text-align:left;font:500 16px Geist,sans-serif;color:#111110">
+            <span style="flex:1">{{ f.q }}</span><i class="{{ f.icon }}" style="font-size:16px;color:#8A8984"></i>
+          </button>
+          <sc-if value="{{ f.open }}"><p style="margin:0 0 20px;color:#5C5B57;font-size:15.5px;line-height:1.6;max-width:620px">{{ f.a }}</p></sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section style="padding:128px 24px 112px">
+  <div style="max-width:1200px;margin:0 auto;border-radius:28px;background:#111110;color:#fff;padding:clamp(48px,7vw,80px) 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px">
+    <h2 style="margin:0;font-size:clamp(32px,4.6vw,54px);line-height:1;font-weight:600;letter-spacing:-0.045em;text-wrap:balance">Start with your next quote.</h2>
+    <p style="margin:0;color:#A3A29C;font-size:17px">Free plan, no card. Takes about five minutes.</p>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:8px">
+      <a href="Builder OS App.dc.html" style="height:46px;padding:0 20px;border-radius:12px;background:#fff;color:#111110;font-size:15px;font-weight:500;display:flex;align-items:center;gap:8px;text-decoration:none">Start free<i class="icon-arrow-right" style="font-size:15px"></i></a>
+      <a href="Book a Demo.dc.html" style="height:46px;padding:0 20px;border-radius:12px;background:#1F1F1D;color:#fff;font-size:15px;font-weight:500;display:flex;align-items:center;text-decoration:none;box-shadow:inset 0 0 0 1px #34342F">Book a demo</a>
+    </div>
+  </div>
+</section>
+<dc-import name="Site Footer" hint-size="100%,380px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { open: 0 };
+  renderVals() {
+    const plans = [
+      { name: 'Free', tag: 'Forever', price: '£0', per: '/ month', vat: 'No card needed', desc: 'For sole traders and anyone trying Builder OS on a real job.', cta: 'Start free', href: 'Builder OS App.dc.html', inc: 'Includes', items: ['3 quotes a month', 'Spreadsheet quote builder', 'Service library (up to 25 items)', 'Client quote links & PDF', '1 user'] },
+      { name: 'Essentials', tag: 'Most popular', price: '£49', per: '/ month', vat: '+ VAT · 14-day free trial', desc: 'Quote, agree changes and get paid — the core of running a renovation firm.', cta: 'Start free trial', href: 'Builder OS App.dc.html', inc: 'Everything in Free, plus', items: ['Unlimited quotes', 'Variations with client sign-off', 'Payment plans & stage payments', 'Invoicing with card & bank payments', 'Unlimited service library & bundles', 'Your branding on quotes & invoices'], dark: true },
+      { name: 'Pro', tag: 'Everything', price: '£119', per: '/ month', vat: '+ VAT · 14-day free trial', desc: 'Run the whole business from one place, from first enquiry to final invoice.', cta: 'Start free trial', href: 'Builder OS App.dc.html', inc: 'Everything in Essentials, plus', items: ['Project management boards', 'CRM & enquiry pipeline', 'Client portal with progress photos', 'Employees tab & employee app', 'Reporting & cash-flow forecast', 'Email automations', 'Priority support & free data import'] }
+    ].map(p => ({ ...p, bg: p.dark ? '#111110' : '#fff', fg: p.dark ? '#fff' : '#111110', muted: p.dark ? '#A3A29C' : '#5C5B57', ring: p.dark ? '0 24px 48px -24px rgba(16,16,15,.5)' : '0 0 0 1px #E8E7E3', tagBg: p.dark ? '#262624' : '#F1F0ED', tagFg: p.dark ? '#EDEDEA' : '#5C5B57', btnBg: p.dark ? '#fff' : '#111110', btnFg: p.dark ? '#111110' : '#fff', line: p.dark ? '#262624' : '#ECEBE7' }));
+    const Y = { icon: 'icon-check', text: '', color: '#111110' }, N = { icon: 'icon-minus', text: '', color: '#C9C8C2' }, txt = t => ({ icon: '', text: t, color: '#262624' });
+    const v = x => x === 1 ? Y : x === 0 ? N : txt(x);
+    const G = (group, rows) => ({ group, rows: rows.map(r => ({ label: r[0], cells: r.slice(1).map(v) })) });
+    const table = [
+      G('Quoting', [['Quotes per month', '3', 'Unlimited', 'Unlimited'], ['Spreadsheet quote builder', 1, 1, 1], ['Service library', '25 items', 'Unlimited', 'Unlimited'], ['Bundles & templates', 0, 1, 1], ['Client links, comments & e-signature', 1, 1, 1], ['Custom branding', 0, 1, 1]]),
+      G('Getting paid', [['Variations', 0, 1, 1], ['Payment plans & stage payments', 0, 1, 1], ['Invoicing', 0, 1, 1], ['Card & open-banking payments', 0, 1, 1], ['Automatic reminders', 0, 1, 1]]),
+      G('Running jobs', [['Project boards & timeline', 0, 0, 1], ['Client portal & progress photos', 0, 0, 1], ['Employees tab', 0, 0, 1], ['Employee app', 0, 0, 1]]),
+      G('Growing', [['CRM & pipeline', 0, 0, 1], ['Email automations', 0, 0, 1], ['Reporting', 'Basic', 'Basic', 'Full'], ['Support', 'Email', 'Email & chat', 'Priority + import']])
+    ];
+    const F = [
+      ['Is it really per company?', 'Yes. One price covers your whole business. Add your office team and site crew without paying per seat.'],
+      ['Can I switch plans later?', 'Any time. Upgrades apply straight away; downgrades take effect at the end of your billing month. Your data stays put.'],
+      ['Do you handle VAT?', 'Quotes and invoices handle standard and reduced VAT rates and the domestic reverse charge. Prices shown exclude VAT.'],
+      ['How do clients pay invoices?', 'By card or bank transfer straight from the invoice link. Money lands in your account; we never hold it.'],
+      ['Can you move my existing price list across?', 'Upload a CSV yourself, or on any paid plan send us your spreadsheet and we\'ll import it for you.'],
+      ['What happens if I cancel?', 'You can export every quote, invoice and client record as CSV or PDF. No lock-in, no exit fees.']
+    ];
+    const faqs = F.map((f, i) => ({ q: f[0], a: f[1], open: this.state.open === i, icon: this.state.open === i ? 'icon-minus' : 'icon-plus', toggle: () => this.setState(s => ({ open: s.open === i ? -1 : i })) }));
+    return { plans, table, faqs };
+  }
+}
+</script>
+</body>
+</html>

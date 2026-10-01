@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>body{margin:0;background:#FAFAF9;-webkit-font-smoothing:antialiased}a{color:#111110}a:hover{color:#5C5B57}input::placeholder,textarea::placeholder{color:#8A8984}</style>
+</helmet>
+<div style="font-family:Geist,system-ui,sans-serif;color:#111110;background:#FAFAF9;overflow-x:clip">
+<dc-import name="Site Nav" active="About" hint-size="100%,64px"></dc-import>
+
+<section style="padding:88px 24px 0">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:40px 64px;align-items:end">
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <span style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">About</span>
+      <h1 style="margin:0;font-size:clamp(40px,5.6vw,64px);line-height:1;font-weight:600;letter-spacing:-0.045em;text-wrap:balance">Made by people who've priced a loft at midnight.</h1>
+    </div>
+    <p style="margin:0;font-size:18px;line-height:1.6;color:#5C5B57;text-wrap:pretty">Builder OS started in a site office in Bristol. We're a small team of former builders, project managers and software people, building the tool we needed when we were running jobs ourselves.</p>
+  </div>
+  <div style="max-width:1200px;margin:56px auto 0;display:grid;grid-template-columns:2fr 1fr;gap:16px">
+    <div style="aspect-ratio:16/10;border-radius:22px;background:repeating-linear-gradient(135deg,#EEEDE9 0 8px,#F5F4F1 8px 16px);box-shadow:0 0 0 1px #E8E7E3;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:12px;color:#8A8984">team photo · Bristol studio</div>
+    <div style="border-radius:22px;background:repeating-linear-gradient(135deg,#EEEDE9 0 8px,#F5F4F1 8px 16px);box-shadow:0 0 0 1px #E8E7E3;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:12px;color:#8A8984;text-align:center;padding:12px">on site with a customer</div>
+  </div>
+</section>
+
+<section style="padding:112px 24px 0">
+  <div style="max-width:1200px;margin:0 auto">
+    <h2 style="margin:0 0 36px;font-size:clamp(28px,3.4vw,40px);line-height:1.1;font-weight:600;letter-spacing:-0.035em">What we care about</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:1px;background:#E8E7E3;border-radius:18px;overflow:hidden;box-shadow:0 0 0 1px #E8E7E3">
+      <sc-for list="{{ values }}" as="v" hint-placeholder-count="3">
+        <div style="background:#fff;padding:32px 28px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">{{ v.n }}</span>
+          <div style="font-size:19px;font-weight:600;letter-spacing:-0.015em;margin-top:12px">{{ v.t }}</div>
+          <div style="font-size:15.5px;line-height:1.6;color:#5C5B57">{{ v.b }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section style="padding:112px 24px 0">
+  <div style="max-width:1200px;margin:0 auto">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:baseline;margin-bottom:32px"><h2 style="margin:0;font-size:clamp(28px,3.4vw,40px);line-height:1.1;font-weight:600;letter-spacing:-0.035em">The team</h2><span style="color:#5C5B57;font-size:15px">We're hiring in Bristol and remote across the UK.</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:24px 16px">
+      <sc-for list="{{ team }}" as="p" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="aspect-ratio:1;border-radius:16px;background:repeating-linear-gradient(135deg,#EEEDE9 0 7px,#F5F4F1 7px 14px);box-shadow:0 0 0 1px #E8E7E3;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:11px;color:#8A8984">portrait</div>
+          <div><div style="font-weight:600;font-size:15px">{{ p.name }}</div><div style="color:#8A8984;font-size:13.5px;line-height:1.4">{{ p.role }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section id="contact" style="padding:112px 24px 112px;scroll-margin-top:80px">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:48px 64px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <span style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">Contact</span>
+      <h2 style="margin:0;font-size:clamp(30px,3.6vw,44px);line-height:1.05;font-weight:600;letter-spacing:-0.035em">Talk to a human.</h2>
+      <p style="margin:0;font-size:16.5px;line-height:1.6;color:#5C5B57;max-width:440px">Questions about pricing, moving your data across, or whether Builder OS suits your firm? We usually reply within the hour, Monday to Friday.</p>
+      <div style="display:flex;flex-direction:column;gap:2px;margin-top:8px;border-top:1px solid #E8E7E3">
+        <sc-for list="{{ contacts }}" as="c" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid #E8E7E3">
+            <i class="{{ c.icon }}" style="font-size:17px;color:#5C5B57"></i>
+            <div style="flex:1"><div style="font-size:13px;color:#8A8984">{{ c.label }}</div><div style="font-weight:500;font-size:15.5px">{{ c.value }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="background:#fff;border-radius:20px;box-shadow:0 0 0 1px #E8E7E3,0 20px 40px -24px rgba(16,16,15,.18);padding:clamp(24px,4vw,36px)">
+      <sc-if value="{{ notSent }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px">
+            <label style="display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:500">Your name<input placeholder="James Hale" style="height:42px;border-radius:10px;border:0;box-shadow:0 0 0 1px #E2E1DC;padding:0 12px;font:15px Geist,sans-serif;outline:none;background:#FAFAF9"></label>
+            <label style="display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:500">Company<input placeholder="Hale &amp; Sons Renovations" style="height:42px;border-radius:10px;border:0;box-shadow:0 0 0 1px #E2E1DC;padding:0 12px;font:15px Geist,sans-serif;outline:none;background:#FAFAF9"></label>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:500">Work email<input placeholder="james@halesons.co.uk" style="height:42px;border-radius:10px;border:0;box-shadow:0 0 0 1px #E2E1DC;padding:0 12px;font:15px Geist,sans-serif;outline:none;background:#FAFAF9"></label>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px;font-weight:500">Team size
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="4"><button onClick="{{ s.go }}" style="border:0;cursor:pointer;height:36px;padding:0 14px;border-radius:10px;font:500 14px Geist,sans-serif;background:{{ s.bg }};color:{{ s.color }};box-shadow:{{ s.ring }}">{{ s.label }}</button></sc-for>
+            </div>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:500">How can we help?<textarea placeholder="We're a 12-person firm doing mostly extensions…" style="min-height:120px;border-radius:10px;border:0;box-shadow:0 0 0 1px #E2E1DC;padding:12px;font:15px/1.5 Geist,sans-serif;outline:none;background:#FAFAF9;resize:vertical"></textarea></label>
+          <button onClick="{{ send }}" style="border:0;cursor:pointer;height:46px;border-radius:12px;background:#111110;color:#fff;font:500 15px Geist,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">Send message<i class="icon-arrow-right" style="font-size:15px"></i></button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ sent }}">
+        <div style="padding:48px 12px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px">
+          <span style="width:48px;height:48px;border-radius:50%;background:#E8F3EC;color:#2F7A4B;display:flex;align-items:center;justify-content:center"><i class="icon-check" style="font-size:22px"></i></span>
+          <div style="font-size:20px;font-weight:600;letter-spacing:-0.015em">Thanks — message received.</div>
+          <div style="color:#5C5B57;font-size:15px;max-width:320px;line-height:1.5">One of us will be in touch shortly. Usually within the hour on weekdays.</div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</section>
+<dc-import name="Site Footer" hint-size="100%,380px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { size: '6–15', sent: false };
+  renderVals() {
+    return {
+      values: [['01', 'Faster than a spreadsheet', 'If it takes longer in Builder OS than in Excel, that\'s a bug. Speed in the van matters more than features in a demo.'], ['02', 'Your client sees your brand', 'We stay out of the way. Quotes, portals and invoices carry your name and your logo, not ours.'], ['03', 'Straight talking', 'Clear prices, no lock-in, and support from people who know what a padstone is.']].map(v => ({ n: v[0], t: v[1], b: v[2] })),
+      team: [['Tom Ashworth', 'Co-founder · ex-renovation firm owner'], ['Hannah Cole', 'Co-founder · product'], ['Dev Mistry', 'Engineering lead'], ['Priya Nair', 'Customer success'], ['Marcus Reid', 'Head of onboarding · ex-site manager'], ['Sophie Lane', 'Design']].map(p => ({ name: p[0], role: p[1] })),
+      contacts: [['icon-mail', 'Email', 'hello@builderos.co.uk'], ['icon-phone', 'Phone', '0117 496 0123'], ['icon-map-pin', 'Office', 'Bristol, United Kingdom']].map(c => ({ icon: c[0], label: c[1], value: c[2] })),
+      sizes: ['Just me', '2–5', '6–15', '16–50', '50+'].map(s => { const a = s === this.state.size; return { label: s, go: () => this.setState({ size: s }), bg: a ? '#111110' : '#fff', color: a ? '#fff' : '#3E3D39', ring: a ? 'none' : '0 0 0 1px #E2E1DC' }; }),
+      sent: this.state.sent, notSent: !this.state.sent, send: () => this.setState({ sent: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

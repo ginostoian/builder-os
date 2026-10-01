@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>body{margin:0;background:#FAFAF9;-webkit-font-smoothing:antialiased}a{color:#111110}a:hover{color:#5C5B57}html{scroll-behavior:smooth}</style>
+</helmet>
+<div style="font-family:Geist,system-ui,sans-serif;color:#111110;background:#FAFAF9;min-height:100vh;display:flex">
+  <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+  <aside style="width:248px;flex:none;position:sticky;top:0;height:100vh;box-sizing:border-box;border-right:1px solid #ECEBE7;padding:28px 20px;display:flex;flex-direction:column;gap:28px;overflow-y:auto">
+    <div style="display:flex;align-items:center;gap:9px">
+      <span style="width:26px;height:26px;border-radius:7px;background:#111110;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 5.5px;box-sizing:border-box">
+        <span style="height:3px;background:#fff;border-radius:1px"></span>
+        <span style="display:flex;gap:2px"><span style="height:3px;flex:1;background:#fff;border-radius:1px"></span><span style="height:3px;flex:2;background:#fff;border-radius:1px"></span></span>
+        <span style="height:3px;background:oklch(0.66 0.17 42);border-radius:1px"></span>
+      </span>
+      <span style="font-weight:600;font-size:16px;letter-spacing:-0.025em">Builder<span style="color:#8A8984;font-weight:500"> OS</span></span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <div style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#8A8984;margin-bottom:8px">Design guidelines · v1.0</div>
+      <sc-for list="{{ toc }}" as="t" hint-placeholder-count="12">
+        <a href="{{ t.href }}" style="display:flex;gap:10px;padding:6px 8px;border-radius:7px;font-size:14px;color:#3E3D39;text-decoration:none"><span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#B5B4AE;width:18px;padding-top:2px">{{ t.n }}</span>{{ t.label }}</a>
+      </sc-for>
+    </div>
+  </aside>
+  </sc-if>
+
+  <main style="flex:1;min-width:0;padding:0 clamp(20px,5vw,72px) 120px">
+    <div style="max-width:960px;margin:0 auto">
+
+      <header style="padding:72px 0 56px;border-bottom:1px solid #ECEBE7">
+        <div style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">Builder OS · Design guidelines · October 2026</div>
+        <h1 style="margin:16px 0 0;font-size:clamp(40px,5.4vw,64px);line-height:1;font-weight:600;letter-spacing:-0.045em;text-wrap:balance">Calm software for people who build things.</h1>
+        <p style="margin:20px 0 0;font-size:18px;line-height:1.6;color:#5C5B57;max-width:640px">This is the single source of truth for how Builder OS looks, sounds and behaves, on the marketing site, in the app and in the documents our customers send their clients. If something isn't covered here, pick the quieter option.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:36px">
+          <sc-for list="{{ principles }}" as="p" hint-placeholder-count="4">
+            <div style="background:#fff;border-radius:14px;box-shadow:0 0 0 1px #E8E7E3;padding:18px">
+              <div style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#8A8984">{{ p.n }}</div>
+              <div style="font-weight:600;font-size:15.5px;margin-top:10px;letter-spacing:-0.01em">{{ p.t }}</div>
+              <div style="font-size:14px;line-height:1.5;color:#5C5B57;margin-top:4px">{{ p.b }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </header>
+
+      <section id="brand" style="padding:64px 0;border-bottom:1px solid #ECEBE7;scroll-margin-top:24px">
+        <div style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">01</div>
+        <h2 style="margin:8px 0 12px;font-size:32px;line-height:1.1;font-weight:600;letter-spacing:-0.035em">Brand &amp; logo</h2>
+        <p style="margin:0 0 28px;font-size:16px;line-height:1.6;color:#5C5B57;max-width:640px">The mark is three courses of brickwork in a rounded square: a full course, a stretcher bond with an offset joint, and a single orange course at the base. It stands for the job being built up in layers, and it reads at 16px.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+          <div style="background:#fff;border-radius:16px;box-shadow:0 0 0 1px #E8E7E3;height:200px;display:flex;align-items:center;justify-content:center;gap:14px">
+            <span style="width:56px;height:56px;border-radius:15px;background:#111110;display:flex;flex-direction:column;justify-content:center;gap:4.5px;padding:0 12px;box-sizing:border-box">
+              <span style="height:6.5px;background:#fff;border-radius:2px"></span>
+              <span style="display:flex;gap:4.5px"><span style="height:6.5px;flex:1;background:#fff;border-radius:2px"></span><span style="height:6.5px;flex:2;background:#fff;border-radius:2px"></span></span>
+              <span style="height:6.5px;background:oklch(0.66 0.17 42);border-radius:2px"></span>
+            </span>
+            <span style="font-weight:600;font-size:34px;letter-spacing:-0.03em">Builder<span style="color:#8A8984;font-weight:500"> OS</span></span>
+          </div>
+          <div style="background:#111110;border-radius:16px;height:200px;display:flex;align-items:center;justify-content:center;gap:14px">
+            <span style="width:56px;height:56px;border-radius:15px;background:#fff;display:flex;flex-direction:column;justify-content:center;gap:4.5px;padding:0 12px;box-sizing:border-box">
+              <span style="height:6.5px;background:#111110;border-radius:2px"></span>
+              <span style="display:flex;gap:4.5px"><span style="height:6.5px;flex:1;background:#111110;border-radius:2px"></span><span style="height:6.5px;flex:2;background:#111110;border-radius:2px"></span></span>
+              <span style="height:6.5px;background:oklch(0.66 0.17 42);border-radius:2px"></span>
+            </span>
+            <span style="font-weight:600;font-size:34px;letter-spacing:-0.03em;color:#fff">Builder<span style="color:#8A8984;font-weight:500"> OS</span></span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px">
+          <sc-for list="{{ logoRules }}" as="r" hint-placeholder-count="4">
+            <div style="background:#fff;border-radius:14px;box-shadow:0 0 0 1px #E8E7E3;padding:16px 18px;display:flex;gap:10px">
+              <i class="{{ r.icon }}" style="font-size:16px;color:{{ r.color }};margin-top:2px"></i>
+              <div style="font-size:14px;line-height:1.5;color:#3E3D39">{{ r.t }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:20px;padding:16px 18px;border-radius:14px;background:#F6F5F2;font-size:14.5px;line-height:1.55;color:#3E3D39"><b style="font-weight:600">Name &amp; tagline.</b> Always "Builder OS": two words, capital B, capital O and S. Never "BuilderOS" or "Builder O.S.". Primary line: <i>Quotes that win the job, built in minutes.</i> Descriptor: <i>The operating system for UK renovation companies.</i></div>
+      </section>
+
+      <section id="colour" style="padding:64px 0;border-bottom:1px solid #ECEBE7;scroll-margin-top:24px">
+        <div style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">02</div>
+        <h2 style="margin:8px 0 12px;font-size:32px;line-height:1.1;font-weight:600;letter-spacing:-0.035em">Colour</h2>
+        <p style="margin:0 0 28px;font-size:16px;line-height:1.6;color:#5C5B57;max-width:640px">Warm, near-neutral greys with a single ink colour. Orange is our only brand accent. Use it like a highlighter, not a paint roller: for the selected cell, a live notification dot, one course of the logo. Never use it for large fills or primary buttons.</p>
+        <div style="font-weight:600;font-size:15px;margin-bottom:12px">Neutrals</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">
+          <sc-for list="{{ neutrals }}" as="c" hint-placeholder-count="10">
+            <div style="background:#fff;border-radius:12px;box-shadow:0 0 0 1px #E8E7E3;overflow:hidden">
+              <div style="height:72px;background:{{ c.hex }};box-shadow:inset 0 -1px 0 rgba(16,16,15,.06)"></div>
+              <div style="padding:10px 12px"><div style="font-weight:600;font-size:13.5px">{{ c.name }}</div><div style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#5C5B57;margin-top:2px">{{ c.hex }}</div><div style="font-size:12px;color:#8A8984;margin-top:4px;line-height:1.4">{{ c.use }}</div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-weight:600;font-size:15px;margin:28px 0 12px">Accent &amp; status</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+          <sc-for list="{{ status }}" as="c" hint-placeholder-count="5">
+            <div style="background:#fff;border-radius:12px;box-shadow:0 0 0 1px #E8E7E3;padding:12px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;gap:6px"><div style="flex:1;height:44px;border-radius:8px;background:{{ c.fg }}"></div><div style="flex:1;height:44px;border-radius:8px;background:{{ c.bg }};box-shadow:inset 0 0 0 1px rgba(16,16,15,.04)"></div></div>
+              <span style="align-self:flex-start;font-size:12px;font-weight:500;padding:2px 9px;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }}">{{ c.pill }}</span>
+              <div><div style="font-weight:600;font-size:13.5px">{{ c.name }}</div><div style="font-family:'Geist Mono',monospace;font-size:11px;color:#5C5B57;margin-top:2px">{{ c.fg }} · {{ c.bg }}</div><div style="font-size:12px;color:#8A8984;margin-top:4px;line-height:1.4">{{ c.use }}</div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+          <div style="background:#111110;border-radius:14px;padding:20px;color:#EDEDEA">
+            <div style="font-weight:600;font-size:14.5px;color:#fff">Dark sections</div>
+            <div style="font-size:13.5px;line-height:1.55;color:#A3A29C;margin-top:6px">Marketing only. One or two per page for rhythm. Surface #111110, raised #1B1B19, border #262624, body text #A3A29C, headings #FFFFFF.</div>
+          </div>
+          <div style="background:#fff;border-radius:14px;box-shadow:0 0 0 1px #E8E7E3;padding:20px">
+            <div style="font-weight:600;font-size:14.5px">Contrast</div>
+            <div style="font-size:13.5px;line-height:1.55;color:#5C5B57;margin-top:6px">Body text is Ink 2 (#5C5B57) or darker on light surfaces, which passes 4.5:1 on white. Muted #8A8984 is for metadata at 12px+ only, never for anything someone needs to act on.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="type" style="padding:64px 0;border-bottom:1px solid #ECEBE7;scroll-margin-top:24px">
+        <div style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">03</div>
+        <h2 style="margin:8px 0 12px;font-size:32px;line-height:1.1;font-weight:600;letter-spacing:-0.035em">Typography</h2>
+        <p style="margin:0 0 28px;font-size:16px;line-height:1.6;color:#5C5B57;max-width:640px">Two families from Google Fonts. <b style="color:#111110;font-weight:600">Geist</b> for everything. <b style="color:#111110;font-weight:600">Geist Mono</b> for codes, references, URLs and section eyebrows. Headings are tight (negative tracking scales with size). Numbers in tables and totals always use tabular figures.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:20px">
+          <div style="background:#fff;border-radius:16px;box-shadow:0 0 0 1px #E8E7E3;padding:24px"><div style="font-size:64px;font-weight:600;letter-spacing:-0.045em;line-height:1">Aa</div><div style="font-weight:600;margin-top:14px">Geist</div><div style="font-size:13.5px;color:#5C5B57">400 · 500 · 600 · interface &amp; display</div></div>
+          <div style="background:#fff;border-radius:16px;box-shadow:0 0 0 1px #E8E7E3;padding:24px"><div style="font-family:'Geist Mono',monospace;font-size:56px;line-height:1.1">Q-1042</div><div style="font-weight:600;margin-top:14px">Geist Mono</div><div style="font-size:13.5px;color:#5C5B57">400 · 500 · references, codes, eyebrows</div></div>
+        </div>
+        <div style="background:#fff;border-radius:16px;box-shadow:0 0 0 1px #E8E7E3;overflow:hidden">
+          <sc-for list="{{ typeScale }}" as="t" hint-placeholder-count="9">
+            <div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;padding:16px 22px;border-bottom:1px solid #F1F0ED;align-items:center">
+              <div><div style="font-weight:600;font-size:13.5px">{{ t.name }}</div><div style="font-family:'Geist Mono',monospace;font-size:11px;color:#8A8984;margin-top:2px">{{ t.spec }}</div></div>
+              <div style="{{ t.style }}">{{ t.sample }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="layout" style="padding:64px 0;border-bottom:1px solid #ECEBE7;scroll-margin-top:24px">
+        <div style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">04</div>
+        <h2 style="margin:8px 0 12px;font-size:32px;line-height:1.1;font-weight:600;letter-spacing:-0.035em">Space, radius &amp; elevation</h2>
+        <p style="margin:0 0 28px;font-size:16px;line-height:1.6;color:#5C5B57;max-width:640px">A 4px base grid. The app is dense (13px body, 32–36px controls). Marketing is airy (16–18px body, 112–128px between sections, 1200px max width). We draw edges with a 1px ring shadow instead of borders, so cards can sit edge to edge without doubling up.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+          <div style="background:#fff;border-radius:16px;box-shadow:0 0 0 1px #E8E7E3;padding:22px">
+            <div style="font-weight:600;font-size:14.5px;margin-bottom:14px">Spacing scale</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ spacing }}" as="s" hint-placeholder-count="8"><div style="display:flex;align-items:center;gap:12px;font-family:'Geist Mono',monospace;font-size:11.5px;color:#5C5B57"><span style="width:28px">{{ s.n }}</span><span style="height:10px;border-radius:2px;background:#111110;width:{{ s.w }}"></span><span style="color:#8A8984">{{ s.use }}</span></div></sc-for>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:16px;box-shadow:0 0 0 1px #E8E7E3;padding:22px">
+            <div style="font-weight:600;font-size:14.5px;margin-bottom:14px">Radius</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+              <sc-for list="{{ radii }}" as="r" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;gap:6px;align-items:center"><div style="width:56px;height:56px;background:#F1F0ED;box-shadow:inset 0 0 0 1px #E2E1DC;border-radius:{{ r.v }}"></div><div style="font-family:'Geist Mono',monospace;font-size:11px;color:#5C5B57">{{ r.v }}</div><div style="font-size:11.5px;color:#8A8984;text-align:center;line-height:1.3">{{ r.use }}</div></div></sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:16px;padding:28px;border-radius:16px;background:#F6F5F2">
+          <sc-for list="{{ shadows }}" as="s" hint-placeholder-count="4">
+            <div style="background:#fff;border-radius:12px;box-shadow:{{ s.v }};padding:18px;min-height:90px"><div style="font-weight:600;font-size:13.5px">{{ s.name }}</div><div style="font-size:12px;color:#8A8984;margin-top:4px;line-height:1.4">{{ s.use }}</div></div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="components" style="padding:64px 0;border-bottom:1px solid #ECEBE7;scroll-margin-top:24px">
+        <div style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">05</div>
+        <h2 style="margin:8px 0 12px;font-size:32px;line-height:1.1;font-weight:600;letter-spacing:-0.035em">Core components</h2>
+        <p style="margin:0 0 28px;font-size:16px;line-height:1.6;color:#5C5B57;max-width:640px">Built on shadcn/ui, restyled to these tokens. One primary action per view. Everything else is secondary (white with a ring) or ghost.</p>
+
+        <div style="background:#fff;border-radius:16px;box-shadow:0 0 0 1px #E8E7E3;padding:24px;display:flex;flex-direction:column;gap:24px">
+          <div>
+            <div style="font-size:12.5px;color:#8A8984;font-family:'Geist Mono',monospace;margin-bottom:12px">Buttons · app 32px / marketing 46px</div>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+              <span style="height:32px;padding:0 12px;border-radius:8px;background:#111110;color:#fff;display:flex;align-items:center;gap:6px;font-weight:500;font-size:13px"><i class="icon-send" style="font-size:14px"></i>Send quote</span>
+              <span style="height:32px;padding:0 12px;border-radius:8px;box-shadow:0 0 0 1px #E8E7E3;background:#fff;display:flex;align-items:center;gap:6px;font-size:13px"><i class="icon-download" style="font-size:14px;color:#5C5B57"></i>PDF</span>
+              <span style="height:32px;padding:0 12px;border-radius:8px;display:flex;align-items:center;gap:6px;font-size:13px;color:#5C5B57">Cancel</span>
+              <span style="height:32px;padding:0 12px;border-radius:8px;background:#FBE9E5;color:#B13B22;display:flex;align-items:center;gap:6px;font-weight:500;font-size:13px"><i class="icon-trash-2" style="font-size:14px"></i>Delete</span>
+              <span style="width:1px;height:28px;background:#ECEBE7;margin:0 6px"></span>
+              <span style="height:46px;padding:0 20px;border-radius:12px;background:#111110;color:#fff;font-size:15px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 6px 16px -6px rgba(16,16,15,.4)">Start free<i class="icon-arrow-right" style="font-size:15px"></i></span>
+              <span style="height:46px;padding:0 20px;border-radius:12px;background:#fff;font-size:15px;font-weight:500;display:flex;align-items:center;box-shadow:0 0 0 1px #E2E1DC">Book a demo</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12.5px;color:#8A8984;font-family:'Geist Mono',monospace;margin-bottom:12px">Inputs, status pills, tags</div>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+              <span style="height:34px;width:220px;border-radius:8px;box-shadow:0 0 0 1px #E2E1DC;display:flex;align-items:center;gap:8px;padding:0 10px;color:#8A8984;font-size:13px;box-sizing:border-box"><i class="icon-search" style="font-size:14px"></i>Search services</span>
+              <span style="height:34px;width:160px;border-radius:8px;box-shadow:0 0 0 1.5px #111110,0 0 0 4px rgba(16,16,15,.08);display:flex;align-items:center;padding:0 10px;font-size:13px;box-sizing:border-box">plast|</span>
+              <span style="font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:999px;background:#F1F0ED;color:#5C5B57">Draft</span>
+              <span style="font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:999px;background:#FBF1DE;color:#93630F">Due</span>
+              <span style="font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:999px;background:#E8F3EC;color:#2F7A4B">Paid</span>
+              <span style="font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:999px;background:#FBE9E5;color:#B13B22">Overdue</span>
+              <span style="font-size:11px;font-weight:500;padding:1px 7px;border-radius:5px;background:#FCEBE2;color:#B7471A">Variation V-03</span>
+              <span style="font-size:11px;padding:1px 7px;border-radius:5px;background:#F6F5F2;color:#5C5B57">Referral</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12.5px;color:#8A8984;font-family:'Geist Mono',monospace;margin-bottom:12px">Quote grid row: the selected cell gets the only orange ring on screen</div>
+            <div style="border-radius:10px;box-shadow:0 0 0 1px #E8E7E3;overflow:hidden;font-size:13px;font-variant-numeric:tabular-nums">
+              <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 60px 56px 92px 104px;height:32px;align-items:center;font-size:11.5px;color:#8A8984;background:#FCFCFB;border-bottom:1px solid #ECEBE7;font-weight:500;padding-left:12px"><span>#</span><span>Item</span><span style="text-align:right;padding-right:10px">Qty</span><span>Unit</span><span style="text-align:right;padding-right:10px">Rate</span><span style="text-align:right;padding-right:12px">Total</span></div>
+              <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 60px 56px 92px 104px;height:34px;align-items:center;background:#FFFAF6;padding-left:12px"><span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#8A8984">2.1</span><span>Steel beam 203×133 UB, supply &amp; fit</span><span style="text-align:right;padding-right:10px">1</span><span style="color:#8A8984">item</span><span style="height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;box-shadow:inset 0 0 0 2px oklch(0.66 0.17 42);background:#fff">1,850.00</span><span style="text-align:right;padding-right:12px;font-weight:500">£2,072.00</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px">
+          <sc-for list="{{ compRules }}" as="r" hint-placeholder-count="6">
+            <div style="background:#fff;border-radius:14px;box-shadow:0 0 0 1px #E8E7E3;padding:16px 18px"><div style="font-weight:600;font-size:14px">{{ r.t }}</div><div style="font-size:13.5px;line-height:1.5;color:#5C5B57;margin-top:4px">{{ r.b }}</div></div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="icons" style="padding:64px 0;border-bottom:1px solid #ECEBE7;scroll-margin-top:24px">
+        <div style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">06</div>
+        <h2 style="margin:8px 0 12px;font-size:32px;line-height:1.1;font-weight:600;letter-spacing:-0.035em">Icons &amp; imagery</h2>
+        <p style="margin:0 0 24px;font-size:16px;line-height:1.6;color:#5C5B57;max-width:640px">Lucide only, at 1.5px stroke (the shadcn default). 14–16px in the app, 20px in marketing feature tiles. Icons sit next to a label. They never replace one, except in universally understood controls (search, close, more).</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">
+          <sc-for list="{{ icons }}" as="i" hint-placeholder-count="12">
+            <div style="background:#fff;border-radius:12px;box-shadow:0 0 0 1px #E8E7E3;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:10px"><i class="{{ i.cls }}" style="font-size:20px"></i><span style="font-size:11.5px;color:#5C5B57;text-align:center">{{ i.use }}</span></div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:20px">
+          <div style="aspect-ratio:16/9;border-radius:14px;background:repeating-linear-gradient(135deg,#EEEDE9 0 8px,#F5F4F1 8px 16px);box-shadow:0 0 0 1px #E8E7E3;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:12px;color:#8A8984">placeholder pattern</div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:14.5px;line-height:1.55;color:#3E3D39">
+            <div><b style="font-weight:600">Photography:</b> real UK sites, real trades, natural light. Half-finished work is welcome. No stock handshakes, hard-hat-and-clipboard poses or 3D renders.</div>
+            <div><b style="font-weight:600">Product shots:</b> always real screens from the app, framed in the browser chrome component. Never fake UI.</div>
+            <div><b style="font-weight:600">Until we have assets:</b> use the 135° stripe placeholder with a mono caption describing the shot.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="data" style="padding:64px 0;border-bottom:1px solid #ECEBE7;scroll-margin-top:24px">
+        <div style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">07</div>
+        <h2 style="margin:8px 0 12px;font-size:32px;line-height:1.1;font-weight:600;letter-spacing:-0.035em">Numbers, dates &amp; UK formats</h2>
+        <p style="margin:0 0 24px;font-size:16px;line-height:1.6;color:#5C5B57;max-width:640px">Money is the product. Always use the <span style="font-family:'Geist Mono',monospace;font-size:14px">en-GB</span> locale and tabular figures, and right-align money in tables.</p>
+        <div style="background:#fff;border-radius:16px;box-shadow:0 0 0 1px #E8E7E3;overflow:hidden">
+          <sc-for list="{{ formats }}" as="f" hint-placeholder-count="9">
+            <div style="display:grid;grid-template-columns:170px minmax(0,1fr) minmax(0,1fr);gap:16px;padding:13px 22px;border-bottom:1px solid #F1F0ED;font-size:14px;align-items:center">
+              <span style="font-weight:500">{{ f.k }}</span>
+              <span style="font-variant-numeric:tabular-nums;color:#2F7A4B;display:flex;gap:8px;align-items:center"><i class="icon-check" style="font-size:14px"></i>{{ f.yes }}</span>
+              <span style="font-variant-numeric:tabular-nums;color:#B13B22;display:flex;gap:8px;align-items:center"><i class="icon-x" style="font-size:14px"></i>{{ f.no }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="voice" style="padding:64px 0;border-bottom:1px solid #ECEBE7;scroll-margin-top:24px">
+        <div style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">08</div>
+        <h2 style="margin:8px 0 12px;font-size:32px;line-height:1.1;font-weight:600;letter-spacing:-0.035em">Voice &amp; tone</h2>
+        <p style="margin:0 0 24px;font-size:16px;line-height:1.6;color:#5C5B57;max-width:640px">We sound like a founder who's run jobs, writing to someone who's running one now: warm, plain-spoken and British. Confident without the hype. We know the trade's words (first fix, padstone, snagging) and we use them correctly.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+          <sc-for list="{{ voice }}" as="v" hint-placeholder-count="4">
+            <div style="background:#fff;border-radius:14px;box-shadow:0 0 0 1px #E8E7E3;padding:18px"><div style="font-weight:600;font-size:15px">{{ v.t }}</div><div style="font-size:12.5px;color:#8A8984;margin:2px 0 8px">{{ v.not }}</div><div style="font-size:13.5px;line-height:1.5;color:#5C5B57">{{ v.b }}</div></div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border-radius:16px;box-shadow:0 0 0 1px #E8E7E3;overflow:hidden">
+          <div style="display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1fr);gap:16px;padding:12px 22px;background:#FCFCFB;border-bottom:1px solid #ECEBE7;font-size:12.5px;color:#8A8984;font-weight:500"><span>Where</span><span>Write this</span><span>Not this</span></div>
+          <sc-for list="{{ copy }}" as="c" hint-placeholder-count="8">
+            <div style="display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1fr);gap:16px;padding:14px 22px;border-bottom:1px solid #F1F0ED;font-size:14px;line-height:1.5">
+              <span style="font-weight:500">{{ c.where }}</span><span style="color:#111110">{{ c.yes }}</span><span style="color:#8A8984;text-decoration:line-through;text-decoration-color:#D6D5CF">{{ c.no }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px">
+          <sc-for list="{{ copyRules }}" as="r" hint-placeholder-count="6">
+            <div style="display:flex;gap:10px;padding:14px 16px;border-radius:12px;background:#F6F5F2;font-size:14px;line-height:1.5;color:#3E3D39"><i class="icon-dot" style="font-size:16px"></i><span>{{ r }}</span></div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="motion" style="padding:64px 0;border-bottom:1px solid #ECEBE7;scroll-margin-top:24px">
+        <div style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">09</div>
+        <h2 style="margin:8px 0 12px;font-size:32px;line-height:1.1;font-weight:600;letter-spacing:-0.035em">Motion &amp; accessibility</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:20px">
+          <sc-for list="{{ a11y }}" as="r" hint-placeholder-count="6">
+            <div style="background:#fff;border-radius:14px;box-shadow:0 0 0 1px #E8E7E3;padding:16px 18px"><div style="font-weight:600;font-size:14px">{{ r.t }}</div><div style="font-size:13.5px;line-height:1.5;color:#5C5B57;margin-top:4px">{{ r.b }}</div></div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="tokens" style="padding:64px 0 0;scroll-margin-top:24px">
+        <div style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">10</div>
+        <h2 style="margin:8px 0 12px;font-size:32px;line-height:1.1;font-weight:600;letter-spacing:-0.035em">Tokens for shadcn/ui</h2>
+        <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#5C5B57;max-width:640px">Drop this into <span style="font-family:'Geist Mono',monospace;font-size:14px">app/globals.css</span> (Tailwind v4 + shadcn). Every shadcn component then picks up the Builder OS look. Brand and status colours are extra tokens.</p>
+        <pre style="margin:0;padding:24px;border-radius:16px;background:#111110;color:#EDEDEA;font:12.5px/1.65 'Geist Mono',monospace;overflow-x:auto;white-space:pre">{{ tokensCss }}</pre>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { w: typeof window !== 'undefined' ? window.innerWidth : 1200 };
+  componentDidMount() { this.onR = () => this.setState({ w: window.innerWidth }); window.addEventListener('resize', this.onR); }
+  componentWillUnmount() { window.removeEventListener('resize', this.onR); }
+  renderVals() {
+    const toc = [['brand', 'Brand & logo'], ['colour', 'Colour'], ['type', 'Typography'], ['layout', 'Space, radius & elevation'], ['components', 'Core components'], ['icons', 'Icons & imagery'], ['data', 'Numbers & UK formats'], ['voice', 'Voice & tone'], ['motion', 'Motion & accessibility'], ['tokens', 'Tokens for shadcn/ui']].map((t, i) => ({ href: '#' + t[0], label: t[1], n: String(i + 1).padStart(2, '0') }));
+    const tokensCss = `@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --radius: 0.625rem;              /* 10px base: sm 6, md 8, lg 10, xl 14 */
+
+  --background: #FFFFFF;           /* app canvas */
+  --foreground: #111110;           /* Ink */
+  --card: #FFFFFF;
+  --card-foreground: #111110;
+  --popover: #FFFFFF;
+  --popover-foreground: #111110;
+  --primary: #111110;              /* primary buttons are ink, never orange */
+  --primary-foreground: #FFFFFF;
+  --secondary: #F6F5F2;
+  --secondary-foreground: #111110;
+  --muted: #F6F5F2;
+  --muted-foreground: #5C5B57;     /* Ink 2: AA on white */
+  --accent: #F1F0ED;               /* shadcn hover/selected bg */
+  --accent-foreground: #111110;
+  --destructive: #B13B22;
+  --border: #E8E7E3;
+  --input: #E2E1DC;
+  --ring: #111110;
+
+  /* Builder OS extensions */
+  --surface: #FAFAF9;              /* sidebar, marketing page bg */
+  --surface-2: #FCFCFB;            /* table headers, app content wells */
+  --subtle: #8A8984;               /* metadata only, 12px+ */
+  --brand: oklch(0.66 0.17 42);    /* highlighter orange */
+  --brand-soft: #FCEBE2;
+  --brand-ink: #B7471A;
+  --success: #2F7A4B;  --success-soft: #E8F3EC;
+  --warning: #93630F;  --warning-soft: #FBF1DE;
+  --danger:  #B13B22;  --danger-soft:  #FBE9E5;
+  --info:    #2F5DA8;  --info-soft:    #E7EEF9;
+
+  --shadow-ring: 0 0 0 1px var(--border);
+  --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgb(16 16 15 / .04);
+  --shadow-pop:  0 0 0 1px var(--border), 0 12px 32px -8px rgb(16 16 15 / .18);
+  --shadow-shot: 0 0 0 1px rgb(16 16 15 / .08), 0 24px 60px -24px rgb(16 16 15 / .22);
+}
+
+.dark, [data-surface="dark"] {      /* marketing dark sections */
+  --background: #111110;
+  --foreground: #FFFFFF;
+  --card: #1B1B19;
+  --muted: #1F1F1D;
+  --muted-foreground: #A3A29C;
+  --border: #262624;
+  --input: #34342F;
+  --primary: #FFFFFF;
+  --primary-foreground: #111110;
+}
+
+@theme inline {
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-surface: var(--surface);
+  --color-subtle: var(--subtle);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+body { font-feature-settings: "ss01"; -webkit-font-smoothing: antialiased; }
+.tabular { font-variant-numeric: tabular-nums; }`;
+    return {
+      wide: this.state.w >= 1000, toc, tokensCss,
+      principles: [['01', 'Faster than Excel', 'Keyboard first. If it takes longer than a spreadsheet, it\'s a bug.'], ['02', 'Their brand, not ours', 'Client-facing surfaces put the contractor\'s name first.'], ['03', 'Money is legible', 'Totals, margins and due dates are always one glance away.'], ['04', 'Quiet by default', 'Ink and warm greys. Colour only means something.']].map(p => ({ n: p[0], t: p[1], b: p[2] })),
+      logoRules: [['icon-check', '#2F7A4B', 'Clear space equals the height of one course on every side.'], ['icon-check', '#2F7A4B', 'Minimum size 16px for the mark, 80px wide for the lockup.'], ['icon-x', '#B13B22', 'Don\'t recolour the courses, rotate the mark or add effects.'], ['icon-x', '#B13B22', 'Don\'t put the mark on photography without a solid tile behind it.']].map(r => ({ icon: r[0], color: r[1], t: r[2] })),
+      neutrals: [['Ink', '#111110', 'Text, primary buttons, dark sections'], ['Ink 2', '#5C5B57', 'Body copy, secondary text'], ['Subtle', '#8A8984', 'Metadata, placeholders'], ['Faint', '#C9C8C2', 'Disabled icons, empty dots'], ['Input', '#E2E1DC', 'Control rings'], ['Border', '#E8E7E3', 'Card rings, dividers'], ['Line', '#F1F0ED', 'Row dividers, chips'], ['Muted', '#F6F5F2', 'Tinted wells, tags'], ['Surface', '#FAFAF9', 'Page & sidebar'], ['White', '#FFFFFF', 'Cards, app canvas']].map(c => ({ name: c[0], hex: c[1], use: c[2] })),
+      status: [['Brand', 'oklch(0.66 0.17 42)', '#FCEBE2', 'Variation', 'Selection, live dots, variations'], ['Success', '#2F7A4B', '#E8F3EC', 'Paid', 'Paid, accepted, on track'], ['Warning', '#93630F', '#FBF1DE', 'Due', 'Due soon, awaiting client'], ['Danger', '#B13B22', '#FBE9E5', 'Overdue', 'Overdue, destructive'], ['Info', '#2F5DA8', '#E7EEF9', 'Booked', 'Scheduled, compliance']].map(c => ({ name: c[0], fg: c[1], bg: c[2], pill: c[3], use: c[4] })),
+      typeScale: [
+        ['Display', '78 / 1.0 · 600 · −4.5%', 'font-size:56px;line-height:1;font-weight:600;letter-spacing:-0.045em', 'Quotes that win.'],
+        ['H1', '64 / 1.0 · 600 · −4.5%', 'font-size:44px;line-height:1;font-weight:600;letter-spacing:-0.045em', 'One price per company'],
+        ['H2', '48 / 1.05 · 600 · −3.5%', 'font-size:34px;line-height:1.05;font-weight:600;letter-spacing:-0.035em', 'After the yes'],
+        ['H3', '19–24 · 600 · −2%', 'font-size:22px;font-weight:600;letter-spacing:-0.02em', 'Kitchen extension & rear knock-through'],
+        ['Lead', '18 / 1.55 · 400', 'font-size:18px;line-height:1.55;color:#5C5B57', 'Spreadsheet-fast quoting for renovation firms.'],
+        ['Body', '16 / 1.6 · 400', 'font-size:16px;line-height:1.6;color:#3E3D39', 'Clients open your quote on any device and sign in two taps.'],
+        ['App body', '13 / 1.4 · 400–500', 'font-size:13px;line-height:1.4', 'Excavate strip foundations, 600×900mm'],
+        ['Caption', '11.5–12 · 500', 'font-size:12px;font-weight:500;color:#8A8984', 'Saved just now · 3 opened today'],
+        ['Mono', '11.5–12.5 · 400', "font-family:'Geist Mono',monospace;font-size:12.5px;color:#5C5B57", 'INV-0231 · builderos.app/q/1042']
+      ].map(t => ({ name: t[0], spec: t[1], style: t[2], sample: t[3] })),
+      spacing: [['4', '4px', 'icon gap'], ['8', '8px', 'control gap'], ['12', '12px', 'card grid gap'], ['16', '16px', 'card padding (app)'], ['24', '24px', 'page gutter (app)'], ['32', '32px', 'card padding (mktg)'], ['64', '64px', 'block spacing'], ['128', '128px', 'section spacing']].map(s => ({ n: s[0], w: Math.min(parseInt(s[1]), 128) + 'px', use: s[2] })),
+      radii: [['5px', 'tags'], ['8px', 'buttons, inputs'], ['10px', 'cards (app)'], ['14px', 'screens, panels'], ['18–22px', 'cards (mktg)'], ['999px', 'pills, avatars']].map(r => ({ v: r[0].replace('18–22px', '20px'), use: r[1] })),
+      shadows: [['Ring', '0 0 0 1px #E8E7E3', 'Default edge for every card & control'], ['Card', '0 0 0 1px #E8E7E3, 0 1px 2px rgba(16,16,15,.04)', 'Resting cards'], ['Popover', '0 0 0 1px #E8E7E3, 0 12px 32px -8px rgba(16,16,15,.18)', 'Menus, autocomplete, notes'], ['Screenshot', '0 0 0 1px rgba(16,16,15,.08), 0 24px 60px -24px rgba(16,16,15,.22)', 'Product shots on marketing']].map(s => ({ name: s[0], v: s[1], use: s[2] })),
+      compRules: [['Primary button', 'Ink fill, white text. One per view. Marketing adds a soft drop shadow and a trailing arrow.'], ['Secondary button', 'White with a 1px ring. Use for PDF, Library, Preview and other supporting actions.'], ['Status pill', 'Fully rounded, soft fill + strong text from the same hue. Words, not colours alone.'], ['Tables & grids', 'Row height 34px, header 32px on a #FCFCFB well. Money right-aligned, codes in mono.'], ['Sidebar nav', '32px rows. Active = white tile with ring. Counts in Subtle, never red badges.'], ['Empty states', 'One line of what\'s missing, one button to fix it. No illustrations.']].map(r => ({ t: r[0], b: r[1] })),
+      icons: [['icon-file-spreadsheet', 'Quotes'], ['icon-library', 'Library'], ['icon-file-diff', 'Variations'], ['icon-square-kanban', 'Projects'], ['icon-receipt', 'Payments'], ['icon-contact', 'Clients'], ['icon-hard-hat', 'Team'], ['icon-chart-column', 'Reports'], ['icon-globe', 'Client portal'], ['icon-camera', 'Photos'], ['icon-sticky-note', 'Line note'], ['icon-pen-line', 'Sign']].map(i => ({ cls: i[0], use: i[1] })),
+      formats: [['Currency', '£34,851.47 · £1,850', '$34851.47 · 34851 GBP'], ['Compact money', '£34.9k (cards only)', '£34,9K · 34.9K£'], ['Dates', '14 Oct 2026 · Tue 6 Oct', '10/14/2026 · 2026-10-14'], ['Times', '09:30 · 16:30', '9:30am · 4:30 PM'], ['Percentages', '20% · 24% margin', '20 % · .2'], ['Units', 'm · m² · m³ · item · job', 'sqm · M2 · units'], ['References', 'Q-1042 · INV-0231 · V-03', 'quote #1042 · Inv231'], ['VAT', '+ VAT · inc. VAT · VAT 20%', '+tax · incl. sales tax'], ['Addresses', '14 Elm Road, Bristol BS6 5AB', '14 Elm Rd., Bristol']].map(f => ({ k: f[0], yes: f[1], no: f[2] })),
+      voice: [['Warm', 'not chummy', 'Talk like a good site manager: friendly, direct, respectful of their time.'], ['Plain', 'not dumbed-down', 'Short words, short sentences. Trade terms are fine. SaaS jargon isn\'t.'], ['Confident', 'not hype', 'Say what it does. No "revolutionary", "seamless", "supercharge".'], ['British', 'not twee', 'UK spelling, £, VAT. No forced slang or "cheeky" jokes.']].map(v => ({ t: v[0], not: v[1], b: v[2] })),
+      copy: [['Headline', 'Quotes that win the job, built in minutes.', 'Supercharge your quoting workflow with AI-powered efficiency'], ['Button', 'Send quote', 'Submit'], ['Empty state', 'No quotes yet. Start one from a past job or the library.', 'Oops! Nothing to see here 🙈'], ['Error', 'We couldn\'t send that. Check the client\'s email and try again.', 'Error 422: Unprocessable entity'], ['Success toast', 'Sent to Sarah. We\'ll tell you when she opens it.', 'Success! Your quote was sent successfully!'], ['Client-facing', 'Here\'s everything we talked through, priced line by line.', 'Please find attached the quotation as discussed.'], ['Reminder email', 'A quick nudge: stage 2 (£10,959) was due on 14 Oct.', 'FINAL NOTICE: Payment overdue'], ['Upgrade prompt', 'Projects come with Pro. Try it free for 14 days.', 'Unlock premium features now!']].map(c => ({ where: c[0], yes: c[1], no: c[2] })),
+      copyRules: ['Sentence case everywhere: headings, buttons, menu items.', 'Use "you" and "your clients". We say "we" on marketing, never inside the product UI.', 'Lead with the outcome, then the feature: "Get paid on time with stage payments".', 'Numbers as numerals: 3 quotes, 14 days, £49.', 'No exclamation marks in product UI. One per page max on marketing, ideally none.', 'No emoji in product or marketing.'],
+      a11y: [['Durations', '120ms for hover/press, 200ms for popovers and drawers, ease-out. Nothing loops.'], ['What moves', 'Opacity and small translate/scale only. No parallax, no bouncing numbers.'], ['Reduced motion', 'Respect prefers-reduced-motion: remove transitions, keep state changes instant.'], ['Focus', '2px Ink ring + 4px 8% Ink halo on every focusable element. Never remove outlines.'], ['Targets', '32px minimum in the dense app, 44px in the employee app and client portal (used on phones, often with gloves).'], ['Colour alone', 'Status always pairs colour with a word or icon. The orange selection ring is backed by an aria-selected cell.']].map(r => ({ t: r[0], b: r[1] }))
+    };
+  }
+}
+</script>
+</body>
+</html>

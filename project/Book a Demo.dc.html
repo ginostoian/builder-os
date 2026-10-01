@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>body{margin:0;background:#FAFAF9;-webkit-font-smoothing:antialiased}a{color:#111110}a:hover{color:#5C5B57}input::placeholder{color:#8A8984}</style>
+</helmet>
+<div style="font-family:Geist,system-ui,sans-serif;color:#111110;background:#FAFAF9;overflow-x:clip;min-height:100vh">
+<dc-import name="Site Nav" active="" hint-size="100%,64px"></dc-import>
+
+<section style="padding:72px 24px 112px">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:48px 64px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:20px;padding-top:12px">
+      <span style="font-family:'Geist Mono',monospace;font-size:12.5px;color:#8A8984">Book a demo</span>
+      <h1 style="margin:0;font-size:clamp(36px,4.8vw,56px);line-height:1.02;font-weight:600;letter-spacing:-0.045em;text-wrap:balance">See Builder OS with one of your own jobs.</h1>
+      <p style="margin:0;font-size:17px;line-height:1.6;color:#5C5B57;max-width:480px">Twenty minutes, on video. Bring an old quote or spreadsheet and we'll rebuild it live, then show you how variations, payments and the client portal fit around it.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+        <sc-for list="{{ cover }}" as="c" hint-placeholder-count="4"><div style="display:flex;gap:12px;font-size:15.5px;line-height:1.45"><i class="icon-check" style="font-size:16px;margin-top:2px"></i>{{ c }}</div></sc-for>
+      </div>
+      <figure style="margin:20px 0 0;padding:22px;border-radius:16px;background:#fff;box-shadow:0 0 0 1px #E8E7E3;display:flex;flex-direction:column;gap:14px;max-width:480px">
+        <blockquote style="margin:0;font-size:15.5px;line-height:1.55;color:#262624">"Marcus rebuilt our worst bathroom quote in about ten minutes on the call. We signed up that afternoon."</blockquote>
+        <figcaption style="display:flex;align-items:center;gap:10px;font-size:14px"><div style="width:32px;height:32px;border-radius:50%;background:#FBF1DE;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;color:#3E3D39">JW</div><span><b style="font-weight:500">Jess Walker</b><span style="color:#8A8984"> · Tidewater Bathrooms</span></span></figcaption>
+      </figure>
+    </div>
+
+    <div style="background:#fff;border-radius:22px;box-shadow:0 0 0 1px #E8E7E3,0 30px 60px -30px rgba(16,16,15,.22);overflow:hidden">
+      <div style="padding:22px 24px;border-bottom:1px solid #ECEBE7;display:flex;align-items:center;gap:14px">
+        <div style="width:44px;height:44px;border-radius:50%;background:#DCE5DF;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;color:#3E3D39">MR</div>
+        <div style="flex:1"><div style="font-size:13px;color:#8A8984">Marcus Reid · Builder OS</div><div style="font-weight:600;font-size:17px;letter-spacing:-0.01em">Builder OS walkthrough</div></div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:#5C5B57;align-items:flex-end">
+          <span style="display:flex;align-items:center;gap:6px"><i class="icon-clock" style="font-size:13px"></i>20 min</span>
+          <span style="display:flex;align-items:center;gap:6px"><i class="icon-video" style="font-size:13px"></i>Google Meet</span>
+        </div>
+      </div>
+
+      <sc-if value="{{ step.pick }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-wrap:wrap">
+        <div style="flex:1 1 320px;padding:22px 24px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <span style="font-weight:600;font-size:15.5px">October <span style="color:#8A8984;font-weight:500">2026</span></span>
+            <div style="display:flex;gap:4px"><span style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#C9C8C2"><i class="icon-chevron-left" style="font-size:15px"></i></span><span style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px #E8E7E3"><i class="icon-chevron-right" style="font-size:15px"></i></span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:11.5px;color:#8A8984;font-weight:500;margin-bottom:6px">
+            <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+            <sc-for list="{{ days }}" as="d" hint-placeholder-count="35">
+              <button onClick="{{ d.go }}" style="aspect-ratio:1;border:0;border-radius:10px;font:500 14px Geist,sans-serif;cursor:{{ d.cursor }};background:{{ d.bg }};color:{{ d.color }};position:relative;padding:0">{{ d.label }}<span style="position:absolute;left:50%;bottom:6px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:{{ d.dot }}"></span></button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex:1 1 220px;padding:22px 24px;border-left:1px solid #ECEBE7;display:flex;flex-direction:column;gap:8px">
+          <div style="font-weight:600;font-size:15px;margin-bottom:8px">{{ dayLabel }}</div>
+          <sc-for list="{{ times }}" as="t" hint-placeholder-count="8">
+            <button onClick="{{ t.go }}" style="height:42px;border:0;border-radius:10px;cursor:pointer;font:500 14.5px Geist,sans-serif;background:{{ t.bg }};color:{{ t.color }};box-shadow:{{ t.ring }};display:flex;align-items:center;justify-content:center;gap:8px"><span style="width:6px;height:6px;border-radius:50%;background:#2F7A4B"></span>{{ t.label }}</button>
+          </sc-for>
+          <div style="font-size:12.5px;color:#8A8984;margin-top:6px;display:flex;align-items:center;gap:6px"><i class="icon-globe" style="font-size:12px"></i>Europe/London (BST)</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ step.details }}">
+      <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+        <button onClick="{{ back }}" style="align-self:flex-start;border:0;background:none;cursor:pointer;padding:0;font:500 14px Geist,sans-serif;color:#5C5B57;display:flex;align-items:center;gap:6px"><i class="icon-arrow-left" style="font-size:14px"></i>Back</button>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:#F6F5F2;font-size:14.5px"><i class="icon-calendar" style="font-size:15px;color:#5C5B57"></i><b style="font-weight:500">{{ dayLabel }}</b><span style="color:#5C5B57">· {{ timeLabel }}</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:500">Your name<input placeholder="James Hale" style="height:42px;border-radius:10px;border:0;box-shadow:0 0 0 1px #E2E1DC;padding:0 12px;font:15px Geist,sans-serif;outline:none;background:#FAFAF9"></label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:500">Work email<input placeholder="james@halesons.co.uk" style="height:42px;border-radius:10px;border:0;box-shadow:0 0 0 1px #E2E1DC;padding:0 12px;font:15px Geist,sans-serif;outline:none;background:#FAFAF9"></label>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:500">Company<input placeholder="Hale &amp; Sons Renovations" style="height:42px;border-radius:10px;border:0;box-shadow:0 0 0 1px #E2E1DC;padding:0 12px;font:15px Geist,sans-serif;outline:none;background:#FAFAF9"></label>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px;font-weight:500">What do you mostly quote?
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ jobTypes }}" as="j" hint-placeholder-count="5"><button onClick="{{ j.go }}" style="border:0;cursor:pointer;height:34px;padding:0 12px;border-radius:9px;font:500 13.5px Geist,sans-serif;background:{{ j.bg }};color:{{ j.color }};box-shadow:{{ j.ring }}">{{ j.label }}</button></sc-for>
+          </div>
+        </div>
+        <button onClick="{{ confirm }}" style="border:0;cursor:pointer;height:46px;border-radius:12px;background:#111110;color:#fff;font:500 15px Geist,sans-serif;margin-top:4px">Confirm booking</button>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ step.done }}">
+      <div style="padding:56px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px">
+        <span style="width:52px;height:52px;border-radius:50%;background:#E8F3EC;color:#2F7A4B;display:flex;align-items:center;justify-content:center"><i class="icon-calendar-check" style="font-size:22px"></i></span>
+        <div style="font-size:21px;font-weight:600;letter-spacing:-0.02em">You're booked in.</div>
+        <div style="color:#5C5B57;font-size:15px;line-height:1.55;max-width:340px">{{ dayLabel }} at {{ timeLabel }} with Marcus. A calendar invite and Meet link are on their way.</div>
+        <button onClick="{{ restart }}" style="margin-top:8px;border:0;cursor:pointer;height:38px;padding:0 14px;border-radius:10px;background:#fff;box-shadow:0 0 0 1px #E2E1DC;font:500 14px Geist,sans-serif">Pick another time</button>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+</section>
+<dc-import name="Site Footer" hint-size="100%,380px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { day: 6, time: null, step: 'pick', job: 'Extensions' };
+  renderVals() {
+    const { day, time, step, job } = this.state;
+    const dow = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const longDow = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const offset = 3; // 1 Oct 2026 is a Thursday
+    const days = [];
+    for (let i = 0; i < offset; i++) days.push({ label: '', bg: 'transparent', color: 'transparent', dot: 'transparent', cursor: 'default', go: null });
+    for (let d = 1; d <= 31; d++) {
+      const wd = (offset + d - 1) % 7;
+      const avail = d >= 2 && wd < 5 && d !== 16;
+      const sel = d === day;
+      days.push({ label: String(d), cursor: avail ? 'pointer' : 'default', go: avail ? () => this.setState({ day: d, time: null }) : null, bg: sel ? '#111110' : avail ? '#F1F0ED' : 'transparent', color: sel ? '#fff' : avail ? '#111110' : '#C9C8C2', dot: d === 1 ? (sel ? '#fff' : '#111110') : 'transparent' });
+    }
+    while (days.length % 7) days.push({ label: '', bg: 'transparent', color: 'transparent', dot: 'transparent', cursor: 'default', go: null });
+    const wd = (offset + day - 1) % 7;
+    const slots = ['09:00', '09:30', '10:30', '11:00', '13:00', '14:00', '15:30', '16:30'].filter((_, i) => (day + i) % 4 !== 0);
+    const times = slots.map(t => ({ label: t, go: () => this.setState({ time: t, step: 'details' }), bg: '#fff', color: '#111110', ring: '0 0 0 1px #E2E1DC' }));
+    return {
+      cover: ['Rebuild one of your real quotes, live', 'Import your price list into the service library', 'Variations, stage payments and invoicing', 'Honest advice on which plan fits'],
+      days, times,
+      dayLabel: `${longDow[wd]} ${day} October`,
+      timeLabel: time || '',
+      step: { pick: step === 'pick', details: step === 'details', done: step === 'done' },
+      back: () => this.setState({ step: 'pick' }),
+      confirm: () => this.setState({ step: 'done' }),
+      restart: () => this.setState({ step: 'pick', time: null }),
+      jobTypes: ['Extensions', 'Lofts', 'Kitchens', 'Bathrooms', 'Full renovations'].map(j => { const a = j === job; return { label: j, go: () => this.setState({ job: j }), bg: a ? '#111110' : '#fff', color: a ? '#fff' : '#3E3D39', ring: a ? 'none' : '0 0 0 1px #E2E1DC' }; })
+    };
+  }
+}
+</script>
+</body>
+</html>
