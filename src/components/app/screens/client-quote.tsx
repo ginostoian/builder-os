@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { company, currentUser, paymentPlan, quote, quoteSections, VAT_RATE } from "@/lib/demo-data";
-import { formatBps, formatGBP } from "@/lib/money";
-import { lineTotal, quoteTotals, sectionTotal, stageAmounts } from "@/lib/quote";
+import { formatBps, formatGBP } from "@/core/money";
+import { lineTotal, quoteTotals, sectionTotal, stageAmounts } from "@/core/quote";
 import { cn } from "@/lib/utils";
 
 /**

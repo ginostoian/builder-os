@@ -4,7 +4,7 @@ import * as React from "react";
 import { Plus, Search, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { serviceCategories, serviceCategoryCounts, services } from "@/lib/demo-data";
-import { formatGBP } from "@/lib/money";
+import { formatGBP } from "@/core/money";
 import { cn } from "@/lib/utils";
 import { ScreenTitle } from "../app-shell";
 

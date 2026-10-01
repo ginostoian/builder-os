@@ -28,8 +28,8 @@ import {
   targetMargin,
   VAT_RATE,
 } from "@/lib/demo-data";
-import { formatBps, formatGBP, formatRate, parsePence } from "@/lib/money";
-import { lineTotal, quoteTotals, sectionTotal, stageAmounts, type QuoteLine, type QuoteSection } from "@/lib/quote";
+import { formatBps, formatGBP, formatRate, parsePence } from "@/core/money";
+import { lineTotal, quoteTotals, sectionTotal, stageAmounts, type QuoteLine, type QuoteSection } from "@/core/quote";
 import { cn } from "@/lib/utils";
 import { appRoutes } from "../routes";
 import { TabStrip } from "../tab-strip";

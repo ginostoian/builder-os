@@ -58,7 +58,7 @@ Companion to the Design Guidelines (`/design-guidelines`, prototype in `project/
 
 - Fastest route to the shipped product: sign-in, invites, roles and the workspace switcher (sidebar top-left in the app design) come prebuilt and restylable.
 - **Cost check:** the B2B add-on becomes necessary at about 100 paying firms, or as soon as one firm has more than 20 staff on the platform. At £49–£119 per company per month, ~$1 per org is negligible. Budget the add-on from public launch.
-- **Escape hatch:** keep every auth call behind `packages/auth` (`getSession()`, `requireRole()`, `currentOrgId()`). If Clerk pricing or limits change, Better Auth's organization plugin on our own Neon DB is the migration target.
+- **Escape hatch:** keep every auth call behind `src/auth` (`getSession()`, `requireRole()`, `currentOrgId()`). If Clerk pricing or limits change, Better Auth's organization plugin on our own Neon DB is the migration target.
 
 ### Identity model
 
@@ -88,33 +88,33 @@ Keeping homeowners out of Clerk keeps them out of the member limits, removes sig
 
 ## 4. Architecture
 
-### Monorepo (Turborepo + pnpm)
+### Single app (no monorepo for now)
+
+One Next.js app, with folders that behave like packages. Lint rules enforce the boundaries, so splitting into a Turborepo later (e.g. when an Expo employee app needs to share `core`) is a mechanical move.
 
 ```
 builder-os/
-├─ apps/
-│  └─ web/                     # one Next.js app, three surfaces via route groups + host middleware
-│     ├─ app/(marketing)/      # builderos.co.uk — Home, Features, Pricing, Blog, Customers, About, Demo
-│     ├─ app/(app)/            # app.builderos.co.uk — authenticated admin app
-│     ├─ app/(portal)/         # builderos.app — client quote links & portal (no Clerk)
-│     ├─ app/(employee)/       # app.builderos.co.uk/m — PWA for site staff
-│     └─ app/api/              # webhooks (Clerk, Stripe, Resend), Inngest, public API later
-├─ packages/
-│  ├─ ui/                      # shadcn/ui components + Builder OS composites (QuoteGrid, StatusPill, MoneyCell…)
-│  ├─ db/                      # Drizzle schema, migrations, RLS policies, seed data
-│  ├─ core/                    # pure domain logic: money (pence ints), VAT, quote totals, payment-plan maths
-│  ├─ auth/                    # Clerk wrapper + permission map
-│  ├─ emails/                  # React Email templates
-│  ├─ pdf/                     # React-PDF documents (quote, invoice, variation)
-│  └─ config/                  # eslint, tsconfig, tailwind tokens (globals.css from Design Guidelines)
-└─ e2e/                        # Playwright
+├─ src/
+│  ├─ app/(marketing)/         # builderos.co.uk: Home, Features, Pricing, Blog, Customers, About, Demo
+│  ├─ app/app/                 # authenticated admin app
+│  ├─ app/q/                   # client quote links & portal (no Clerk)
+│  ├─ app/m/                   # PWA for site staff
+│  ├─ app/api/                 # webhooks (Clerk, Stripe, Resend), Inngest, public API later
+│  ├─ core/                    # pure domain logic: money (pence ints), VAT, quote totals, limits, Zod schemas
+│  ├─ db/                      # Drizzle schema, migrations, RLS policies, withTenant()
+│  ├─ auth/                    # Clerk wrapper + permission map (step 4)
+│  ├─ components/ui/           # shadcn/ui components + Builder OS composites
+│  ├─ emails/, pdf/            # React Email templates, React-PDF documents (later)
+│  └─ lib/                     # demo data, content, utilities
+└─ e2e/                        # Playwright (later)
 ```
 
-One Next.js app keeps auth, design tokens and deploys simple. Middleware routes by hostname. Split into separate apps later only if build times force it.
+- `src/core` imports nothing outside itself, and nothing from React, Next or the database.
+- Raw database drivers can only be imported inside `src/db`. Everything else queries through `withTenant()`.
 
 ### Request patterns
 
-- **Reads:** React Server Components calling `packages/db` query functions inside `withTenant`.
+- **Reads:** React Server Components calling `src/db` query functions inside `withTenant`.
 - **Writes:** Server Actions validated with **Zod** (shared schemas in `core`) → domain function → DB → `revalidateTag`.
 - **Quote grid:** client component (TanStack Table + custom keyboard model). Edits are optimistic in local state, debounced autosave (500 ms) via a Server Action that applies a **patch list** (`[{op:'update', lineId, field, value}]`), not the whole quote. Conflict guard with `version` column.
 - **Webhooks and public endpoints:** Route Handlers, signature-verified, rate-limited, idempotent (store event IDs).
@@ -149,7 +149,7 @@ notifications(id, org_id, member_id, kind, payload, read_at)
 automations(id, org_id, trigger, conditions jsonb, action, template_id, enabled)
 ```
 
-**Money rule:** all money is **integer pence**, all percentages are **basis points**, and quantities are `numeric(12,3)`. Every total is computed in `packages/core` (unit-tested, property-tested) and never in the UI or SQL ad hoc. Line total = `round(qty × rate × (1 + markup))` per line, then section and quote sums, then VAT on the net. This exactly matches the summary panel in the quote builder design.
+**Money rule:** all money is **integer pence**, all percentages are **basis points**, and quantities are `numeric(12,3)`. Every total is computed in `src/core` (unit-tested, property-tested) and never in the UI or SQL ad hoc. Line total = `round(qty × rate × (1 + markup))` per line, then section and quote sums, then VAT on the net. This exactly matches the summary panel in the quote builder design.
 
 ### Surfaces → routes (screen map)
 
@@ -172,7 +172,7 @@ automations(id, org_id, trigger, conditions jsonb, action, template_id, enabled)
 ```
 feature branch ─► PR ─► GitHub Actions ─────────────────────────────► Vercel Preview
                          ├ pnpm install (cached)                       └ Neon branch per PR (Vercel–Neon integration)
-                         ├ turbo lint · typecheck · vitest              (seeded with 2 demo tenants)
+                         ├ lint · typecheck · vitest                    (seeded with 2 demo tenants)
                          ├ drizzle-kit check (migration drift)
                          ├ Playwright e2e vs preview URL (+ tenant-isolation suite)
                          └ Lighthouse CI on marketing routes
@@ -183,7 +183,7 @@ main ─► migrate (drizzle-kit migrate on Neon prod) ─► Vercel Production 
 - **Migrations:** expand → migrate → contract. No destructive migration in the same deploy as the code that stops using a column.
 - **Secrets:** Vercel env vars. Clerk/Stripe test keys in preview, live keys only in production.
 - **Feature flags:** PostHog flags per org (`pro.projects`, `beta.xero`), combined with plan entitlements.
-- **Quality gates:** no merge with failing type-check, unit tests or tenant-isolation tests. Visual regression (Playwright screenshots) on core `packages/ui` stories.
+- **Quality gates:** no merge with failing type-check, unit tests or tenant-isolation tests. Visual regression (Playwright screenshots) on core `src/components/ui` stories.
 - **Dependencies:** Renovate weekly. Next.js security patches applied within 48 h.
 - **Backups:** Neon point-in-time restore (paid plan) + nightly logical dump to R2 (Inngest cron).
 
@@ -194,9 +194,9 @@ main ─► migrate (drizzle-kit migrate on Neon prod) ─► Vercel Production 
 Each phase ends in something sellable. Phases line up with the pricing tiers on the site.
 
 ### Phase 0: Foundations (weeks 1–3)
-1. Monorepo, CI, Vercel + Neon + Clerk projects, Sentry, PostHog.
-2. `packages/config`: Design Guidelines tokens → `globals.css`. Geist fonts via `next/font`.
-3. `packages/ui`: install and restyle shadcn primitives (Button, Input, Select, Dialog, Popover, Command, Table, Tabs, Badge, Tooltip, Sheet, DropdownMenu, Toast/Sonner, Calendar). Build composites: `AppShell`, `Sidebar`, `TopBar`, `StatusPill`, `MoneyCell`, `KpiCard`, `EmptyState`, `BrowserFrame` (marketing screenshots).
+1. Single-app structure with lint-enforced boundaries (`src/core`, `src/db`, `src/auth`), CI, Vercel + Neon + Clerk projects, Sentry, PostHog.
+2. Design Guidelines tokens → `src/app/globals.css`. Geist fonts via `next/font`.
+3. `src/components/ui`: install and restyle shadcn primitives (Button, Input, Select, Dialog, Popover, Command, Table, Tabs, Badge, Tooltip, Sheet, DropdownMenu, Toast/Sonner, Calendar). Build composites: `AppShell`, `Sidebar`, `TopBar`, `StatusPill`, `MoneyCell`, `KpiCard`, `EmptyState`, `BrowserFrame` (marketing screenshots).
 4. Auth + orgs, Clerk webhooks → `organizations`/`members`, RLS + `withTenant`, tenant-isolation tests.
 5. Company settings: profile, logo, VAT number, default markup, terms.
 
@@ -279,8 +279,8 @@ Revenue at 500 firms with a 60/40 Essentials/Pro mix is ≈ £38k MRR, so infras
 | Risk | Mitigation |
 |---|---|
 | Cross-tenant data leak | RLS + non-bypass DB role + `withTenant` + automated isolation tests on every PR |
-| Quote grid performance with 300+ lines | Virtualised rows, patch-based autosave, totals computed incrementally in `core` |
-| Clerk pricing or limits change | Auth behind `packages/auth`; Better Auth migration path documented |
+| Quote grid performance with 300+ lines | Virtualised rows, patch-based autosave, totals computed incrementally in `src/core` |
+| Clerk pricing or limits change | Auth behind `src/auth`; Better Auth migration path documented |
 | iOS PWA limitations for site staff | Keep critical flows (check-in, photos) simple; Expo app in Phase 4 |
 | Payments liability | Stripe Connect Express: funds go to contractor accounts, KYC handled by Stripe |
 | Next.js security churn | Renovate + 48 h patch SLA, pinned minors, CSP headers, image-optimiser domain allow-list |

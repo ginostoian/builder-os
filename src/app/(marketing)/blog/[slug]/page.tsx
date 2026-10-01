@@ -9,8 +9,8 @@ import { ArrowLink, Container, H1, PrimaryCta } from "@/components/marketing/pie
 import { Button } from "@/components/ui/button";
 import { featuredPost, posts } from "@/lib/content/blog";
 import { quoteSections, VAT_RATE } from "@/lib/demo-data";
-import { formatGBP } from "@/lib/money";
-import { quoteTotals, sectionTotal } from "@/lib/quote";
+import { formatGBP } from "@/core/money";
+import { quoteTotals, sectionTotal } from "@/core/quote";
 
 export function generateStaticParams() {
   return [{ slug: featuredPost.slug }];

@@ -1,0 +1,93 @@
+/**
+ * The only way app code talks to the database. There is deliberately no exported `db`: every query runs
+ * inside `withTenant`, which pins the transaction to one organization so Postgres RLS can enforce isolation.
+ *
+ * Server-only. Importing this from a Client Component fails the build.
+ */
+import "server-only";
+import { sql } from "drizzle-orm";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { id } from "@/core/schemas";
+import { databaseUrl } from "./env";
+import * as schema from "./schema";
+
+type Db = PostgresJsDatabase<typeof schema>;
+export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+/** Statement timeout inside tenant transactions, so one bad query can't hold a connection forever. */
+const STATEMENT_TIMEOUT = "10s";
+
+let client: postgres.Sql | undefined;
+let db: Db | undefined;
+let roleCheck: Promise<void> | undefined;
+
+function getDb(): Db {
+  if (!db) {
+    client = postgres(databaseUrl(), {
+      // Neon's pooled endpoint (PgBouncer, transaction mode) doesn't support named prepared statements.
+      prepare: false,
+      max: Number(process.env.DATABASE_POOL_MAX ?? 5),
+      idle_timeout: 20,
+      connect_timeout: 10,
+      // Never log query parameters: they contain client names, addresses and prices.
+      debug: false,
+    });
+    db = drizzle(client, { schema });
+  }
+  return db;
+}
+
+/**
+ * Refuse to run if the connection role could see across tenants: a superuser, a BYPASSRLS role, or the
+ * owner of a tenant table. Checked once per process. This catches a production DATABASE_URL that was set
+ * to the owner connection string by mistake.
+ */
+async function assertRestrictedRole(database: Db): Promise<void> {
+  const rows = await database.execute<{ superuser: boolean; bypassrls: boolean; owns_tables: boolean }>(sql`
+    select r.rolsuper as superuser,
+           r.rolbypassrls as bypassrls,
+           exists (
+             select 1 from pg_class c
+             join pg_namespace ns on ns.oid = c.relnamespace
+             where ns.nspname = 'public' and c.relkind = 'r' and pg_has_role(current_user, c.relowner, 'MEMBER')
+           ) as owns_tables
+    from pg_roles r where r.rolname = current_user`);
+  const role = rows[0];
+  if (!role || role.superuser || role.bypassrls || role.owns_tables) {
+    throw new Error(
+      "DATABASE_URL must use a login role in builderos_app (not a superuser, BYPASSRLS role or table owner). See docs/database.md.",
+    );
+  }
+}
+
+/**
+ * Run `fn` in a transaction scoped to one organization. `orgId` must come from the authenticated session,
+ * never from request input. Anything `fn` reads or writes outside that organization is invisible or rejected
+ * by RLS. The setting is transaction-local, so it can't leak to the next request on a pooled connection.
+ */
+export async function withTenant<T>(orgId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  const tenant = id.parse(orgId);
+  const database = getDb();
+  roleCheck ??= assertRestrictedRole(database).catch((error: unknown) => {
+    roleCheck = undefined;
+    throw error;
+  });
+  await roleCheck;
+  return database.transaction(async (tx) => {
+    await tx.execute(
+      sql`select set_config('app.org_id', ${tenant}, true), set_config('statement_timeout', ${STATEMENT_TIMEOUT}, true)`,
+    );
+    return fn(tx);
+  });
+}
+
+/** Close the pool (scripts and tests; Next.js keeps it for the process lifetime). */
+export async function closeDb(): Promise<void> {
+  await client?.end();
+  client = undefined;
+  db = undefined;
+  roleCheck = undefined;
+}
+
+export { schema };

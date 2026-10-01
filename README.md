@@ -2,14 +2,15 @@
 
 The operating system for UK renovation companies: spreadsheet-fast quoting, client sign-off, stage payments and invoicing, with projects, team and pipeline in the same place.
 
-This repo holds the marketing site and the app UI, built from the Claude Design handoff in `project/` (design prototypes) and `chats/` (the design conversation). The app runs on typed demo data for now. Auth, database and payments come next (see `docs/technical-implementation-plan.md`).
+This repo holds the marketing site and the app UI, built from the Claude Design handoff in `project/` (design prototypes) and `chats/` (the design conversation). The app screens still run on typed demo data. The database layer (Postgres + Drizzle + Row-Level Security) is in place. Auth and payments come next. See `docs/technical-implementation-plan.md` and `docs/database.md`.
 
 ## Run it
 
 ```bash
 pnpm install
 pnpm dev          # http://localhost:3000
-pnpm test         # quote maths (vitest)
+pnpm test         # domain logic and validation (vitest)
+pnpm test:db      # tenant isolation against real Postgres (see docs/database.md)
 pnpm typecheck && pnpm lint && pnpm build
 ```
 
@@ -37,7 +38,8 @@ pnpm typecheck && pnpm lint && pnpm build
 ## How it fits together
 
 - **One source of demo data.** `src/lib/demo-data.ts` feeds every app screen. Marketing screenshots (`src/components/app/screenshot.tsx`) render the real screens at 1280×800 and scale them down, so changing a screen or a figure updates every screenshot.
-- **Money.** Integer pence and basis points throughout. All totals come from `src/lib/quote.ts` (tested in `quote.test.ts`).
+- **Domain logic.** `src/core` holds money, quote maths, limits and the Zod schemas for every input. It's pure TypeScript: lint stops it importing React, Next or the database. Money is integer pence and basis points throughout, and all totals come from `src/core/quote.ts`.
+- **Database.** `src/db` holds the Drizzle schema, migrations and `withTenant()`, the only way to query. Every table is isolated per company by Postgres RLS. See `docs/database.md`.
 - **Design tokens.** `src/app/globals.css` is the Tailwind v4 + shadcn theme from the Design Guidelines. `/design-guidelines` prints this file, so the docs can't drift from the code.
 - **Components.** shadcn-style primitives in `src/components/ui` (restyled Button, Badge, Input, Accordion, Dialog…), brand pieces in `src/components/brand.tsx`, app shell in `src/components/app/app-shell.tsx`.
 

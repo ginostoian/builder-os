@@ -3,7 +3,7 @@
  * Every in-app screen and every marketing screenshot reads from here, so changing a
  * value updates the app and the screenshots together. Replace with DB queries in Phase 1.
  */
-import type { PaymentStage, QuoteSection } from "./quote";
+import type { PaymentStage, QuoteSection } from "@/core/quote";
 
 export const company = {
   name: "Hale & Sons",

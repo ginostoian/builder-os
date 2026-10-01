@@ -2,6 +2,7 @@
  * Money rules (Technical Implementation Plan §4): money is integer pence,
  * percentages are basis points, and every total is computed here, never ad hoc in the UI.
  */
+import { MAX_RATE_PENCE } from "./limits";
 
 export type Pence = number;
 export type Bps = number;
@@ -32,10 +33,15 @@ export function formatBps(bps: Bps): string {
   return `${Number((bps / 100).toFixed(2))}%`;
 }
 
-/** Parse "1,850.00" or "£1850" into pence. Returns null for anything that isn't a number. */
+/**
+ * Parse "1,850.00" or "£1850" into pence. Returns null for anything that isn't a plain amount:
+ * empty input, exponents ("1e9"), hex ("0x10"), more than 2 decimals, or more than £10m.
+ */
 export function parsePence(input: string): Pence | null {
-  const n = Number(input.replace(/[£,\s]/g, ""));
-  return Number.isFinite(n) ? Math.round(n * 100) : null;
+  const cleaned = input.replace(/[£,\s]/g, "");
+  if (!/^-?(\d+(\.\d{0,2})?|\.\d{1,2})$/.test(cleaned)) return null;
+  const pence = Math.round(Number(cleaned) * 100);
+  return Math.abs(pence) <= MAX_RATE_PENCE ? pence : null;
 }
 
 /** Percentage of an amount, rounded to the nearest penny. */
