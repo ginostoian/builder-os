@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { AppShell } from "@/components/app/app-shell";
+import { LiveAppShell } from "@/components/app/live-app-shell";
 import { PipelineScreen } from "@/components/app/screens/pipeline";
 
 export const metadata: Metadata = { title: "Pipeline" };
 
 export default function ClientsPage() {
   return (
-    <AppShell active="crm">
+    <LiveAppShell active="crm">
       <PipelineScreen />
-    </AppShell>
+    </LiveAppShell>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AppShell } from "@/components/app/app-shell";
+import { LiveAppShell } from "@/components/app/live-app-shell";
 import { ProjectBoardScreen } from "@/components/app/screens/project-board";
 import { project } from "@/lib/demo-data";
 
@@ -14,8 +14,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   const { slug } = await params;
   if (slug !== project.slug) notFound();
   return (
-    <AppShell active="board">
+    <LiveAppShell active="board">
       <ProjectBoardScreen />
-    </AppShell>
+    </LiveAppShell>
   );
 }

@@ -52,14 +52,28 @@ const crumbs: Record<AdminScreen, [string, string]> = {
   board: ["Projects", "14 Elm Road"],
   invoices: ["Payments", "14 Elm Road"],
   crm: ["Clients", "Pipeline"],
+  settings: ["Settings", "Company"],
 };
+
+/** The signed-in account, rendered by `LiveAppShell`. Screenshots leave it out and show demo data. */
+export type ShellAccount = { company: React.ReactNode; user: React.ReactNode; crumbs?: [string, string] };
 
 /**
  * Admin app frame: 228px sidebar, 52px top bar. Dense by design (13px body, 32px controls).
  * `embedded` makes it fill its parent (used by marketing screenshots) instead of the viewport.
  */
-export function AppShell({ active, embedded = false, children }: { active: AdminScreen; embedded?: boolean; children: React.ReactNode }) {
-  const [crumbA, crumbB] = crumbs[active];
+export function AppShell({
+  active,
+  embedded = false,
+  account,
+  children,
+}: {
+  active: AdminScreen;
+  embedded?: boolean;
+  account?: ShellAccount;
+  children: React.ReactNode;
+}) {
+  const [crumbA, crumbB] = account?.crumbs ?? crumbs[active];
   return (
     <div
       className={cn(
@@ -68,14 +82,18 @@ export function AppShell({ active, embedded = false, children }: { active: Admin
       )}
     >
       <aside className="flex w-[228px] flex-none flex-col gap-3.5 border-r border-hairline bg-surface px-2.5 py-3">
-        <button type="button" className="flex items-center gap-2.5 rounded-md p-1.5 text-left hover:bg-accent">
-          <LogoMark size="md" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-[13px] font-semibold tracking-[-0.01em]">{company.name}</span>
-            <span className="block text-[11.5px] text-subtle">{company.place}</span>
-          </span>
-          <ChevronsUpDown className="size-3.5 text-subtle" />
-        </button>
+        {account ? (
+          account.company
+        ) : (
+          <button type="button" className="flex items-center gap-2.5 rounded-md p-1.5 text-left hover:bg-accent">
+            <LogoMark size="md" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-semibold tracking-[-0.01em]">{company.name}</span>
+              <span className="block text-[11.5px] text-subtle">{company.place}</span>
+            </span>
+            <ChevronsUpDown className="size-3.5 text-subtle" />
+          </button>
+        )}
         <button
           type="button"
           className="flex h-8 items-center gap-2 rounded-md bg-white px-2.5 text-subtle shadow-ring"
@@ -124,14 +142,18 @@ export function AppShell({ active, embedded = false, children }: { active: Admin
             </div>
             <div className="text-xs text-ink-2">Upgrade to keep CRM &amp; projects</div>
           </div>
-          <div className="flex items-center gap-2.5 p-1.5">
-            <Avatar initials={currentUser.initials} size={28} className="text-[11px]" />
-            <div className="flex-1">
-              <div className="text-[12.5px] font-medium">{currentUser.name}</div>
-              <div className="text-[11.5px] text-subtle">{currentUser.role}</div>
+          {account ? (
+            account.user
+          ) : (
+            <div className="flex items-center gap-2.5 p-1.5">
+              <Avatar initials={currentUser.initials} size={28} className="text-[11px]" />
+              <div className="flex-1">
+                <div className="text-[12.5px] font-medium">{currentUser.name}</div>
+                <div className="text-[11.5px] text-subtle">{currentUser.role}</div>
+              </div>
+              <Settings className="size-[15px] text-subtle" />
             </div>
-            <Settings className="size-[15px] text-subtle" />
-          </div>
+          )}
         </div>
       </aside>
 
