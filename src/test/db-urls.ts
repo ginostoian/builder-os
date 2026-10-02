@@ -2,8 +2,15 @@
  * Connection strings for the database tests, derived from TEST_DATABASE_URL_ADMIN (a superuser on a
  * throwaway database). The database name must end in `_test`: setup drops and recreates its schema.
  */
-const OWNER = { user: "builderos_owner_test", password: "owner_test_only" };
-const APP = { user: "builderos_app_test", password: "app_test_only" };
+import { randomBytes } from "node:crypto";
+
+// Fresh random passwords per run: global setup (re)sets them on the roles, and test workers inherit them via
+// the environment. Nothing to commit, nothing for secret scanners to flag.
+process.env.BUILDEROS_TEST_OWNER_PASSWORD ??= randomBytes(24).toString("hex");
+process.env.BUILDEROS_TEST_APP_PASSWORD ??= randomBytes(24).toString("hex");
+
+const OWNER = { user: "builderos_owner_test", password: process.env.BUILDEROS_TEST_OWNER_PASSWORD };
+const APP = { user: "builderos_app_test", password: process.env.BUILDEROS_TEST_APP_PASSWORD };
 
 export function adminUrl(): string {
   const raw = process.env.TEST_DATABASE_URL_ADMIN;

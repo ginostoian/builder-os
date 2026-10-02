@@ -69,6 +69,13 @@ GRANT builderos_lookup TO builderos_owner_local WITH ADMIN OPTION;
 - `DATABASE_URL` is the runtime role, using the **pooled** Neon endpoint with `sslmode=require`. Production refuses to start without TLS.
 - `DATABASE_URL_OWNER` is the owner role. It is used only by `pnpm db:migrate` in CI or deploy, and is never set on the running app.
 
+## Production (Neon)
+
+- Project `builder-os` (`fragrant-recipe-94754385`), region `aws-eu-west-2`, branch `production`, database `neondb`.
+- Runtime role `builderos_app_prod` (member of `builderos_app`). Vercel's `DATABASE_URL` is its **pooled** string (`ep-divine-resonance-ab1faunq-pooler…`, `sslmode=require`), with no quotes around it. No owner credentials on Vercel.
+- Migrations run from `.github/workflows/migrate.yml` after CI passes on `main` (or by hand from the Actions tab). The workflow uses the `DATABASE_URL_OWNER` secret in the `production` GitHub environment, which is the owner role (`neondb_owner`) on the direct, non-pooler host.
+- Schema `legacy_prisma` holds the tables from the February 2026 Prisma prototype. They were moved out of `public` on 2026-10-02 so the app role's grants never reach them. The app role has no access to that schema. Neon branch `backup-before-drizzle-2026-10-02` is a snapshot from just before that move.
+
 ## Commands
 
 ```bash
@@ -84,8 +91,10 @@ You need a Postgres 16+ superuser and a throwaway database whose name ends in `_
 
 ```bash
 createdb builderos_test
-TEST_DATABASE_URL_ADMIN=postgres://postgres:postgres@localhost:5432/builderos_test pnpm test:db
+TEST_DATABASE_URL_ADMIN=postgres://postgres:<password>@localhost:5432/builderos_test pnpm test:db
 ```
+
+The test roles (`builderos_owner_test`, `builderos_app_test`) get fresh random passwords on every run.
 
 ## Still to do
 
