@@ -40,7 +40,14 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
    - It may update only the settings columns and sync columns.
    - It may never update `plan`, `stripe_customer_id`, `connect_account_id` or `clerk_org_id`, and may never delete a company (Clerk deletions are soft).
    - Billing webhooks will get their own role in Phase 2.
-9. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
+9. **Client portal (migration 0007).** Clients have no login: each client has one private link, `/portal/{token}`, with 32 random bytes in the token. Every quote sent to them appears there.
+   - Public pages call `app_portal_lookup(token)` first. It's a `SECURITY DEFINER` function owned by `builderos_lookup`, like the Clerk lookups, and returns only the company and client of an *active* token. Everything else then runs inside `withTenant` for that company, scoped to that client.
+   - Tokens are stored as-is, so the office can copy a link again later. "Reset link" revokes the old row and issues a new token.
+   - Clients see `quote_versions.snapshot`: a frozen, client-safe copy made at send time, with selling prices only and only the notes marked "show to client". They never see the live draft, costs or markups.
+   - `quote_versions`, `quote_events`, `quote_comments` and `quote_decisions` are append-only for the app role: `UPDATE` and `DELETE` are revoked. `portal_access` rows can only be revoked or touched (`revoked_at`, `last_viewed_at`).
+   - An e-signature (`quote_decisions`) stores the full name, typed signature, time, IP, user agent, and the SHA-256 of the exact snapshot accepted. There's one decision per version.
+   - Opens are recorded from the page in the browser after 1.5 s on screen, not on the server render, and at most once per half hour. So link previews, email scanners and refreshes don't count, and the team's "Preview as client" never does.
+10. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
 
 **Adding a table:**
 - Give it `org_id`, `tenantPolicy(t.orgId)`, `.enableRLS()`, and a `unique(org_id, id)` if anything references it.

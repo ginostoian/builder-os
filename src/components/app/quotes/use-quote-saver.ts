@@ -108,5 +108,20 @@ export function useQuoteSaver(quoteId: string, initialVersion: number) {
     };
   }, [flush]);
 
-  return { push, saveHeader, flush, status, message, savedAt };
+  /**
+   * Save everything now and wait for it, then return the saved version (for sending exactly what's on
+   * screen). Null if saving is blocked or still failing after ~15 s.
+   */
+  const settle = React.useCallback(async (): Promise<number | null> => {
+    const deadline = Date.now() + 15_000;
+    await flush();
+    while (inFlight.current || hasWork()) {
+      if (blocked.current || Date.now() > deadline) return null;
+      await new Promise((r) => setTimeout(r, 100));
+      if (!inFlight.current) await flush();
+    }
+    return blocked.current ? null : version.current;
+  }, [flush]);
+
+  return { push, saveHeader, flush, settle, status, message, savedAt };
 }

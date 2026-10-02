@@ -2,11 +2,15 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LiveAppShell } from "@/components/app/live-app-shell";
 import { QuoteBuilder } from "@/components/app/quotes/quote-builder";
+import { SentQuote } from "@/components/app/quotes/sent-quote";
 import { quoteRef } from "@/core/quote";
 import { id as uuid } from "@/core/schemas";
 import { clientOptions } from "@/db/clients";
 import { getQuote, libraryForQuotes } from "@/db/quotes";
+import { currentPortalToken, latestVersion, quoteActivity } from "@/db/sending";
 import { requirePermission, withSession } from "@/auth/session";
+import { emailConfigured } from "@/server/email";
+import { appOrigin, portalUrl } from "@/server/origin";
 
 export const metadata: Metadata = { title: "Quote" };
 
@@ -18,19 +22,31 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   const data = await withSession(session, async (tx) => {
     const loaded = await getQuote(tx, session.orgId, id);
     if (!loaded) return undefined;
+    const activity = await quoteActivity(tx, session.orgId, id);
+    if (loaded.quote.status === "draft") {
+      return {
+        kind: "draft" as const,
+        loaded,
+        sentVersions: activity.versions.length,
+        clients: await clientOptions(tx, session.orgId, loaded.quote.clientId),
+        library: await libraryForQuotes(tx, session.orgId),
+      };
+    }
     return {
+      kind: "sent" as const,
       loaded,
-      clients: await clientOptions(tx, session.orgId, loaded.quote.clientId),
-      library: await libraryForQuotes(tx, session.orgId),
+      activity,
+      version: (await latestVersion(tx, session.orgId, id))!,
+      token: await currentPortalToken(tx, session.orgId, loaded.quote.clientId),
     };
   });
   if (!data) notFound();
-  const { loaded, clients, library } = data;
-  const q = loaded.quote;
+  const q = data.loaded.quote;
+  const crumbs: [string, string] = ["Quotes", `${quoteRef(q.number)} · ${q.title}`];
 
-  return (
-    <LiveAppShell active="quote" crumbs={["Quotes", `${quoteRef(q.number)} · ${q.title}`]}>
-      {q.status === "draft" ? (
+  if (data.kind === "draft") {
+    return (
+      <LiveAppShell active="quote" crumbs={crumbs}>
         <QuoteBuilder
           key={q.id}
           initial={{
@@ -44,15 +60,37 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
             validUntil: q.validUntil,
             markupBps: q.markupBps,
             vatRateBps: q.vatRateBps,
-            sections: loaded.sections,
+            sections: data.loaded.sections,
           }}
-          clients={clients}
-          library={library}
-          clientName={loaded.client?.name ?? ""}
+          clients={data.clients}
+          library={data.library}
+          clientName={data.loaded.client?.name ?? ""}
+          clientEmail={data.loaded.client?.email ?? null}
+          emailEnabled={emailConfigured()}
+          sentVersions={data.sentVersions}
         />
-      ) : (
-        <div className="p-6 text-ink-2">This quote has been sent. Viewing sent quotes comes with sending.</div>
-      )}
+      </LiveAppShell>
+    );
+  }
+
+  const { activity, version } = data;
+  return (
+    <LiveAppShell active="quote" crumbs={crumbs}>
+      <SentQuote
+        quoteId={q.id}
+        status={q.status}
+        clientName={data.loaded.client?.name ?? ""}
+        clientId={q.clientId}
+        snapshot={version.snapshot}
+        version={{ versionNo: version.versionNo, sentAt: version.sentAt, contentHash: version.contentHash }}
+        link={data.token ? portalUrl(await appOrigin(), data.token, q.number) : null}
+        events={activity.events}
+        comments={activity.comments}
+        decision={activity.decisions.find((d) => d.versionId === version.id) ?? null}
+        viewCount={activity.viewCount}
+        lastViewedAt={activity.lastViewedAt}
+        versionCount={activity.versions.length}
+      />
     </LiveAppShell>
   );
 }

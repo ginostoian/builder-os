@@ -173,3 +173,9 @@ export async function clientContact(tx: Tx, orgId: string, clientId: string) {
   const [c] = await tx.select({ name: clients.name, email: clients.email }).from(clients).where(and(eq(clients.orgId, orgId), eq(clients.id, clientId)));
   return c;
 }
+
+/** A team member's email, used as Reply-To on quote emails so the client's reply reaches a person. */
+export async function memberEmail(tx: Tx, orgId: string, memberId: string): Promise<string | null> {
+  const [m] = await tx.select({ email: members.email }).from(members).where(and(eq(members.orgId, orgId), eq(members.id, memberId)));
+  return m?.email ?? null;
+}

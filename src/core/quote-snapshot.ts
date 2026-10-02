@@ -80,3 +80,7 @@ export function isExpired(validUntil: string | null, now = new Date()): boolean 
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(now); // YYYY-MM-DD
   return today > validUntil;
 }
+
+/** "31 January 2027" in UK time. Accepts a date-only string ("2027-01-31") or a timestamp. */
+export const longDate = (d: string | Date) =>
+  new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" }).format(typeof d === "string" ? new Date(`${d}T12:00:00Z`) : d);

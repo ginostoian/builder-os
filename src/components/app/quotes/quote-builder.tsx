@@ -31,6 +31,7 @@ import { lineTotal, quoteRef, quoteTotals, sectionTotal, type QuoteSection } fro
 import { LINE_KINDS, qty as qtySchema, quoteHeaderInput, singleLine, type Address, type QuoteHeaderInput, type QuoteOp } from "@/core/schemas";
 import { cn } from "@/lib/utils";
 import { Field, control } from "../form-fields";
+import { SendDialog } from "./send-dialog";
 import { useQuoteSaver, type SaveStatus } from "./use-quote-saver";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -104,11 +105,18 @@ export function QuoteBuilder({
   clients,
   library,
   clientName,
+  clientEmail,
+  emailEnabled,
+  sentVersions,
 }: {
   initial: BuilderQuote;
   clients: ClientOption[];
   library: LibraryOption[];
   clientName: string;
+  clientEmail: string | null;
+  emailEnabled: boolean;
+  /** How many versions were sent before (a revision in progress when > 0). */
+  sentVersions: number;
 }) {
   const saver = useQuoteSaver(initial.id, initial.version);
   const [sections, setSections] = React.useState<BuilderSection[]>(initial.sections);
@@ -236,8 +244,25 @@ export function QuoteBuilder({
                 Library
               </Link>
             </Button>
+            <SendDialog
+              quoteId={initial.id}
+              quoteRef={quoteRef(initial.number)}
+              title={header.title}
+              clientName={client?.name ?? clientName}
+              clientEmail={header.clientId === initial.clientId ? clientEmail : null}
+              emailEnabled={emailEnabled}
+              resend={sentVersions > 0}
+              disabled={blocked || !sections.some((s) => s.lines.length > 0)}
+              settle={saver.settle}
+            />
           </div>
         </div>
+
+        {sentVersions > 0 && !blocked && (
+          <div className="mx-6 mb-3 rounded-lg bg-warning-soft px-3.5 py-2.5 text-warning">
+            You&apos;re revising this quote. {client?.name ?? clientName} still sees version {sentVersions} and can&apos;t accept it until you send the update.
+          </div>
+        )}
 
         {blocked && (
           <div role="alert" className="mx-6 mb-3 flex items-center gap-2.5 rounded-lg bg-danger-soft px-3.5 py-2.5 text-danger">
@@ -367,7 +392,7 @@ export function QuoteBuilder({
             ))}
           </div>
         </div>
-        <p className="mt-auto text-[11.5px] leading-normal text-subtle">Sending, the client link and PDFs come next. Everything here saves as you type.</p>
+        <p className="mt-auto text-[11.5px] leading-normal text-subtle">Everything here saves as you type. Send it when it&apos;s ready: the client gets exactly what you see.</p>
       </aside>
     </div>
   );
