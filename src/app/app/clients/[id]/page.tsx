@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Plus } from "lucide-react";
 import { LiveAppShell } from "@/components/app/live-app-shell";
 import { Panel } from "@/components/app/app-shell";
 import { ArchivePanel } from "@/components/app/archive-panel";
 import { ClientForm } from "@/components/app/clients/client-form";
 import { SectionHeading } from "@/components/app/form-fields";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { formatGBP } from "@/core/money";
+import { quoteRef } from "@/core/quote";
 import { can } from "@/core/roles";
 import { id as uuid } from "@/core/schemas";
 import { countClientQuotes, getClient } from "@/db/clients";
+import { listQuotes } from "@/db/quotes";
 import { requirePermission, withSession } from "@/auth/session";
 import { archiveClient, removeClient } from "../actions";
 
@@ -25,10 +29,18 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
   const found = await withSession(session, async (tx) => {
     const client = await getClient(tx, session.orgId, id);
-    return client && { client, quoteCount: await countClientQuotes(tx, session.orgId, id) };
+    return (
+      client && {
+        client,
+        quoteCount: await countClientQuotes(tx, session.orgId, id),
+        // Quote totals are prices, so only roles that work on quotes see them.
+        clientQuotes: can(session.role, "quotes.edit") ? (await listQuotes(tx, session.orgId, { clientId: id })).quotes : [],
+      }
+    );
   });
   if (!found) notFound();
-  const { client, quoteCount } = found;
+  const { client, quoteCount, clientQuotes } = found;
+  const canQuote = can(session.role, "quotes.edit");
   const canManage = can(session.role, "clients.manage");
 
   return (
@@ -67,10 +79,36 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           />
           <div className="flex flex-col gap-4">
             <Panel className="flex flex-col gap-3 p-5">
-              <SectionHeading title="Quotes" />
-              <p className="text-ink-2">
-                {quoteCount === 0 ? "No quotes yet. Quotes will be listed here once the quote builder is live." : `${quoteCount} ${quoteCount === 1 ? "quote" : "quotes"}.`}
-              </p>
+              <div className="flex items-center justify-between">
+                <SectionHeading title="Quotes" />
+                {canQuote && !client.archivedAt && (
+                  <Button variant="secondary" asChild>
+                    <Link href={`/app/quotes/new?client=${client.id}`}>
+                      <Plus />
+                      New quote
+                    </Link>
+                  </Button>
+                )}
+              </div>
+              {clientQuotes.length === 0 ? (
+                <p className="text-ink-2">No quotes yet.</p>
+              ) : canQuote ? (
+                <ul className="flex flex-col">
+                  {clientQuotes.map((q) => (
+                    <li key={q.id} className="border-t border-hairline first:border-0">
+                      <Link href={`/app/quotes/${q.id}`} className="flex items-center gap-2 py-2 hover:text-ink">
+                        <span className="font-mono text-[11.5px] text-subtle">{quoteRef(q.number)}</span>
+                        <span className="min-w-0 flex-1 truncate">{q.title}</span>
+                        <span className="tabular text-ink-2">{formatGBP(q.total, 0)}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-ink-2">
+                  {quoteCount} {quoteCount === 1 ? "quote" : "quotes"}.
+                </p>
+              )}
               <p className="text-[12px] text-subtle">Added {dateFormat.format(client.createdAt)}</p>
             </Panel>
             {canManage && (

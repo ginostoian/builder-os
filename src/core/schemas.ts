@@ -177,6 +177,19 @@ const lineField = z.discriminatedUnion("field", [
 
 const position = z.int().min(0).max(MAX_LINES_PER_QUOTE);
 
+/** One grid operation. Ids for new sections and lines are made by the browser (`crypto.randomUUID`). */
+export const quoteOp = z.discriminatedUnion("op", [
+  z.strictObject({ op: z.literal("addSection"), sectionId: id, name: singleLine(TEXT.name), position }),
+  z.strictObject({ op: z.literal("renameSection"), sectionId: id, name: singleLine(TEXT.name) }),
+  z.strictObject({ op: z.literal("moveSection"), sectionId: id, position }),
+  z.strictObject({ op: z.literal("removeSection"), sectionId: id }),
+  z.strictObject({ op: z.literal("addLine"), sectionId: id, lineId: id, position, line: quoteLineInput }),
+  z.strictObject({ op: z.literal("updateLine"), lineId: id, change: lineField }),
+  z.strictObject({ op: z.literal("moveLine"), lineId: id, sectionId: id, position }),
+  z.strictObject({ op: z.literal("removeLine"), lineId: id }),
+]);
+export type QuoteOp = z.infer<typeof quoteOp>;
+
 /**
  * Autosave patch from the quote grid (plan §4 "Request patterns"). The server applies ops in order,
  * inside one tenant transaction, and rejects the whole patch if `baseVersion` is stale.
@@ -184,20 +197,21 @@ const position = z.int().min(0).max(MAX_LINES_PER_QUOTE);
 export const quotePatch = z.strictObject({
   quoteId: id,
   baseVersion: z.int().min(0),
-  ops: z
-    .array(
-      z.discriminatedUnion("op", [
-        z.strictObject({ op: z.literal("addSection"), sectionId: id, name: singleLine(TEXT.name), position }),
-        z.strictObject({ op: z.literal("renameSection"), sectionId: id, name: singleLine(TEXT.name) }),
-        z.strictObject({ op: z.literal("moveSection"), sectionId: id, position }),
-        z.strictObject({ op: z.literal("removeSection"), sectionId: id }),
-        z.strictObject({ op: z.literal("addLine"), sectionId: id, lineId: id, position, line: quoteLineInput }),
-        z.strictObject({ op: z.literal("updateLine"), lineId: id, change: lineField }),
-        z.strictObject({ op: z.literal("moveLine"), lineId: id, sectionId: id, position }),
-        z.strictObject({ op: z.literal("removeLine"), lineId: id }),
-      ]),
-    )
-    .min(1)
-    .max(MAX_PATCH_OPS),
+  ops: z.array(quoteOp).min(1).max(MAX_PATCH_OPS),
 });
 export type QuotePatch = z.infer<typeof quotePatch>;
+
+/** One autosave from the quote builder: header changes, grid ops, or both, against `baseVersion`. */
+export const quoteSave = z
+  .strictObject({
+    quoteId: id,
+    baseVersion: z.int().min(0),
+    header: quoteHeaderInput.optional(),
+    ops: z.array(quoteOp).max(MAX_PATCH_OPS).default([]),
+  })
+  .refine((s) => s.header !== undefined || s.ops.length > 0, "Nothing to save");
+export type QuoteSave = z.infer<typeof quoteSave>;
+
+/** Starting a quote: who it's for and what it's called. Everything else comes from company defaults. */
+export const newQuoteInput = z.strictObject({ clientId: id, title: singleLine(TEXT.name) });
+export type NewQuoteInput = z.infer<typeof newQuoteInput>;
