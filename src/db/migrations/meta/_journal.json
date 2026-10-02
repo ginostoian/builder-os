@@ -43,6 +43,13 @@
       "when": 1790891798985,
       "tag": "0005_clerk_lookup_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790971675204,
+      "tag": "0006_client_notes_archive",
+      "breakpoints": true
     }
   ]
 }

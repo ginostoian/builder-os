@@ -1,0 +1,1418 @@
+{
+  "id": "a6674eff-47bd-4cf5-bffe-506d7ce5744b",
+  "prevId": "d50f1824-79da-4995-b9db-6316c64d3266",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.clients": {
+      "name": "clients",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "org_id": {
+          "name": "org_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address": {
+          "name": "address",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_member_id": {
+          "name": "owner_member_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "clients_org_name_idx": {
+          "name": "clients_org_name_idx",
+          "columns": [
+            {
+              "expression": "org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "clients_org_id_organizations_id_fk": {
+          "name": "clients_org_id_organizations_id_fk",
+          "tableFrom": "clients",
+          "tableTo": "organizations",
+          "columnsFrom": [
+            "org_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "clients_owner_member_fk": {
+          "name": "clients_owner_member_fk",
+          "tableFrom": "clients",
+          "tableTo": "members",
+          "columnsFrom": [
+            "org_id",
+            "owner_member_id"
+          ],
+          "columnsTo": [
+            "org_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "clients_org_id_id_key": {
+          "name": "clients_org_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "org_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "builderos_app"
+          ],
+          "using": "\"clients\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)",
+          "withCheck": "\"clients\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)"
+        }
+      },
+      "checkConstraints": {
+        "clients_name_len": {
+          "name": "clients_name_len",
+          "value": "char_length(\"clients\".\"name\") between 1 and 200"
+        },
+        "clients_email_len": {
+          "name": "clients_email_len",
+          "value": "char_length(\"clients\".\"email\") between 1 and 254"
+        },
+        "clients_phone_len": {
+          "name": "clients_phone_len",
+          "value": "char_length(\"clients\".\"phone\") between 0 and 32"
+        },
+        "clients_source_len": {
+          "name": "clients_source_len",
+          "value": "char_length(\"clients\".\"source\") between 1 and 50"
+        },
+        "clients_notes_len": {
+          "name": "clients_notes_len",
+          "value": "char_length(\"clients\".\"notes\") between 0 and 2000"
+        },
+        "clients_address_object": {
+          "name": "clients_address_object",
+          "value": "\"clients\".\"address\" is null or jsonb_typeof(\"clients\".\"address\") = 'object'"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.members": {
+      "name": "members",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "org_id": {
+          "name": "org_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clerk_user_id": {
+          "name": "clerk_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "member_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trade": {
+          "name": "trade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "day_rate_pence": {
+          "name": "day_rate_pence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "clerk_synced_at": {
+          "name": "clerk_synced_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "members_org_id_organizations_id_fk": {
+          "name": "members_org_id_organizations_id_fk",
+          "tableFrom": "members",
+          "tableTo": "organizations",
+          "columnsFrom": [
+            "org_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "members_org_id_id_key": {
+          "name": "members_org_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "org_id",
+            "id"
+          ]
+        },
+        "members_org_clerk_user_key": {
+          "name": "members_org_clerk_user_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "org_id",
+            "clerk_user_id"
+          ]
+        }
+      },
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "builderos_app"
+          ],
+          "using": "\"members\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)",
+          "withCheck": "\"members\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)"
+        },
+        "clerk_lookup": {
+          "name": "clerk_lookup",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "builderos_lookup"
+          ],
+          "using": "true"
+        }
+      },
+      "checkConstraints": {
+        "members_name_len": {
+          "name": "members_name_len",
+          "value": "char_length(\"members\".\"name\") between 1 and 200"
+        },
+        "members_email_len": {
+          "name": "members_email_len",
+          "value": "char_length(\"members\".\"email\") between 1 and 254"
+        },
+        "members_phone_len": {
+          "name": "members_phone_len",
+          "value": "char_length(\"members\".\"phone\") between 0 and 32"
+        },
+        "members_trade_len": {
+          "name": "members_trade_len",
+          "value": "char_length(\"members\".\"trade\") between 1 and 50"
+        },
+        "members_day_rate_range": {
+          "name": "members_day_rate_range",
+          "value": "\"members\".\"day_rate_pence\" between 0 and 1000000000"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.organizations": {
+      "name": "organizations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "clerk_org_id": {
+          "name": "clerk_org_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "trading_name": {
+          "name": "trading_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vat_number": {
+          "name": "vat_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "logo_url": {
+          "name": "logo_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "brand_colour": {
+          "name": "brand_colour",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "plan": {
+          "name": "plan",
+          "type": "plan",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'free'"
+        },
+        "stripe_customer_id": {
+          "name": "stripe_customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "connect_account_id": {
+          "name": "connect_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "default_markup_bps": {
+          "name": "default_markup_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "default_vat_rate_bps": {
+          "name": "default_vat_rate_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 2000
+        },
+        "quote_terms": {
+          "name": "quote_terms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "clerk_synced_at": {
+          "name": "clerk_synced_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "organizations_clerk_org_id_unique": {
+          "name": "organizations_clerk_org_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "clerk_org_id"
+          ]
+        }
+      },
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "builderos_app"
+          ],
+          "using": "\"organizations\".\"id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)",
+          "withCheck": "\"organizations\".\"id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)"
+        },
+        "clerk_lookup": {
+          "name": "clerk_lookup",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "builderos_lookup"
+          ],
+          "using": "true"
+        }
+      },
+      "checkConstraints": {
+        "organizations_name_len": {
+          "name": "organizations_name_len",
+          "value": "char_length(\"organizations\".\"name\") between 1 and 200"
+        },
+        "organizations_trading_name_len": {
+          "name": "organizations_trading_name_len",
+          "value": "char_length(\"organizations\".\"trading_name\") between 1 and 200"
+        },
+        "organizations_logo_https": {
+          "name": "organizations_logo_https",
+          "value": "\"organizations\".\"logo_url\" is null or \"organizations\".\"logo_url\" like 'https://%'"
+        },
+        "organizations_brand_colour_hex": {
+          "name": "organizations_brand_colour_hex",
+          "value": "\"organizations\".\"brand_colour\" is null or \"organizations\".\"brand_colour\" ~ '^#[0-9a-fA-F]{6}$'"
+        },
+        "organizations_default_markup_range": {
+          "name": "organizations_default_markup_range",
+          "value": "\"organizations\".\"default_markup_bps\" between 0 and 50000"
+        },
+        "organizations_default_vat_range": {
+          "name": "organizations_default_vat_range",
+          "value": "\"organizations\".\"default_vat_rate_bps\" between 0 and 10000"
+        },
+        "organizations_quote_terms_len": {
+          "name": "organizations_quote_terms_len",
+          "value": "char_length(\"organizations\".\"quote_terms\") between 0 and 20000"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.quote_lines": {
+      "name": "quote_lines",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "org_id": {
+          "name": "org_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "section_id": {
+          "name": "section_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "qty": {
+          "name": "qty",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit": {
+          "name": "unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rate_pence": {
+          "name": "rate_pence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "markup_bps": {
+          "name": "markup_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note_visible": {
+          "name": "note_visible",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "line_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'normal'"
+        }
+      },
+      "indexes": {
+        "quote_lines_section_idx": {
+          "name": "quote_lines_section_idx",
+          "columns": [
+            {
+              "expression": "org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "section_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "quote_lines_section_fk": {
+          "name": "quote_lines_section_fk",
+          "tableFrom": "quote_lines",
+          "tableTo": "quote_sections",
+          "columnsFrom": [
+            "org_id",
+            "section_id"
+          ],
+          "columnsTo": [
+            "org_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "quote_lines_service_fk": {
+          "name": "quote_lines_service_fk",
+          "tableFrom": "quote_lines",
+          "tableTo": "services",
+          "columnsFrom": [
+            "org_id",
+            "service_id"
+          ],
+          "columnsTo": [
+            "org_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "quote_lines_org_id_id_key": {
+          "name": "quote_lines_org_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "org_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "builderos_app"
+          ],
+          "using": "\"quote_lines\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)",
+          "withCheck": "\"quote_lines\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)"
+        }
+      },
+      "checkConstraints": {
+        "quote_lines_position_nonneg": {
+          "name": "quote_lines_position_nonneg",
+          "value": "\"quote_lines\".\"position\" >= 0"
+        },
+        "quote_lines_name_len": {
+          "name": "quote_lines_name_len",
+          "value": "char_length(\"quote_lines\".\"name\") between 1 and 300"
+        },
+        "quote_lines_qty_range": {
+          "name": "quote_lines_qty_range",
+          "value": "\"quote_lines\".\"qty\" >= 0 and \"quote_lines\".\"qty\" <= 1000000"
+        },
+        "quote_lines_unit_len": {
+          "name": "quote_lines_unit_len",
+          "value": "char_length(\"quote_lines\".\"unit\") between 1 and 50"
+        },
+        "quote_lines_rate_range": {
+          "name": "quote_lines_rate_range",
+          "value": "\"quote_lines\".\"rate_pence\" between 0 and 1000000000"
+        },
+        "quote_lines_markup_range": {
+          "name": "quote_lines_markup_range",
+          "value": "\"quote_lines\".\"markup_bps\" between 0 and 50000"
+        },
+        "quote_lines_note_len": {
+          "name": "quote_lines_note_len",
+          "value": "char_length(\"quote_lines\".\"note\") between 0 and 2000"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.quote_sections": {
+      "name": "quote_sections",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "org_id": {
+          "name": "org_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quote_id": {
+          "name": "quote_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collapsed": {
+          "name": "collapsed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "quote_sections_quote_idx": {
+          "name": "quote_sections_quote_idx",
+          "columns": [
+            {
+              "expression": "org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "quote_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "quote_sections_quote_fk": {
+          "name": "quote_sections_quote_fk",
+          "tableFrom": "quote_sections",
+          "tableTo": "quotes",
+          "columnsFrom": [
+            "org_id",
+            "quote_id"
+          ],
+          "columnsTo": [
+            "org_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "quote_sections_org_id_id_key": {
+          "name": "quote_sections_org_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "org_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "builderos_app"
+          ],
+          "using": "\"quote_sections\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)",
+          "withCheck": "\"quote_sections\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)"
+        }
+      },
+      "checkConstraints": {
+        "quote_sections_position_nonneg": {
+          "name": "quote_sections_position_nonneg",
+          "value": "\"quote_sections\".\"position\" >= 0"
+        },
+        "quote_sections_name_len": {
+          "name": "quote_sections_name_len",
+          "value": "char_length(\"quote_sections\".\"name\") between 1 and 200"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.quotes": {
+      "name": "quotes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "org_id": {
+          "name": "org_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "number": {
+          "name": "number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "site_address": {
+          "name": "site_address",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "quote_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "valid_until": {
+          "name": "valid_until",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "markup_bps": {
+          "name": "markup_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vat_rate_bps": {
+          "name": "vat_rate_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "quotes_org_status_idx": {
+          "name": "quotes_org_status_idx",
+          "columns": [
+            {
+              "expression": "org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "quotes_org_id_organizations_id_fk": {
+          "name": "quotes_org_id_organizations_id_fk",
+          "tableFrom": "quotes",
+          "tableTo": "organizations",
+          "columnsFrom": [
+            "org_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "quotes_client_fk": {
+          "name": "quotes_client_fk",
+          "tableFrom": "quotes",
+          "tableTo": "clients",
+          "columnsFrom": [
+            "org_id",
+            "client_id"
+          ],
+          "columnsTo": [
+            "org_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "quotes_org_id_id_key": {
+          "name": "quotes_org_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "org_id",
+            "id"
+          ]
+        },
+        "quotes_org_number_key": {
+          "name": "quotes_org_number_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "org_id",
+            "number"
+          ]
+        }
+      },
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "builderos_app"
+          ],
+          "using": "\"quotes\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)",
+          "withCheck": "\"quotes\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)"
+        }
+      },
+      "checkConstraints": {
+        "quotes_number_positive": {
+          "name": "quotes_number_positive",
+          "value": "\"quotes\".\"number\" > 0"
+        },
+        "quotes_title_len": {
+          "name": "quotes_title_len",
+          "value": "char_length(\"quotes\".\"title\") between 1 and 200"
+        },
+        "quotes_site_address_object": {
+          "name": "quotes_site_address_object",
+          "value": "\"quotes\".\"site_address\" is null or jsonb_typeof(\"quotes\".\"site_address\") = 'object'"
+        },
+        "quotes_markup_range": {
+          "name": "quotes_markup_range",
+          "value": "\"quotes\".\"markup_bps\" between 0 and 50000"
+        },
+        "quotes_vat_range": {
+          "name": "quotes_vat_range",
+          "value": "\"quotes\".\"vat_rate_bps\" between 0 and 10000"
+        },
+        "quotes_version_nonneg": {
+          "name": "quotes_version_nonneg",
+          "value": "\"quotes\".\"version\" >= 0"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.service_bundle_items": {
+      "name": "service_bundle_items",
+      "schema": "",
+      "columns": {
+        "org_id": {
+          "name": "org_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bundle_id": {
+          "name": "bundle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_id": {
+          "name": "service_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "qty": {
+          "name": "qty",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "service_bundle_items_bundle_fk": {
+          "name": "service_bundle_items_bundle_fk",
+          "tableFrom": "service_bundle_items",
+          "tableTo": "services",
+          "columnsFrom": [
+            "org_id",
+            "bundle_id"
+          ],
+          "columnsTo": [
+            "org_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "service_bundle_items_service_fk": {
+          "name": "service_bundle_items_service_fk",
+          "tableFrom": "service_bundle_items",
+          "tableTo": "services",
+          "columnsFrom": [
+            "org_id",
+            "service_id"
+          ],
+          "columnsTo": [
+            "org_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "service_bundle_items_bundle_id_service_id_pk": {
+          "name": "service_bundle_items_bundle_id_service_id_pk",
+          "columns": [
+            "bundle_id",
+            "service_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "builderos_app"
+          ],
+          "using": "\"service_bundle_items\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)",
+          "withCheck": "\"service_bundle_items\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)"
+        }
+      },
+      "checkConstraints": {
+        "service_bundle_items_not_self": {
+          "name": "service_bundle_items_not_self",
+          "value": "\"service_bundle_items\".\"bundle_id\" <> \"service_bundle_items\".\"service_id\""
+        },
+        "service_bundle_items_qty_range": {
+          "name": "service_bundle_items_qty_range",
+          "value": "\"service_bundle_items\".\"qty\" > 0 and \"service_bundle_items\".\"qty\" <= 1000000"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.services": {
+      "name": "services",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "org_id": {
+          "name": "org_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unit": {
+          "name": "unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rate_pence": {
+          "name": "rate_pence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "default_markup_bps": {
+          "name": "default_markup_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "service_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'service'"
+        },
+        "usage_count": {
+          "name": "usage_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "services_org_category_idx": {
+          "name": "services_org_category_idx",
+          "columns": [
+            {
+              "expression": "org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "category",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "services_org_id_organizations_id_fk": {
+          "name": "services_org_id_organizations_id_fk",
+          "tableFrom": "services",
+          "tableTo": "organizations",
+          "columnsFrom": [
+            "org_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "services_org_id_id_key": {
+          "name": "services_org_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "org_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "builderos_app"
+          ],
+          "using": "\"services\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)",
+          "withCheck": "\"services\".\"org_id\" = (select nullif(current_setting('app.org_id', true), '')::uuid)"
+        }
+      },
+      "checkConstraints": {
+        "services_category_len": {
+          "name": "services_category_len",
+          "value": "char_length(\"services\".\"category\") between 1 and 50"
+        },
+        "services_name_len": {
+          "name": "services_name_len",
+          "value": "char_length(\"services\".\"name\") between 1 and 300"
+        },
+        "services_description_len": {
+          "name": "services_description_len",
+          "value": "char_length(\"services\".\"description\") between 0 and 2000"
+        },
+        "services_unit_len": {
+          "name": "services_unit_len",
+          "value": "char_length(\"services\".\"unit\") between 1 and 50"
+        },
+        "services_rate_range": {
+          "name": "services_rate_range",
+          "value": "\"services\".\"rate_pence\" between 0 and 1000000000"
+        },
+        "services_default_markup_range": {
+          "name": "services_default_markup_range",
+          "value": "\"services\".\"default_markup_bps\" between 0 and 50000"
+        },
+        "services_usage_count_nonneg": {
+          "name": "services_usage_count_nonneg",
+          "value": "\"services\".\"usage_count\" >= 0"
+        }
+      },
+      "isRLSEnabled": true
+    }
+  },
+  "enums": {
+    "public.line_kind": {
+      "name": "line_kind",
+      "schema": "public",
+      "values": [
+        "normal",
+        "pc_sum",
+        "provisional"
+      ]
+    },
+    "public.member_role": {
+      "name": "member_role",
+      "schema": "public",
+      "values": [
+        "admin",
+        "office",
+        "estimator",
+        "site_lead",
+        "employee"
+      ]
+    },
+    "public.plan": {
+      "name": "plan",
+      "schema": "public",
+      "values": [
+        "free",
+        "essentials",
+        "pro"
+      ]
+    },
+    "public.quote_status": {
+      "name": "quote_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "sent",
+        "viewed",
+        "accepted",
+        "declined",
+        "expired"
+      ]
+    },
+    "public.service_kind": {
+      "name": "service_kind",
+      "schema": "public",
+      "values": [
+        "service",
+        "bundle"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

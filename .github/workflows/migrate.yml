@@ -1,32 +1,46 @@
-name: Migrate production database
+name: Migrate database
 
-# Applies pending migrations to the production Neon database once CI has passed on main.
-# The owner connection string lives only in the `production` environment's secrets, never on Vercel.
+# Applies pending migrations once CI has passed:
+# - a push to main migrates production (the `production` environment's DATABASE_URL_OWNER secret);
+# - a pull request from this repository migrates the shared preview branch (the `preview` environment's secret),
+#   so its Vercel preview runs against the schema it expects.
+# Owner connection strings live only in GitHub environment secrets, never on Vercel.
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: [main]
   workflow_dispatch:
-
-# Never run two migrations at once, and never cancel one halfway.
-concurrency:
-  group: migrate-production
-  cancel-in-progress: false
+    inputs:
+      environment:
+        description: Database to migrate
+        type: choice
+        options: [production, preview]
+        default: production
 
 permissions:
   contents: read
 
 jobs:
   migrate:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    # Never for pull requests from forks: their migration SQL would run with our preview owner credentials.
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+        github.event.workflow_run.conclusion == 'success' && (
+          (github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') ||
+          (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_repository.full_name == github.repository)
+        )
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment: production
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.event.workflow_run.event == 'push' && 'production' || 'preview') }}
+    # One migration per database at a time, and never cancel one halfway.
+    concurrency:
+      group: migrate-${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.event.workflow_run.event == 'push' && 'production' || 'preview') }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
         with:
-          # Migrate exactly the commit CI passed on, not whatever main points at now.
+          # Migrate exactly the commit CI passed on, not whatever the branch points at now.
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -36,6 +50,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Apply migrations
         env:
-          # Neon owner role, direct (non-pooler) host, sslmode=require.
+          # The environment's owner role, direct (non-pooler) host, sslmode=require.
           DATABASE_URL_OWNER: ${{ secrets.DATABASE_URL_OWNER }}
         run: pnpm db:migrate

@@ -168,7 +168,10 @@ export const clients = pgTable(
     phone: text("phone"),
     address: jsonb("address").$type<Address>(),
     source: text("source"),
+    notes: text("notes"),
     ownerMemberId: uuid("owner_member_id"),
+    /** Hidden from the client list and pickers. Kept (not deleted) because quotes and invoices point at it. */
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -180,6 +183,7 @@ export const clients = pgTable(
     len("clients_email_len", t.email, TEXT.email),
     len("clients_phone_len", t.phone, TEXT.phone, 0),
     len("clients_source_len", t.source, TEXT.short),
+    len("clients_notes_len", t.notes, TEXT.note, 0),
     check("clients_address_object", sql`${t.address} is null or jsonb_typeof(${t.address}) = 'object'`),
   ],
 ).enableRLS();
