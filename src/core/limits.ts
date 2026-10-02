@@ -28,6 +28,9 @@ export const TEXT = {
   terms: 20_000,
 } as const;
 
+/** Most services in one bundle. */
+export const MAX_BUNDLE_ITEMS = 50;
+
 /** Most lines on one quote and most operations in one autosave patch. */
 export const MAX_LINES_PER_QUOTE = 2_000;
 export const MAX_PATCH_OPS = 200;

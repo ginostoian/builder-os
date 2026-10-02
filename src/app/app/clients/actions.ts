@@ -7,6 +7,7 @@ import { can } from "@/core/roles";
 import { id, type ClientInput } from "@/core/schemas";
 import { createClient, deleteClient, setClientArchived, updateClient } from "@/db/clients";
 import { getSession, withSession } from "@/auth/session";
+import type { RecordActionResult } from "@/components/app/archive-panel";
 
 export type ClientFormState = {
   status: "idle" | "saved" | "error";
@@ -15,7 +16,7 @@ export type ClientFormState = {
   /** What was stored, after tidying (e.g. "bs7 8aa" → "BS7 8AA"). */
   saved?: ClientInput;
 };
-export type ClientActionResult = { ok: true } | { ok: false; message: string };
+export type ClientActionResult = RecordActionResult;
 
 const NOT_ALLOWED = "Your role can view clients but not change them.";
 const NOT_FOUND = "This client no longer exists. Refresh the page.";
