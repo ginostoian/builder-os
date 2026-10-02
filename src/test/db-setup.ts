@@ -10,9 +10,10 @@ export default async function setup(): Promise<void> {
     await admin.unsafe(`
       DO $$ BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${ownerCredentials.user}') THEN
-          CREATE ROLE ${ownerCredentials.user} LOGIN CREATEROLE PASSWORD '${ownerCredentials.password}';
+          CREATE ROLE ${ownerCredentials.user} LOGIN CREATEROLE;
         END IF;
       END $$;
+      ALTER ROLE ${ownerCredentials.user} PASSWORD '${ownerCredentials.password}';
       -- Roles are server-wide: let this owner manage the lookup role even if another database created it.
       DO $$ BEGIN
         IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'builderos_lookup') THEN
@@ -28,9 +29,10 @@ export default async function setup(): Promise<void> {
     await admin.unsafe(`
       DO $$ BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${appCredentials.user}') THEN
-          CREATE ROLE ${appCredentials.user} LOGIN PASSWORD '${appCredentials.password}';
+          CREATE ROLE ${appCredentials.user} LOGIN;
         END IF;
       END $$;
+      ALTER ROLE ${appCredentials.user} PASSWORD '${appCredentials.password}';
       GRANT builderos_app TO ${appCredentials.user};
     `);
   } finally {

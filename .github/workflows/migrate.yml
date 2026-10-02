@@ -1,0 +1,41 @@
+name: Migrate production database
+
+# Applies pending migrations to the production Neon database once CI has passed on main.
+# The owner connection string lives only in the `production` environment's secrets, never on Vercel.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+# Never run two migrations at once, and never cancel one halfway.
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Migrate exactly the commit CI passed on, not whatever main points at now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Apply migrations
+        env:
+          # Neon owner role, direct (non-pooler) host, sslmode=require.
+          DATABASE_URL_OWNER: ${{ secrets.DATABASE_URL_OWNER }}
+        run: pnpm db:migrate
