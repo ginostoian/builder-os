@@ -133,3 +133,13 @@ export async function deleteClient(tx: Tx, orgId: string, clientId: string): Pro
     .returning({ id: clients.id });
   return rows.length > 0 ? "deleted" : "not_found";
 }
+
+/** Clients for a picker: active ones alphabetically, plus `includeId` even if it's archived. */
+export async function clientOptions(tx: Tx, orgId: string, includeId?: string) {
+  return tx
+    .select({ id: clients.id, name: clients.name, address: clients.address })
+    .from(clients)
+    .where(and(eq(clients.orgId, orgId), includeId ? or(isNull(clients.archivedAt), eq(clients.id, includeId)) : isNull(clients.archivedAt)))
+    .orderBy(asc(sql`lower(${clients.name})`))
+    .limit(5_000);
+}

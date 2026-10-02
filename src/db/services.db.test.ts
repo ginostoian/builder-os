@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { planImport } from "@/core/library-import";
 import { appUrl } from "@/test/db-urls";
 import { createClient } from "./clients";
 import { closeDb, withTenant } from "./index";
@@ -13,7 +14,9 @@ import {
   createService,
   deleteService,
   getService,
+  importServices,
   libraryCounts,
+  libraryKeys,
   listServices,
   setServiceArchived,
   updateBundle,
@@ -144,5 +147,20 @@ describe("services", () => {
       await expect(createBundle(tx, a, { category: "A", name: "Steal", unit: "job", items: [{ serviceId: theirs, qty: 1 }] })).rejects.toThrow("unknown_service");
     });
     await withTenant(b, async (tx) => expect((await getService(tx, b, theirs))?.service).toMatchObject({ name: "B's service", ratePence: 100, archivedAt: null }));
+  });
+
+  it("imports a CSV, skipping what's already there (archived included)", async () => {
+    const org = await newOrg("Svc import");
+    await withTenant(org, async (tx) => {
+      const old = await createService(tx, org, svc("Skim", 1_000));
+      await setServiceArchived(tx, org, old, true);
+      const csv = "category,name,unit,rate\nplastering,SKIM,m²,22\nElectrical,Socket,point,120\nElectrical,Bad,point,x";
+      const plan = planImport(csv, await libraryKeys(tx, org));
+      expect(plan).toMatchObject({ ok: true, counts: { new: 1, duplicate: 1, error: 1 } });
+      if (!plan.ok) return;
+      expect(await importServices(tx, org, plan.rows.flatMap((r) => (r.status === "new" ? [r.value] : [])))).toBe(1);
+      expect((await listServices(tx, org)).services.map((s) => [s.name, s.ratePence])).toEqual([["Socket", 12_000]]);
+      expect(await importServices(tx, org, [])).toBe(0);
+    });
   });
 });

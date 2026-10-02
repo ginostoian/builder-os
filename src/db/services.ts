@@ -8,6 +8,7 @@
 import "server-only";
 import { and, asc, count, desc, eq, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { likePattern } from "@/core/clients";
+import { duplicateKey } from "@/core/library-import";
 import { bundleRate, bundleRateTooHigh } from "@/core/services";
 import type { BundleInput, ServiceInput } from "@/core/schemas";
 import type { Tx } from "./index";
@@ -268,4 +269,20 @@ export async function deleteService(tx: Tx, orgId: string, serviceId: string): P
     .where(and(eq(services.orgId, orgId), eq(services.id, serviceId)))
     .returning({ id: services.id });
   return rows.length > 0 ? "deleted" : "not_found";
+}
+
+/** `duplicateKey`s for everything in the library, archived included, so an import doesn't recreate them. */
+export async function libraryKeys(tx: Tx, orgId: string): Promise<Set<string>> {
+  const rows = await tx.select({ category: services.category, name: services.name }).from(services).where(eq(services.orgId, orgId));
+  return new Set(rows.map((r) => duplicateKey(r.category, r.name)));
+}
+
+/** Insert imported services in one statement. Returns how many were added. */
+export async function importServices(tx: Tx, orgId: string, inputs: ServiceInput[]): Promise<number> {
+  if (inputs.length === 0) return 0;
+  const rows = await tx
+    .insert(services)
+    .values(inputs.map((input) => ({ orgId, kind: "service" as const, ...serviceColumns(input) })))
+    .returning({ id: services.id });
+  return rows.length;
 }

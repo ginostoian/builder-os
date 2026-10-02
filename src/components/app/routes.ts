@@ -1,7 +1,7 @@
 /** App URLs. One place so the sidebar, screenshots and marketing links agree. */
 export const appRoutes = {
   dashboard: "/app",
-  quote: "/app/quotes/Q-1042",
+  quote: "/app/quotes",
   library: "/app/library",
   project: "/app/projects/elm-road",
   payments: "/app/payments",

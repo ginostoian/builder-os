@@ -73,3 +73,13 @@ export function stageAmounts(total: Pence, stages: PaymentStage[]): Pence[] {
     return amount;
   });
 }
+
+/** Display reference for a quote number: 7 → "Q-0007". */
+export const quoteRef = (n: number) => `Q-${String(n).padStart(4, "0")}`;
+
+/** Move `id` to `position` within `ids` (clamped), returning the new order. Adds it if it wasn't there. */
+export function placeAt(ids: readonly string[], id: string, position: number): string[] {
+  const rest = ids.filter((x) => x !== id);
+  const at = Math.max(0, Math.min(position, rest.length));
+  return [...rest.slice(0, at), id, ...rest.slice(at)];
+}

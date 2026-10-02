@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { can } from "@/core/roles";
 import { id } from "@/core/schemas";
 import { parseBundleForm, parseServiceForm, type ServiceErrors } from "@/core/services";
-import { BundleError, createBundle, createService, deleteService, setServiceArchived, updateBundle, updateService } from "@/db/services";
+import { planImport, type ImportPlan } from "@/core/library-import";
+import { BundleError, createBundle, createService, deleteService, importServices, libraryKeys, setServiceArchived, updateBundle, updateService } from "@/db/services";
 import { getSession, withSession, type Session } from "@/auth/session";
 import type { RecordActionResult } from "@/components/app/archive-panel";
 
@@ -107,4 +108,33 @@ export async function removeService(serviceId: string): Promise<RecordActionResu
   if (result === "not_found") return { ok: false, message: NOT_FOUND };
   revalidate();
   redirect("/app/library");
+}
+
+export type ImportResult = { ok: true; added: number; skipped: number; failed: number } | { ok: false; message: string };
+
+/** Check a CSV against the library without writing anything. */
+export async function previewImport(text: string): Promise<ImportPlan> {
+  const session = await manager();
+  if (!session) return { ok: false, error: NOT_ALLOWED };
+  if (typeof text !== "string") return { ok: false, error: "That file couldn't be read." };
+  const existing = await withSession(session, (tx) => libraryKeys(tx, session.orgId));
+  return planImport(text, existing);
+}
+
+/**
+ * Import a CSV: re-validated here (never trust the preview the browser saw), then every new row is added in
+ * one transaction. Duplicates and rows with errors are skipped.
+ */
+export async function importLibrary(text: string): Promise<ImportResult> {
+  const session = await manager();
+  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (typeof text !== "string") return { ok: false, message: "That file couldn't be read." };
+  const result = await withSession(session, async (tx) => {
+    const plan = planImport(text, await libraryKeys(tx, session.orgId));
+    if (!plan.ok) return { ok: false as const, message: plan.error };
+    const added = await importServices(tx, session.orgId, plan.rows.flatMap((r) => (r.status === "new" ? [r.value] : [])));
+    return { ok: true as const, added, skipped: plan.counts.duplicate, failed: plan.counts.error };
+  });
+  if (result.ok) revalidatePath("/app/library", "layout");
+  return result;
 }
