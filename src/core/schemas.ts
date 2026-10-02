@@ -8,7 +8,7 @@
  * - Money is integer pence, percentages are basis points, quantities have at most 3 decimals.
  */
 import { z } from "zod";
-import { MAX_LINES_PER_QUOTE, MAX_MARKUP_BPS, MAX_PATCH_OPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, QTY_DECIMALS, TEXT } from "./limits";
+import { MAX_BUNDLE_ITEMS, MAX_LINES_PER_QUOTE, MAX_MARKUP_BPS, MAX_PATCH_OPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, QTY_DECIMALS, TEXT } from "./limits";
 
 // Control characters other than tab and newline. They break PDFs and CSV exports and hide content.
 const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
@@ -119,6 +119,24 @@ export const serviceInput = z.strictObject({
   kind: z.enum(SERVICE_KINDS).default("service"),
 });
 export type ServiceInput = z.infer<typeof serviceInput>;
+
+/**
+ * A bundle: several services added to a quote together. It has no rate of its own: its price is the sum of
+ * its items (qty × rate), worked out on the server. Bundles can't contain bundles.
+ */
+export const bundleInput = z.strictObject({
+  category: singleLine(TEXT.short),
+  name: singleLine(TEXT.line),
+  description: multiLine(TEXT.description).optional(),
+  unit: singleLine(TEXT.short),
+  defaultMarkupBps: markupBps.optional(),
+  items: z
+    .array(z.strictObject({ serviceId: id, qty: qty.refine((n) => n > 0, "Must be more than 0") }))
+    .min(1, "Add at least one service")
+    .max(MAX_BUNDLE_ITEMS)
+    .refine((items) => new Set(items.map((i) => i.serviceId)).size === items.length, "Each service can only appear once"),
+});
+export type BundleInput = z.infer<typeof bundleInput>;
 
 // ── Quotes ───────────────────────────────────────────────────────────────────
 

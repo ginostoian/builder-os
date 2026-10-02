@@ -48,6 +48,9 @@ const PERMISSIONS = {
   /** Client names, contact details and addresses. Site leads need them to run jobs. */
   "clients.view": OFFICE,
   "clients.manage": ["admin", "office", "estimator"],
+  /** The service library holds rates, so it follows costs.view. Estimators look after it. */
+  "library.view": ["admin", "office", "estimator"],
+  "library.manage": ["admin", "estimator"],
   /** Margins, markups and cost prices. */
   "costs.view": ["admin", "office", "estimator"],
   "quotes.edit": ["admin", "office", "estimator"],

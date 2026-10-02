@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Mail, Phone } from "lucide-react";
 import { LiveAppShell } from "@/components/app/live-app-shell";
 import { Panel } from "@/components/app/app-shell";
-import { ClientDangerZone } from "@/components/app/clients/client-actions";
+import { ArchivePanel } from "@/components/app/archive-panel";
 import { ClientForm } from "@/components/app/clients/client-form";
 import { SectionHeading } from "@/components/app/form-fields";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { can } from "@/core/roles";
 import { id as uuid } from "@/core/schemas";
 import { countClientQuotes, getClient } from "@/db/clients";
 import { requirePermission, withSession } from "@/auth/session";
+import { archiveClient, removeClient } from "../actions";
 
 export const metadata: Metadata = { title: "Client" };
 
@@ -72,7 +73,21 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
               </p>
               <p className="text-[12px] text-subtle">Added {dateFormat.format(client.createdAt)}</p>
             </Panel>
-            {canManage && <ClientDangerZone clientId={client.id} name={client.name} archived={client.archivedAt !== null} quoteCount={quoteCount} />}
+            {canManage && (
+              <ArchivePanel
+                noun="client"
+                name={client.name}
+                archived={client.archivedAt !== null}
+                hint={
+                  quoteCount === 0
+                    ? "Archiving hides a client from the list and keeps their history. Only clients without quotes can be deleted."
+                    : "Archiving hides a client from the list and keeps their history. Clients with quotes can't be deleted."
+                }
+                archivedHint="Hidden from the client list. Restore to use them on new quotes again."
+                archive={archiveClient.bind(null, client.id)}
+                remove={quoteCount === 0 ? removeClient.bind(null, client.id) : undefined}
+              />
+            )}
           </div>
         </div>
       </div>
