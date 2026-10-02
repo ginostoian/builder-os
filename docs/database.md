@@ -69,11 +69,25 @@ GRANT builderos_lookup TO builderos_owner_local WITH ADMIN OPTION;
 - `DATABASE_URL` is the runtime role, using the **pooled** Neon endpoint with `sslmode=require`. Production refuses to start without TLS.
 - `DATABASE_URL_OWNER` is the owner role. It is used only by `pnpm db:migrate` in CI or deploy, and is never set on the running app.
 
-## Production (Neon)
+## Production and preview (Neon)
 
-- Project `builder-os` (`fragrant-recipe-94754385`), region `aws-eu-west-2`, branch `production`, database `neondb`.
-- Runtime role `builderos_app_prod` (member of `builderos_app`). Vercel's `DATABASE_URL` is its **pooled** string (`ep-divine-resonance-ab1faunq-pooler…`, `sslmode=require`), with no quotes around it. No owner credentials on Vercel.
-- Migrations run from `.github/workflows/migrate.yml` after CI passes on `main` (or by hand from the Actions tab). The workflow uses the `DATABASE_URL_OWNER` secret in the `production` GitHub environment, which is the owner role (`neondb_owner`) on the direct, non-pooler host.
+Project `builder-os` (`fragrant-recipe-94754385`), region `aws-eu-west-2`, database `neondb`.
+
+| | Production | Preview |
+|---|---|---|
+| Neon branch | `production` | `preview` (branched from production on 2026-10-02) |
+| Runtime role (Vercel `DATABASE_URL`, pooled host, no quotes) | `builderos_app_prod` | `builderos_app_preview` |
+| Vercel environment | Production | Preview |
+| Migrated by | `migrate.yml` after CI passes on `main` | `migrate.yml` after CI passes on a pull request |
+| Owner secret (`DATABASE_URL_OWNER`, direct host) | GitHub environment `production` | GitHub environment `preview` |
+
+- Owner credentials never go on Vercel. Each branch has its own owner password, so one branch's secret can't unlock the other.
+- **Create runtime roles in SQL, never in the Neon console or API.** Neon gives roles it creates `BYPASSRLS` and `neon_superuser` membership, which would let the app read every company's data (`withTenant` refuses to start if it sees that). As the owner:
+  ```sql
+  CREATE ROLE builderos_app_<env> LOGIN NOBYPASSRLS PASSWORD '<random>';
+  GRANT builderos_app TO builderos_app_<env>;
+  ```
+- The preview branch is shared by every open pull request. If it gets into a bad state (say, two PRs added conflicting migrations), reset it from its parent in the Neon console, then re-run the workflow by hand (Actions → Migrate database → Run workflow → `preview`). Resetting restores production's roles and passwords on that branch, so recreate `builderos_app_preview` and reset the branch's owner password afterwards.
 - Schema `legacy_prisma` holds the tables from the February 2026 Prisma prototype. They were moved out of `public` on 2026-10-02 so the app role's grants never reach them. The app role has no access to that schema. Neon branch `backup-before-drizzle-2026-10-02` is a snapshot from just before that move.
 
 ## Commands

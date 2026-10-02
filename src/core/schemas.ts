@@ -103,6 +103,7 @@ export const clientInput = z.strictObject({
   phone: phone.optional(),
   address: address.optional(),
   source: singleLine(TEXT.short).optional(),
+  notes: multiLine(TEXT.note).optional(),
 });
 export type ClientInput = z.infer<typeof clientInput>;
 

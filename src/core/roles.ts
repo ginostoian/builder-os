@@ -45,6 +45,9 @@ const PERMISSIONS = {
   "settings.view": OFFICE,
   "settings.manage": ["admin"],
   "team.manage": ["admin"],
+  /** Client names, contact details and addresses. Site leads need them to run jobs. */
+  "clients.view": OFFICE,
+  "clients.manage": ["admin", "office", "estimator"],
   /** Margins, markups and cost prices. */
   "costs.view": ["admin", "office", "estimator"],
   "quotes.edit": ["admin", "office", "estimator"],

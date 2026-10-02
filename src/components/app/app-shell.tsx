@@ -119,7 +119,8 @@ export function AppShell({
               >
                 <n.icon className="size-[15px] w-4" strokeWidth={1.75} />
                 <span className="flex-1">{n.label}</span>
-                {n.badge && <span className="text-[11px] text-subtle tabular">{n.badge}</span>}
+                {/* Badges are demo counts: only the marketing screenshots show them. */}
+                {n.badge && !account && <span className="text-[11px] text-subtle tabular">{n.badge}</span>}
               </Link>
             );
           })}
