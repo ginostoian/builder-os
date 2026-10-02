@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Layers, Library, Plus, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers, Library, Plus, Search, Upload } from "lucide-react";
 import { LiveAppShell } from "@/components/app/live-app-shell";
 import { Panel, ScreenTitle } from "@/components/app/app-shell";
 import { Button } from "@/components/ui/button";
@@ -86,6 +86,12 @@ export default async function LibraryPage({ searchParams }: { searchParams: Sear
             {canManage && (
               <>
                 <Button variant="secondary" asChild>
+                  <Link href="/app/library/import">
+                    <Upload className="text-ink-2" />
+                    Import CSV
+                  </Link>
+                </Button>
+                <Button variant="secondary" asChild>
                   <Link href="/app/library/new?kind=bundle">
                     <Layers className="text-ink-2" />
                     New bundle
@@ -153,12 +159,20 @@ export default async function LibraryPage({ searchParams }: { searchParams: Sear
                     Add the work you price often, like a plaster skim per m² or a boiler swap per job. Then group services into bundles, like a standard bathroom refit.
                   </p>
                   {canManage && (
-                    <Button asChild className="mt-2">
-                      <Link href="/app/library/new">
-                        <Plus />
-                        Add your first service
-                      </Link>
-                    </Button>
+                    <div className="mt-2 flex gap-2">
+                      <Button asChild>
+                        <Link href="/app/library/new">
+                          <Plus />
+                          Add your first service
+                        </Link>
+                      </Button>
+                      <Button variant="secondary" asChild>
+                        <Link href="/app/library/import">
+                          <Upload className="text-ink-2" />
+                          Import from a spreadsheet
+                        </Link>
+                      </Button>
+                    </div>
                   )}
                 </>
               )}
