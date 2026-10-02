@@ -22,6 +22,8 @@ const MESSAGES: Record<QuoteErrorReason, string> = {
   unknown_line: "Part of this quote was removed somewhere else. Reload to see the latest version.",
   unknown_service: "A service you added is no longer in the library.",
   too_many_lines: "A quote can have up to 2,000 lines.",
+  empty: "Add at least one line before sending.",
+  not_sent: "This quote hasn't been sent yet.",
 };
 
 async function editor(): Promise<Session | null> {
@@ -79,6 +81,7 @@ export async function removeDraft(quoteId: string): Promise<RecordActionResult> 
   if (!id.safeParse(quoteId).success) return { ok: false, message: MESSAGES.not_found };
   const result = await withSession(session, (tx) => deleteDraft(tx, session.orgId, quoteId));
   if (result === "not_draft") return { ok: false, message: "Only drafts can be deleted." };
+  if (result === "was_sent") return { ok: false, message: "This quote has been sent before, so it's kept as a record and can't be deleted." };
   if (result === "not_found") return { ok: false, message: MESSAGES.not_found };
   revalidatePath("/app/quotes");
   redirect("/app/quotes");

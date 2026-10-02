@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lineTotal, quoteTotals, stageAmounts } from "./quote";
+import { lineTotal, quoteTotals, sellRate, stageAmounts } from "./quote";
 
 const line = (qty: number, rate: number, markup: number) => ({ id: "x", name: "x", unit: "item", qty, rate, markup });
 
@@ -7,6 +7,13 @@ describe("quote maths", () => {
   it("applies per-line markup and rounds to the penny", () => {
     expect(lineTotal({ qty: 1, rate: 185_000, markup: 1200 })).toBe(207_200);
     expect(lineTotal({ qty: 6.2, rate: 14_500, markup: 1500 })).toBe(103_385);
+  });
+
+  it("rounds the unit price first, so quantity × the client's unit price is the line total", () => {
+    // 1,333 × 1.125 = 1,499.625 → £14.9963 a unit unrounded; the client sees £15.00.
+    expect(sellRate({ rate: 1_333, markup: 1250 })).toBe(1_500);
+    expect(lineTotal({ qty: 3, rate: 1_333, markup: 1250 })).toBe(4_500);
+    expect(lineTotal({ qty: 0.5, rate: 1_333, markup: 1250 })).toBe(750);
   });
 
   it("computes VAT on the net and margin on the net price", () => {

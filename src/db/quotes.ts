@@ -13,11 +13,21 @@ import { MAX_LINES_PER_QUOTE } from "@/core/limits";
 import { placeAt, quoteTotals, type QuoteTotals } from "@/core/quote";
 import type { NewQuoteInput, QuoteOp, QuoteSave } from "@/core/schemas";
 import type { Tx } from "./index";
-import { clients, organizations, quoteLines, quoteSections, quotes, serviceBundleItems, services } from "./schema";
+import { clients, organizations, quoteLines, quoteSections, quoteVersions, quotes, serviceBundleItems, services } from "./schema";
 
 export const QUOTES_PAGE_SIZE = 50;
 
-export type QuoteErrorReason = "conflict" | "not_editable" | "not_found" | "unknown_client" | "unknown_section" | "unknown_line" | "unknown_service" | "too_many_lines";
+export type QuoteErrorReason =
+  | "conflict"
+  | "not_editable"
+  | "not_found"
+  | "unknown_client"
+  | "unknown_section"
+  | "unknown_line"
+  | "unknown_service"
+  | "too_many_lines"
+  | "empty"
+  | "not_sent";
 
 /** A save that can't be applied. Nothing from it is written (the transaction rolls back). */
 export class QuoteError extends Error {
@@ -216,13 +226,16 @@ export async function createQuote(tx: Tx, orgId: string, input: NewQuoteInput): 
 }
 
 /** Delete a draft and everything in it. Sent quotes are records and can't be deleted. */
-export async function deleteDraft(tx: Tx, orgId: string, quoteId: string): Promise<"deleted" | "not_found" | "not_draft"> {
+export async function deleteDraft(tx: Tx, orgId: string, quoteId: string): Promise<"deleted" | "not_found" | "not_draft" | "was_sent"> {
   const [quote] = await tx
     .select({ status: quotes.status })
     .from(quotes)
     .where(and(eq(quotes.orgId, orgId), eq(quotes.id, quoteId)));
   if (!quote) return "not_found";
   if (quote.status !== "draft") return "not_draft";
+  // A draft that was sent before (and is being revised) has permanent versions: it can't be deleted.
+  const [sent] = await tx.select({ n: count() }).from(quoteVersions).where(and(eq(quoteVersions.orgId, orgId), eq(quoteVersions.quoteId, quoteId)));
+  if ((sent?.n ?? 0) > 0) return "was_sent";
   const serviceIds = await serviceIdsInQuote(tx, orgId, quoteId);
   await tx.delete(quotes).where(and(eq(quotes.orgId, orgId), eq(quotes.id, quoteId)));
   await refreshUsage(tx, orgId, serviceIds);

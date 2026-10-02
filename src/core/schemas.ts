@@ -215,3 +215,35 @@ export type QuoteSave = z.infer<typeof quoteSave>;
 /** Starting a quote: who it's for and what it's called. Everything else comes from company defaults. */
 export const newQuoteInput = z.strictObject({ clientId: id, title: singleLine(TEXT.name) });
 export type NewQuoteInput = z.infer<typeof newQuoteInput>;
+
+// ── Sending and the client portal ────────────────────────────────────────────
+
+/** Send a draft: freeze it into a version and (optionally) email the client their portal link. */
+export const sendQuoteInput = z.strictObject({
+  quoteId: id,
+  /** The draft version the person was looking at. A stale one means it changed under them. */
+  baseVersion: z.int().min(0),
+  email: z.boolean(),
+  message: multiLine(TEXT.note).optional(),
+});
+export type SendQuoteInput = z.infer<typeof sendQuoteInput>;
+
+export const portalToken = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
+
+/** A comment from the client portal, optionally about one line of the quote. */
+export const portalCommentInput = z.strictObject({
+  name: singleLine(TEXT.name),
+  body: multiLine(TEXT.note).pipe(z.string().min(1, "Write a comment")),
+  lineId: id.optional(),
+});
+export type PortalCommentInput = z.infer<typeof portalCommentInput>;
+
+/** Accept (typed signature plus an explicit "I agree") or decline (optional reason). */
+export const portalDecisionInput = z.discriminatedUnion("decision", [
+  z.strictObject({ decision: z.literal("accepted"), fullName: singleLine(TEXT.name), signature: singleLine(TEXT.name), agree: z.literal(true) }),
+  z.strictObject({ decision: z.literal("declined"), fullName: singleLine(TEXT.name), reason: multiLine(TEXT.note).optional() }),
+]);
+export type PortalDecisionInput = z.infer<typeof portalDecisionInput>;
+
+/** A reply from the team on a sent quote. */
+export const staffReplyInput = z.strictObject({ quoteId: id, body: multiLine(TEXT.note).pipe(z.string().min(1, "Write a reply")) });
