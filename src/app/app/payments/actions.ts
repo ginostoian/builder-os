@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { can } from "@/core/roles";
 import { createInvoiceInput, id, markPaidInput, paymentSettingsInput } from "@/core/schemas";
-import { InvoiceError, createStageInvoice, getInvoice, markPaid, markSent, markUnpaid, savePaymentSettings, voidInvoice, type InvoiceErrorReason } from "@/db/invoices";
+import { InvoiceError, createInvoice as raiseInvoice, getInvoice, markPaid, markSent, markUnpaid, savePaymentSettings, voidInvoice, type InvoiceErrorReason } from "@/db/invoices";
 import { clientContact, ensurePortalToken, memberEmail } from "@/db/sending";
 import { getSession, withSession, type Session } from "@/auth/session";
 import { emailConfigured } from "@/server/email";
@@ -16,6 +16,8 @@ const MESSAGES: Record<InvoiceErrorReason, string> = {
   not_found: "This invoice no longer exists.",
   not_accepted: "Invoices can only be raised once the client has accepted the quote.",
   unknown_stage: "That payment isn't in the accepted quote's plan.",
+  unknown_variation: "A variation you picked isn't approved or is already invoiced. Reload to see the latest.",
+  credit_too_big: "The credits are bigger than what's being invoiced. Add them to a larger payment instead.",
   already_invoiced: "That payment has already been invoiced.",
   no_bank_details: "Add your bank details in Settings → Payments first, so the client knows where to pay.",
   not_paid: "This invoice isn't marked as paid.",
@@ -67,9 +69,9 @@ export async function createInvoice(input: unknown): Promise<InvoiceActionResult
   if (!session) return { ok: false, message: NOT_ALLOWED };
   const parsed = createInvoiceInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: MESSAGES.unknown_stage };
-  let created: Awaited<ReturnType<typeof createStageInvoice>>;
+  let created: Awaited<ReturnType<typeof raiseInvoice>>;
   try {
-    created = await withSession(session, (tx) => createStageInvoice(tx, session.orgId, { quoteId: parsed.data.quoteId, stageId: parsed.data.stageId, memberId: session.memberId }));
+    created = await withSession(session, (tx) => raiseInvoice(tx, session.orgId, { quoteId: parsed.data.quoteId, stageId: parsed.data.stageId, variationIds: parsed.data.variationIds, memberId: session.memberId }));
   } catch (error) {
     if (error instanceof InvoiceError) return { ok: false, message: MESSAGES[error.reason] };
     throw error;

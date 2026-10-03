@@ -9,7 +9,8 @@ import { after } from "next/server";
 import { portalCommentInput, portalDecisionInput } from "@/core/schemas";
 import { findPortalAccess, withTenant, type Tx } from "@/db";
 import { PortalError, addClientComment, decide, recordView, type PortalErrorReason } from "@/db/portal";
-import { notifyTeam } from "@/server/notify";
+import { VariationError, decideVariation } from "@/db/variations";
+import { notifyTeam, notifyVariationDecision } from "@/server/notify";
 import { isBot, requestEvidence } from "@/server/origin";
 
 export type PortalActionResult = { ok: true } | { ok: false; message: string };
@@ -74,6 +75,36 @@ async function runIn(
     if (afterwards) after(() => afterwards(access.orgId, quoteId));
   } catch (error) {
     if (error instanceof PortalError) return { ok: false, message: MESSAGES[error.reason] };
+    throw error;
+  }
+  revalidatePath(`/portal/${token}`, "layout");
+  return { ok: true };
+}
+
+/** The client approves (signed) or rejects a variation. */
+export async function decideVariationAction(token: string, quoteNumberArg: number, number: number, input: unknown): Promise<PortalActionResult> {
+  const parsed = portalDecisionInput.safeParse(input);
+  if (!parsed.success) return { ok: false, message: MESSAGES.invalid };
+  const q = quoteNumber(quoteNumberArg);
+  const n = quoteNumber(number);
+  const access = typeof token === "string" ? await findPortalAccess(token) : null;
+  if (!access || q === null || n === null) return { ok: false, message: MESSAGES.bad_link };
+  const evidence = await requestEvidence();
+  const d = parsed.data;
+  try {
+    const r = await withTenant(access.orgId, (tx) => decideVariation(tx, access.orgId, access.clientId, { quoteNumber: q, number: n }, d, evidence));
+    after(() =>
+      notifyVariationDecision(access.orgId, r.quoteId, r.variationId, {
+        approved: d.decision === "accepted",
+        name: d.fullName,
+        ref: r.snapshot.ref,
+        title: r.snapshot.title,
+        total: r.snapshot.totals.total,
+        reason: d.decision === "declined" ? d.reason : undefined,
+      }),
+    );
+  } catch (error) {
+    if (error instanceof VariationError) return { ok: false, message: error.reason === "decided" ? "You've already answered this variation." : "This variation isn't available any more." };
     throw error;
   }
   revalidatePath(`/portal/${token}`, "layout");

@@ -42,3 +42,37 @@ export async function notifyTeam(orgId: string, quoteId: string, activity: Clien
     console.error("Team alert failed", activity.kind, error instanceof Error ? error.message : "unknown");
   }
 }
+
+/** Tell the team a client approved or rejected a variation. Same recipients and rules as quote alerts. */
+export async function notifyVariationDecision(
+  orgId: string,
+  quoteId: string,
+  variationId: string,
+  d: { approved: boolean; name: string; ref: string; title: string; total: number; reason?: string },
+): Promise<void> {
+  if (!emailConfigured()) return;
+  try {
+    const ctx = await withTenant(orgId, (tx) => alertContext(tx, orgId, quoteId));
+    if (!ctx || ctx.to.length === 0) return;
+    const what = `${d.ref} · ${d.title}`;
+    const subject = `${d.approved ? "Approved" : "Rejected"}: variation ${what}`;
+    const result = await sendEmail({
+      to: ctx.to,
+      subject,
+      fromName: "Builder OS",
+      content: {
+        company: { name: ctx.company, brandColour: ctx.brandColour },
+        preheader: subject,
+        heading: `${ctx.clientName} ${d.approved ? "approved" : "rejected"} a variation`,
+        paragraphs: d.approved
+          ? [`${what} (${formatGBP(d.total)} inc. VAT) was approved and signed by ${d.name}.`, "Invoice it on its own, or add it to the next payment's invoice."]
+          : [`${what} was rejected by ${d.name}.`, ...(d.reason ? [`Their reason: “${d.reason.slice(0, 1_000)}”`] : []), "You can revise it and send it again."],
+        button: { label: "Open the variation", href: `${await appOrigin()}/app/variations/${variationId}` },
+        footer: "You're getting this because you work on this quote in Builder OS.",
+      },
+    });
+    if (!result.ok) console.error("Variation alert not sent");
+  } catch (error) {
+    console.error("Variation alert failed", error instanceof Error ? error.message : "unknown");
+  }
+}
