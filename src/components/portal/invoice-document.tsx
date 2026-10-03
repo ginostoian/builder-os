@@ -72,10 +72,17 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceView }) {
         </dl>
 
         <div className="mt-6 border-t border-hairline">
-          <div className="flex items-baseline gap-3 py-3">
-            <span className="flex-1">{s.description}</span>
-            <span className="tabular">{formatGBP(invoice.netPence)}</span>
-          </div>
+          {s.lines && s.quote && (
+            <div className="pt-3 text-[12px] text-subtle">
+              For {s.quote.title} ({s.quote.ref})
+            </div>
+          )}
+          {(s.lines ?? [{ description: s.description, net: invoice.netPence }]).map((l, i) => (
+            <div key={i} className="flex items-baseline gap-3 border-b border-muted py-3 last:border-0">
+              <span className="flex-1">{l.description}</span>
+              <span className={cn("tabular", l.net < 0 && "text-info")}>{formatGBP(l.net)}</span>
+            </div>
+          ))}
           <div className="flex flex-col gap-1 border-t border-hairline pt-3 tabular">
             <div className="flex justify-between text-ink-2">
               <span>Subtotal</span>

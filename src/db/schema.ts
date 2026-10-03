@@ -33,6 +33,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { MAX_MARKUP_BPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, TEXT } from "../core/limits";
+import { VARIATION_STATUSES, type VariationLine } from "../core/variation";
 import { LINE_KINDS, QUOTE_STATUSES, ROLES, SERVICE_KINDS, type Address, type PaymentPlanInput } from "../core/schemas";
 
 /** Runtime role. Created (NOLOGIN) in migration 0000; login roles per environment are granted membership. */
@@ -561,5 +562,76 @@ export const invoiceReminders = pgTable(
     unique("invoice_reminders_once").on(t.orgId, t.invoiceId, t.kind),
     foreignKey({ name: "invoice_reminders_invoice_fk", columns: [t.orgId, t.invoiceId], foreignColumns: [invoices.orgId, invoices.id] }),
     check("invoice_reminders_kind", sql`${t.kind} in ('before', 'due', 'overdue_3', 'overdue_7')`),
+  ],
+).enableRLS();
+
+// ── Variations ────────────────────────────────────────────────────────────────
+
+export const variationStatus = pgEnum("variation_status", VARIATION_STATUSES);
+
+/**
+ * A change to an accepted quote: extra work or an omission, priced in its own lines. A draft is edited
+ * freely; sending freezes the client-safe `snapshot` (with its SHA-256), and from then on only the client's
+ * decision, withdrawal and billing can change (a trigger enforces that, migration 0009). Approved
+ * variations are invoiced on their own or added to a payment's invoice (`invoice_id`).
+ */
+export const variations = pgTable(
+  "variations",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    quoteId: uuid("quote_id").notNull(),
+    clientId: uuid("client_id").notNull(),
+    /** 1, 2, 3… per quote. */
+    number: integer("number").notNull(),
+    title: text("title").notNull(),
+    reason: text("reason"),
+    lines: jsonb("lines").$type<VariationLine[]>().notNull().default(sql`'[]'::jsonb`),
+    vatRateBps: integer("vat_rate_bps").notNull(),
+    status: variationStatus("status").notNull().default("draft"),
+    netPence: integer("net_pence").notNull().default(0),
+    vatPence: integer("vat_pence").notNull().default(0),
+    totalPence: integer("total_pence").notNull().default(0),
+    snapshot: jsonb("snapshot"),
+    contentHash: text("content_hash"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    sentByMemberId: uuid("sent_by_member_id"),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    decisionName: text("decision_name"),
+    signature: text("signature"),
+    decisionReason: text("decision_reason"),
+    decisionIp: text("decision_ip"),
+    decisionUserAgent: text("decision_user_agent"),
+    /** The invoice that bills it (approved only). Voiding that invoice frees it to be billed again. */
+    invoiceId: uuid("invoice_id"),
+    createdByMemberId: uuid("created_by_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    unique("variations_org_id_id_key").on(t.orgId, t.id),
+    unique("variations_quote_number_key").on(t.orgId, t.quoteId, t.number),
+    foreignKey({ name: "variations_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
+    foreignKey({ name: "variations_client_fk", columns: [t.orgId, t.clientId], foreignColumns: [clients.orgId, clients.id] }),
+    foreignKey({ name: "variations_invoice_fk", columns: [t.orgId, t.invoiceId], foreignColumns: [invoices.orgId, invoices.id] }),
+    foreignKey({ name: "variations_sent_by_fk", columns: [t.orgId, t.sentByMemberId], foreignColumns: [members.orgId, members.id] }),
+    foreignKey({ name: "variations_created_by_fk", columns: [t.orgId, t.createdByMemberId], foreignColumns: [members.orgId, members.id] }),
+    index("variations_quote_idx").on(t.orgId, t.quoteId),
+    check("variations_number_positive", sql`${t.number} > 0`),
+    len("variations_title_len", t.title, TEXT.name),
+    len("variations_reason_len", t.reason, TEXT.note, 0),
+    between("variations_vat_range", t.vatRateBps, 0, MAX_VAT_BPS),
+    check("variations_lines_array", sql`jsonb_typeof(${t.lines}) = 'array'`),
+    between("variations_total_range", t.totalPence, -MAX_RATE_PENCE, MAX_RATE_PENCE),
+    check("variations_amounts_add_up", sql`${t.netPence} + ${t.vatPence} = ${t.totalPence}`),
+    check("variations_sent_frozen", sql`${t.status} = 'draft' or (${t.snapshot} is not null and ${t.contentHash} ~ '^[0-9a-f]{64}$' and ${t.sentAt} is not null)`),
+    check("variations_decided", sql`(${t.status} in ('approved', 'rejected')) = (${t.decidedAt} is not null)`),
+    check("variations_approved_signed", sql`${t.status} <> 'approved' or (${t.signature} is not null and ${t.decisionName} is not null)`),
+    check("variations_billed_when_approved", sql`${t.invoiceId} is null or ${t.status} = 'approved'`),
+    len("variations_decision_name_len", t.decisionName, TEXT.name),
+    len("variations_signature_len", t.signature, TEXT.name),
+    len("variations_decision_reason_len", t.decisionReason, TEXT.note, 0),
+    len("variations_decision_ip_len", t.decisionIp, 64, 0),
+    len("variations_decision_user_agent_len", t.decisionUserAgent, 500, 0),
   ],
 ).enableRLS();

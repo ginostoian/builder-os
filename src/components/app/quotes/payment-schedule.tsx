@@ -13,6 +13,8 @@ import { formatGBP } from "@/core/money";
 import { invoiceRef, invoiceState, ukToday } from "@/core/payment-plan";
 import type { SnapshotStage } from "@/core/quote-snapshot";
 
+export type BillableVariation = { id: string; number: number; title: string; totalPence: number };
+
 export type ScheduleRow = SnapshotStage & { invoice: { id: string; number: number; status: string; dueDate: string; paidOn: string | null } | null };
 
 const dueText = (s: SnapshotStage) => (s.dueKind === "on_acceptance" ? "On acceptance" : s.dueKind === "date" && s.dueDate ? shortDate(s.dueDate) : "At a stage of work");
@@ -21,6 +23,7 @@ const dueText = (s: SnapshotStage) => (s.dueKind === "on_acceptance" ? "On accep
 export function PaymentSchedule({
   quoteId,
   rows,
+  billable,
   canInvoice,
   bankReady,
   emailEnabled,
@@ -29,6 +32,7 @@ export function PaymentSchedule({
 }: {
   quoteId: string;
   rows: ScheduleRow[];
+  billable: BillableVariation[];
   canInvoice: boolean;
   bankReady: boolean;
   emailEnabled: boolean;
@@ -81,7 +85,7 @@ export function PaymentSchedule({
                 ) : (
                   <>
                     <span>{dueText(r)}</span>
-                    {canInvoice && <CreateInvoiceButton quoteId={quoteId} row={r} disabled={!bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />}
+                    {canInvoice && <CreateInvoiceButton quoteId={quoteId} row={r} billable={billable} disabled={!bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />}
                   </>
                 )}
               </div>
@@ -93,7 +97,25 @@ export function PaymentSchedule({
   );
 }
 
-function CreateInvoiceButton({ quoteId, row, disabled, emailEnabled, clientName, clientEmail }: { quoteId: string; row: ScheduleRow; disabled: boolean; emailEnabled: boolean; clientName: string; clientEmail: string | null }) {
+function CreateInvoiceButton({
+  quoteId,
+  row,
+  billable,
+  disabled,
+  emailEnabled,
+  clientName,
+  clientEmail,
+}: {
+  quoteId: string;
+  row: ScheduleRow;
+  billable: BillableVariation[];
+  disabled: boolean;
+  emailEnabled: boolean;
+  clientName: string;
+  clientEmail: string | null;
+}) {
+  const [picked, setPicked] = React.useState<Set<string>>(() => new Set());
+  const total = row.amount + billable.filter((v) => picked.has(v.id)).reduce((a, v) => a + v.totalPence, 0);
   const router = useRouter();
   const canEmail = emailEnabled && Boolean(clientEmail);
   const [open, setOpen] = React.useState(false);
@@ -113,6 +135,37 @@ function CreateInvoiceButton({ quoteId, row, disabled, emailEnabled, clientName,
         <DialogDescription>
           {formatGBP(row.amount)} inc. VAT, payable by bank transfer. {row.dueKind === "date" && row.dueDate ? `Due ${shortDate(row.dueDate)} (or after your payment terms if that's passed).` : "Due after your payment terms."} It also appears in {clientName}&apos;s portal.
         </DialogDescription>
+        {billable.length > 0 && (
+          <fieldset className="mt-4 flex flex-col gap-1.5">
+            <legend className="mb-1.5 text-[12.5px] font-medium">Add approved variations</legend>
+            {billable.map((v) => (
+              <label key={v.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={picked.has(v.id)}
+                  onChange={(e) =>
+                    setPicked((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(v.id);
+                      else next.delete(v.id);
+                      return next;
+                    })
+                  }
+                />
+                <span className="min-w-0 flex-1 truncate">
+                  V{v.number} {v.title}
+                </span>
+                <span className="tabular">{formatGBP(v.totalPence)}</span>
+              </label>
+            ))}
+            {picked.size > 0 && (
+              <div className="mt-1 flex justify-between border-t border-hairline pt-1.5 font-medium tabular">
+                <span>Invoice total</span>
+                <span>{formatGBP(total)}</span>
+              </div>
+            )}
+          </fieldset>
+        )}
         <label className="mt-4 flex items-center gap-2">
           <input type="checkbox" checked={email} disabled={!canEmail} onChange={(e) => setEmail(e.target.checked)} />
           <span className={canEmail ? undefined : "text-subtle"}>{canEmail ? `Email it to ${clientEmail}` : clientEmail ? "Email isn't set up yet" : `${clientName} has no email address`}</span>
@@ -126,7 +179,7 @@ function CreateInvoiceButton({ quoteId, row, disabled, emailEnabled, clientName,
             disabled={pending}
             onClick={() =>
               startTransition(async () => {
-                const r = await createInvoice({ quoteId, stageId: row.id, email: email && canEmail });
+                const r = await createInvoice({ quoteId, stageId: row.id, variationIds: [...picked], email: email && canEmail });
                 if (!r.ok) return setError(r.message);
                 if (r.emailError) setError(`Invoice created, but: ${r.emailError}`);
                 else setOpen(false);

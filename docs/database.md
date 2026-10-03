@@ -54,7 +54,16 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
    - `invoice_reminders` is append-only. Its unique `(invoice, kind)` key is how the reminder job claims each reminder exactly once.
    - Bank details and reminder settings live on `organizations`, with column grants for the app role.
    - The daily reminder job finds companies through `app_orgs_with_due_invoices(date)`, a `SECURITY DEFINER` function owned by `builderos_lookup` that returns only company ids. The lookup role can read just `invoices (org_id, status, due_date)` and `organizations.reminders_enabled` for it. Everything else runs in `withTenant`.
-11. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
+11. **Variations (migration 0009).** A change to an accepted quote: extra work, or work taken out as a credit. The client approves or rejects it in their portal.
+   - Drafts can be edited and deleted.
+   - Sending freezes a client-safe `snapshot` with its SHA-256 hash: selling prices only, no cost rates or markups.
+   - After that, the `variations_guard` trigger blocks any change to the content or amounts, and any delete. The only status changes it allows:
+     - `sent` → `approved` (signed: name, typed signature, time, IP, user agent) or `rejected`. Each records the client's decision, once.
+     - `sent` → `withdrawn`, done by the team.
+   - On an approved variation, only `invoice_id` can change after that.
+   - "Revise" withdraws a sent variation and copies it into a new draft. The client never has two versions of the same change to approve.
+   - Approved variations are billed on their own, or added to a payment's invoice; an invoice's `snapshot.lines` lists each part. A variation is billed while its `invoice_id` points at a live invoice, so voiding that invoice frees it again. Credits can reduce an invoice but never take it below zero.
+12. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
 
 **Adding a table:**
 - Give it `org_id`, `tenantPolicy(t.orgId)`, `.enableRLS()`, and a `unique(org_id, id)` if anything references it.
