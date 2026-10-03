@@ -8,6 +8,9 @@ export type ImageType = { mime: "image/png" | "image/jpeg" | "image/webp"; ext: 
 /** Largest logo we take. Logos are shown small; this is plenty for a sharp one. */
 export const MAX_LOGO_BYTES = 1_000_000;
 
+/** Largest site photo we take. The browser shrinks photos to about 2,000 px first, which lands well under this. */
+export const MAX_PHOTO_BYTES = 1_800_000;
+
 /**
  * The real type of an image from its first bytes, ignoring the name and the browser's claimed type. SVG is
  * deliberately not accepted: it can carry scripts, and logos are served from a public CDN.
@@ -28,7 +31,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
  * Storage key for a company file: `orgs/{orgId}/{area}/{random}.{ext}`. The random part makes keys
  * unguessable and never reused, so a new logo is a new URL (no stale CDN cache).
  */
-export function orgFileKey(orgId: string, area: "logo" | "files", random: string, ext: string): string {
+export function orgFileKey(orgId: string, area: "logo" | "files" | "photos", random: string, ext: string): string {
   if (!UUID.test(orgId)) throw new Error("Invalid org id");
   if (!/^[A-Za-z0-9_-]{16,64}$/.test(random) || !/^[a-z0-9]{2,5}$/.test(ext)) throw new Error("Invalid file key part");
   return `orgs/${orgId}/${area}/${random}.${ext}`;

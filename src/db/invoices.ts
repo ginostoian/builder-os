@@ -9,11 +9,13 @@ import "server-only";
 import { and, asc, desc, eq, inArray, lte, ne, sql } from "drizzle-orm";
 import { addDays, invoiceRef, splitVat, ukToday, type ReminderKind } from "@/core/payment-plan";
 import type { QuoteSnapshot, SnapshotStage } from "@/core/quote-snapshot";
+import type { VariationSnapshot } from "@/core/variation";
 import type { PaymentSettingsInput } from "@/core/schemas";
 import type { Tx } from "./index";
-import { clients, invoiceReminders, invoices, organizations, quoteDecisions, quoteVersions, quotes } from "./schema";
+import { clients, invoiceReminders, invoices, organizations, quoteDecisions, quoteVersions, quotes, variations } from "./schema";
+import { billableVariations } from "./variations";
 
-export type InvoiceErrorReason = "not_found" | "not_accepted" | "unknown_stage" | "already_invoiced" | "no_bank_details" | "not_paid" | "not_open";
+export type InvoiceErrorReason = "not_found" | "not_accepted" | "unknown_stage" | "unknown_variation" | "credit_too_big" | "already_invoiced" | "no_bank_details" | "not_paid" | "not_open";
 
 export class InvoiceError extends Error {
   constructor(readonly reason: InvoiceErrorReason) {
@@ -31,7 +33,11 @@ export type InvoiceSnapshot = {
   description: string;
   vatRateBps: number;
   bank: { accountName: string; sortCode: string; accountNumber: string };
+  /** What's billed, line by line (a stage and/or variations). Older invoices have one line: the description. */
+  lines?: InvoiceLine[];
 };
+
+export type InvoiceLine = { description: string; net: number; vat: number; total: number };
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 
@@ -94,37 +100,60 @@ export async function quoteSchedule(tx: Tx, orgId: string, quoteId: string): Pro
 // ── Raising invoices ─────────────────────────────────────────────────────────
 
 /**
- * Invoice one stage of an accepted quote's plan. Due on the stage's own date if that's still ahead, otherwise
- * after the company's payment terms. Needs bank details (it's paid by bank transfer).
+ * Raise an invoice on an accepted quote: one stage of its payment plan, approved variations, or both (a
+ * stage with variations added). A stage is due on its own date if that's still ahead, otherwise after the
+ * company's payment terms. Needs bank details (it's paid by bank transfer). Omissions (credits) can reduce
+ * an invoice but not take it below zero.
  */
-export async function createStageInvoice(tx: Tx, orgId: string, input: { quoteId: string; stageId: string; memberId: string }, today = ukToday()) {
+export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: string; stageId?: string; variationIds?: string[]; memberId: string }, today = ukToday()) {
+  const variationIds = input.variationIds ?? [];
+  if (!input.stageId && variationIds.length === 0) throw new InvoiceError("unknown_stage");
   const accepted = await acceptedVersion(tx, orgId, input.quoteId);
   if (!accepted) throw new InvoiceError("not_accepted");
-  const stage = accepted.snapshot.paymentPlan?.find((st) => st.id === input.stageId);
-  if (!stage) throw new InvoiceError("unknown_stage");
+  const stage = input.stageId ? accepted.snapshot.paymentPlan?.find((st) => st.id === input.stageId) : undefined;
+  if (input.stageId && !stage) throw new InvoiceError("unknown_stage");
   const [org] = await tx.select().from(organizations).where(eq(organizations.id, orgId));
   if (!org.bankAccountName || !org.bankSortCode || !org.bankAccountNumber) throw new InvoiceError("no_bank_details");
   const [quote] = await tx.select({ clientId: quotes.clientId }).from(quotes).where(and(eq(quotes.orgId, orgId), eq(quotes.id, input.quoteId)));
   const [client] = await tx.select({ name: clients.name, email: clients.email, address: clients.address }).from(clients).where(and(eq(clients.orgId, orgId), eq(clients.id, quote.clientId)));
 
-  // Serialize numbering per company, as for quotes.
+  // Serialize numbering per company, as for quotes. This also serializes billing variations.
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`invoice-number:${orgId}`}, 0))`);
+  const billable = variationIds.length ? await billableVariations(tx, orgId, input.quoteId) : [];
+  const chosen = variationIds.map((id) => billable.find((v) => v.id === id));
+  if (chosen.some((v) => !v)) throw new InvoiceError("unknown_variation");
+
+  const s = accepted.snapshot;
+  const lines: InvoiceLine[] = [];
+  if (stage) {
+    const { net, vat } = splitVat(stage.amount, s.quote.vatRateBps);
+    lines.push({ description: stage.label, net, vat, total: stage.amount });
+  }
+  for (const v of chosen as NonNullable<(typeof chosen)[number]>[]) {
+    const ref = (v.snapshot as VariationSnapshot).ref;
+    lines.push({ description: `Variation ${ref.split("-").at(-1)}: ${v.title}`, net: v.netPence, vat: v.vatPence, total: v.totalPence });
+  }
+  const net = lines.reduce((a, l) => a + l.net, 0);
+  const vat = lines.reduce((a, l) => a + l.vat, 0);
+  const total = net + vat;
+  if (net < 0 || vat < 0 || total <= 0) throw new InvoiceError("credit_too_big");
+
   const [{ next }] = await tx
     .select({ next: sql<number>`coalesce(max(${invoices.number}), 0) + 1`.mapWith(Number) })
     .from(invoices)
     .where(eq(invoices.orgId, orgId));
-  const s = accepted.snapshot;
-  const { net, vat } = splitVat(stage.amount, s.quote.vatRateBps);
-  const dueDate = stage.dueKind === "date" && stage.dueDate && stage.dueDate > today ? stage.dueDate : addDays(today, org.paymentTermsDays);
+  const dueDate = stage && stage.dueKind === "date" && stage.dueDate && stage.dueDate > today ? stage.dueDate : addDays(today, org.paymentTermsDays);
+  const headline = lines.length === 1 ? lines[0].description : stage ? `${stage.label} and ${lines.length - 1} variation${lines.length > 2 ? "s" : ""}` : `${lines.length} variations`;
   const snapshot: InvoiceSnapshot = {
     v: 1,
     ref: invoiceRef(next),
     company: { name: org.name, tradingName: org.tradingName, vatNumber: org.vatNumber, logoUrl: org.logoUrl, brandColour: org.brandColour },
     client: { name: client.name, email: client.email, address: client.address },
     quote: { ref: s.quote.ref, title: s.quote.title },
-    description: `${stage.label}: ${s.quote.title} (${s.quote.ref})`,
+    description: `${headline}: ${s.quote.title} (${s.quote.ref})`,
     vatRateBps: s.quote.vatRateBps,
     bank: { accountName: org.bankAccountName, sortCode: org.bankSortCode, accountNumber: org.bankAccountNumber },
+    lines,
   };
   const inserted = await tx
     .insert(invoices)
@@ -133,20 +162,29 @@ export async function createStageInvoice(tx: Tx, orgId: string, input: { quoteId
       number: next,
       clientId: quote.clientId,
       quoteId: input.quoteId,
-      stageId: stage.id,
+      stageId: stage?.id ?? null,
       issueDate: today,
       dueDate,
       netPence: net,
       vatPence: vat,
-      totalPence: stage.amount,
+      totalPence: total,
       snapshot,
       createdByMemberId: input.memberId,
     })
     .onConflictDoNothing()
     .returning({ id: invoices.id, number: invoices.number });
   if (inserted.length === 0) throw new InvoiceError("already_invoiced");
-  return { ...inserted[0], clientId: quote.clientId, clientEmail: client.email, snapshot, dueDate, totalPence: stage.amount };
+  if (variationIds.length) {
+    await tx
+      .update(variations)
+      .set({ invoiceId: inserted[0].id })
+      .where(and(eq(variations.orgId, orgId), inArray(variations.id, variationIds)));
+  }
+  return { ...inserted[0], clientId: quote.clientId, clientEmail: client.email, snapshot, dueDate, totalPence: total };
 }
+
+/** Invoice one stage of an accepted quote's plan. */
+export const createStageInvoice = (tx: Tx, orgId: string, input: { quoteId: string; stageId: string; memberId: string }, today = ukToday()) => createInvoice(tx, orgId, input, today);
 
 // ── Reading ──────────────────────────────────────────────────────────────────
 

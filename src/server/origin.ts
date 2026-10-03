@@ -30,3 +30,5 @@ export async function isBot(): Promise<boolean> {
 }
 
 export const portalInvoiceUrl = (origin: string, token: string, number: number) => `${origin}/portal/${token}/invoices/${number}`;
+
+export const portalVariationUrl = (origin: string, token: string, quoteNumber: number, number: number) => `${origin}/portal/${token}/quotes/${quoteNumber}/variations/${number}`;

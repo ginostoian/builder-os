@@ -28,6 +28,7 @@ import { formatAddress } from "@/core/clients";
 import { MAX_MARKUP_BPS, MAX_VAT_BPS, TEXT } from "@/core/limits";
 import { formatBps, formatGBP, formatRate, parsePence, parsePercentToBps } from "@/core/money";
 import { lineTotal, quoteRef, quoteTotals, sectionTotal, type QuoteSection } from "@/core/quote";
+import { searchLibrary } from "@/core/library-search";
 import { LINE_KINDS, qty as qtySchema, quoteHeaderInput, singleLine, type Address, type QuoteHeaderInput, type QuoteOp } from "@/core/schemas";
 import { paymentPlanInput } from "@/core/schemas";
 import type { PlanStage } from "@/core/payment-plan";
@@ -732,18 +733,6 @@ function NumberCell<T extends number>({ value, label, col, parse, onCommit, clas
 }
 
 // ── Adding lines ─────────────────────────────────────────────────────────────
-
-/** Match every word of the query against name, category and description; names that start with it first. */
-function searchLibrary(library: LibraryOption[], query: string): LibraryOption[] {
-  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [];
-  const hits = library.filter((s) => {
-    const hay = `${s.name} ${s.category} ${s.description ?? ""}`.toLowerCase();
-    return words.every((w) => hay.includes(w));
-  });
-  const q = query.trim().toLowerCase();
-  return hits.sort((a, b) => Number(b.name.toLowerCase().startsWith(q)) - Number(a.name.toLowerCase().startsWith(q))).slice(0, 8);
-}
 
 /** Lines for a library pick. A bundle becomes one line per service, at the bundle's quantities. */
 function linesFor(option: LibraryOption, quoteMarkup: number): BuilderLine[] {

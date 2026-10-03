@@ -178,7 +178,12 @@ export function PortalQuote({
           <AcceptDialog
             open={dialog === "accept"}
             onOpenChange={(o) => setDialog(o ? "accept" : null)}
-            snapshot={snapshot}
+            description={
+              <>
+                You&apos;re accepting {snapshot.quote.ref}, {snapshot.quote.title}, from {company} for {formatGBP(snapshot.totals.total)} inc. VAT. We record your name, signature, the time and the
+                exact version you sign.
+              </>
+            }
             onSubmit={async (fullName, signature) => {
               const r = await decideQuote(token, number, { decision: "accepted", fullName, signature, agree: true });
               if (r.ok) router.refresh();
@@ -360,15 +365,22 @@ function Conversation({
   );
 }
 
-function AcceptDialog({
+/** Name + typed signature + explicit agreement. Shared by quotes and variations. */
+export function AcceptDialog({
   open,
   onOpenChange,
-  snapshot,
+  title = "Accept and sign",
+  description,
+  agreement = "I accept this quote and its terms. I understand that typing my name above is my electronic signature.",
+  submitLabel = "Sign and accept",
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  snapshot: QuoteSnapshot;
+  title?: string;
+  description: React.ReactNode;
+  agreement?: string;
+  submitLabel?: string;
   onSubmit: (fullName: string, signature: string) => Promise<{ ok: boolean; message?: string }>;
 }) {
   const [fullName, setFullName] = React.useState("");
@@ -376,15 +388,11 @@ function AcceptDialog({
   const [agree, setAgree] = React.useState(false);
   const [error, setError] = React.useState<string>();
   const [pending, startTransition] = React.useTransition();
-  const company = snapshot.company.tradingName ?? snapshot.company.name;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[480px]">
-        <DialogTitle>Accept and sign</DialogTitle>
-        <DialogDescription>
-          You&apos;re accepting {snapshot.quote.ref}, {snapshot.quote.title}, from {company} for {formatGBP(snapshot.totals.total)} inc. VAT. We record your name, signature, the time and the
-          exact version you sign.
-        </DialogDescription>
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
         <form
           className="mt-5 flex flex-col gap-3.5"
           onSubmit={(e) => {
@@ -406,12 +414,12 @@ function AcceptDialog({
           </label>
           <label className="flex items-start gap-2.5 text-[12.5px] leading-normal text-ink-2">
             <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5" />
-            I accept this quote and its terms. I understand that typing my name above is my electronic signature.
+            {agreement}
           </label>
           {error && <p className="text-[12.5px] text-danger">{error}</p>}
           <Button type="submit" size="md" className="w-full" disabled={pending || !agree || !fullName.trim() || !signature.trim()}>
             <PenLine />
-            {pending ? "Signing…" : "Sign and accept"}
+            {pending ? "Signing…" : submitLabel}
           </Button>
         </form>
       </DialogContent>
@@ -419,15 +427,19 @@ function AcceptDialog({
   );
 }
 
-function DeclineDialog({
+export function DeclineDialog({
   open,
   onOpenChange,
   company,
+  title = "Decline this quote",
+  submitLabel = "Decline quote",
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   company: string;
+  title?: string;
+  submitLabel?: string;
   onSubmit: (fullName: string, reason: string) => Promise<{ ok: boolean; message?: string }>;
 }) {
   const [fullName, setFullName] = React.useState("");
@@ -437,7 +449,7 @@ function DeclineDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogTitle>Decline this quote</DialogTitle>
+        <DialogTitle>{title}</DialogTitle>
         <DialogDescription>{company} will be told. A reason helps them, but it&apos;s optional.</DialogDescription>
         <form
           className="mt-5 flex flex-col gap-3.5"
@@ -460,7 +472,7 @@ function DeclineDialog({
           </label>
           {error && <p className="text-[12.5px] text-danger">{error}</p>}
           <Button type="submit" variant="secondary" size="md" className="w-full" disabled={pending || !fullName.trim()}>
-            {pending ? "Sending…" : "Decline quote"}
+            {pending ? "Sending…" : submitLabel}
           </Button>
         </form>
       </DialogContent>

@@ -15,7 +15,8 @@ import { longDate, type QuoteSnapshot } from "@/core/quote-snapshot";
 import { cn } from "@/lib/utils";
 import { control } from "../form-fields";
 import { DuplicateButton } from "./duplicate-button";
-import { PaymentSchedule, type ScheduleRow } from "./payment-schedule";
+import { PaymentSchedule, type BillableVariation, type ScheduleRow } from "./payment-schedule";
+import { VariationsPanel, type VariationRow } from "@/components/app/variations/variations-panel";
 import { CopyButton } from "./send-dialog";
 import { QUOTE_STATUS } from "./status";
 
@@ -55,6 +56,9 @@ export function SentQuote({
   bankReady,
   emailEnabled,
   clientEmail,
+  variations,
+  billable,
+  canEdit,
 }: {
   quoteId: string;
   status: string;
@@ -74,6 +78,9 @@ export function SentQuote({
   bankReady: boolean;
   emailEnabled: boolean;
   clientEmail: string | null;
+  variations: VariationRow[] | null;
+  billable: BillableVariation[];
+  canEdit: boolean;
 }) {
   const router = useRouter();
   const [revising, startRevise] = React.useTransition();
@@ -165,8 +172,9 @@ export function SentQuote({
         </div>
         {decision && <DecisionCard decision={decision} />}
         {schedule && schedule.length > 0 && (
-          <PaymentSchedule quoteId={quoteId} rows={schedule} canInvoice={canInvoice} bankReady={bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />
+          <PaymentSchedule quoteId={quoteId} rows={schedule} billable={billable} canInvoice={canInvoice} bankReady={bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />
         )}
+        {variations && <VariationsPanel quoteId={quoteId} rows={variations} canEdit={canEdit} />}
         <Conversation quoteId={quoteId} comments={comments} clientName={clientName} snapshot={snapshot} />
         <div>
           <div className="mb-2 text-xs font-medium text-subtle">Activity</div>

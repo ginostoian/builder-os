@@ -9,6 +9,8 @@ import { quoteRef } from "@/core/quote";
 import { findPortalAccess, withTenant } from "@/db";
 import { portalHeader, portalQuotes } from "@/db/portal";
 import { portalInvoices } from "@/db/invoices";
+import { portalVariations } from "@/db/variations";
+import { variationRef } from "@/core/variation";
 import { invoiceRef, invoiceState, ukToday } from "@/core/payment-plan";
 
 export const metadata: Metadata = { title: { absolute: "Your quotes and invoices" } };
@@ -31,6 +33,12 @@ const INVOICE_BADGE: Record<string, { label: string; className: string }> = {
   void: { label: "Cancelled", className: "bg-line text-ink-2" },
 };
 
+const VARIATION_BADGE: Record<string, { label: string; className: string }> = {
+  sent: { label: "Needs your approval", className: "bg-warning-soft text-warning" },
+  approved: { label: "Approved", className: "bg-success-soft text-success" },
+  rejected: { label: "Rejected", className: "bg-line text-ink-2" },
+};
+
 /** The client's portal home: every quote they've been sent by this company. */
 export default async function PortalHome({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -38,12 +46,13 @@ export default async function PortalHome({ params }: { params: Promise<{ token: 
   if (!access) notFound();
   const data = await withTenant(access.orgId, async (tx) => {
     const header = await portalHeader(tx, access.orgId, access.clientId);
-    return header && { ...header, quotes: await portalQuotes(tx, access.orgId, access.clientId), invoices: await portalInvoices(tx, access.orgId, access.clientId) };
+    return header && { ...header, quotes: await portalQuotes(tx, access.orgId, access.clientId), invoices: await portalInvoices(tx, access.orgId, access.clientId), variations: await portalVariations(tx, access.orgId, access.clientId) };
   });
   if (!data) notFound();
   const company = data.company.tradingName ?? data.company.name;
   const today = ukToday();
   const unpaid = data.invoices.filter((i) => i.status === "issued");
+  const waiting = data.variations.filter((v) => v.status === "sent").length;
 
   return (
     <div className="min-h-screen bg-muted font-sans text-[13.5px] text-ink antialiased">
@@ -56,6 +65,35 @@ export default async function PortalHome({ params }: { params: Promise<{ token: 
           <h1 className="text-2xl font-semibold tracking-[-0.025em]">Hello {data.clientName}</h1>
           <p className="mt-1 text-ink-2">Your quotes{data.invoices.length > 0 ? " and invoices" : ""} from {company}. Open a quote to read it, ask questions or accept it.</p>
         </div>
+        {data.variations.length > 0 && (
+          <section className="flex flex-col gap-2">
+            <h2 className="flex items-baseline justify-between px-1 font-semibold">
+              Variations
+              {waiting > 0 && <span className="text-[12.5px] font-normal text-warning">{waiting} waiting for your approval</span>}
+            </h2>
+            <ul className="overflow-hidden rounded-[14px] bg-white shadow-ring">
+              {data.variations.map((v) => {
+                const badge = VARIATION_BADGE[v.status] ?? VARIATION_BADGE.sent;
+                return (
+                  <li key={v.id} className="border-b border-line last:border-0">
+                    <Link href={`/portal/${token}/quotes/${v.quoteNumber}/variations/${v.number}`} className="flex items-center gap-4 px-5 py-4 hover:bg-surface">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-semibold">{v.title}</div>
+                        <div className="mt-0.5 text-[12.5px] text-subtle">
+                          {variationRef(v.quoteNumber, v.number)} · {v.quoteTitle}
+                        </div>
+                        <span className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11.5px] font-medium sm:hidden ${badge.className}`}>{badge.label}</span>
+                      </div>
+                      <span className={`hidden rounded-full px-2 py-0.5 text-[11.5px] font-medium sm:inline ${badge.className}`}>{badge.label}</span>
+                      <span className="w-[100px] text-right font-medium tabular">{formatGBP(v.totalPence)}</span>
+                      <ChevronRight className="size-4 text-subtle" />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
         {data.invoices.length > 0 && (
           <section className="flex flex-col gap-2">
             <h2 className="flex items-baseline justify-between px-1 font-semibold">
@@ -84,9 +122,9 @@ export default async function PortalHome({ params }: { params: Promise<{ token: 
                 );
               })}
             </ul>
-            <h2 className="mt-3 px-1 font-semibold">Quotes</h2>
           </section>
         )}
+        {(data.invoices.length > 0 || data.variations.length > 0) && <h2 className="mt-3 px-1 font-semibold">Quotes</h2>}
         {data.quotes.length === 0 ? (
           <div className="rounded-[14px] bg-white px-6 py-10 text-center text-ink-2 shadow-ring">Nothing here yet. Quotes from {company} will appear here as soon as they&apos;re sent.</div>
         ) : (

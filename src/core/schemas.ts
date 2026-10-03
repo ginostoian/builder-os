@@ -8,6 +8,7 @@
  * - Money is integer pence, percentages are basis points, quantities have at most 3 decimals.
  */
 import { z } from "zod";
+import { MAX_VARIATION_LINES } from "./variation";
 import { MAX_PAYMENT_STAGES, PAYMENT_AMOUNT_KINDS, PAYMENT_DUE_KINDS } from "./payment-plan";
 import { MAX_BUNDLE_ITEMS, MAX_LINES_PER_QUOTE, MAX_MARKUP_BPS, MAX_PATCH_OPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, QTY_DECIMALS, TEXT } from "./limits";
 
@@ -292,11 +293,41 @@ export const paymentSettingsInput = z.strictObject({
 });
 export type PaymentSettingsInput = z.infer<typeof paymentSettingsInput>;
 
-/** Raise an invoice for one stage of an accepted quote's plan. */
-export const createInvoiceInput = z.strictObject({ quoteId: id, stageId: id, email: z.boolean() });
+/**
+ * Raise an invoice on an accepted quote: one stage of its plan, approved variations, or a stage with
+ * variations added to it.
+ */
+export const createInvoiceInput = z
+  .strictObject({ quoteId: id, stageId: id.optional(), variationIds: z.array(id).max(50).default([]), email: z.boolean() })
+  .refine((i) => i.stageId !== undefined || i.variationIds.length > 0, "Choose what to invoice")
+  .refine((i) => new Set(i.variationIds).size === i.variationIds.length, "Duplicate variation");
 
 export const markPaidInput = z.strictObject({
   invoiceId: id,
   paidOn: isoDate,
   reference: singleLine(TEXT.short).optional(),
 });
+
+// ── Variations ───────────────────────────────────────────────────────────────
+
+export const variationLineInput = z.strictObject({
+  id,
+  name: singleLine(TEXT.line),
+  qty,
+  unit: singleLine(TEXT.short),
+  ratePence: pence,
+  markupBps,
+  /** Work taken out of the job: a credit. */
+  omit: z.boolean(),
+});
+
+/** Saving a draft variation: its whole content (it's small). */
+export const variationSaveInput = z.strictObject({
+  variationId: id,
+  title: singleLine(TEXT.name),
+  reason: multiLine(TEXT.note).optional(),
+  lines: z.array(variationLineInput).max(MAX_VARIATION_LINES),
+});
+export type VariationSaveInput = z.infer<typeof variationSaveInput>;
+
+export const sendVariationInput = z.strictObject({ variationId: id, email: z.boolean() });
