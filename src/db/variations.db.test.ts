@@ -15,6 +15,7 @@ import { createQuote, getQuote, saveQuote } from "./quotes";
 import { sendQuote, sha256 } from "./sending";
 import {
   VariationError,
+  addVariationPhoto,
   billableVariations,
   createVariation,
   decideVariation,
@@ -23,6 +24,7 @@ import {
   portalVariation,
   portalVariations,
   quoteVariations,
+  removeVariationPhoto,
   reviseVariation,
   saveVariation,
   sendVariation,
@@ -110,7 +112,7 @@ describe("drafting and sending", () => {
       // 2 × £72 − 10 × £9.20 = £52 net + 20% VAT.
       expect((await getVariation(tx, orgId, a))!.variation).toMatchObject({ netPence: 5_200, vatPence: 1_040, totalPence: 6_240 });
       expect(await reason(sendVariation(tx, orgId, { variationId: b, memberId }))).toBe("empty");
-      expect(await deleteVariation(tx, orgId, b)).toBe(quoteId);
+      expect(await deleteVariation(tx, orgId, b)).toEqual({ quoteId, orphans: [] });
     });
   });
 
@@ -146,6 +148,52 @@ describe("drafting and sending", () => {
             (e: { code?: string }) => expect(e.code, stmt).toBe("42501"),
           );
       }
+    } finally {
+      await raw.end();
+    }
+  });
+});
+
+describe("photos", () => {
+  it("are added to drafts up to the limit, frozen as URLs when sent, and shared safely with revisions", async () => {
+    const { orgId, memberId } = await newOrg("Var photos");
+    const { quoteId } = await acceptedQuote(orgId, memberId);
+    const key = (n: number) => `orgs/${orgId}/photos/${"p".repeat(20)}${n}.jpg`;
+    const id = await withTenant(orgId, async (tx) => {
+      const id = await createVariation(tx, orgId, { quoteId, memberId });
+      await saveVariation(tx, orgId, { variationId: id, title: "Radiator", lines: [vline()] });
+      for (let i = 0; i < 12; i++) await addVariationPhoto(tx, orgId, id, key(i));
+      expect(await reason(addVariationPhoto(tx, orgId, id, key(99)))).toBe("too_many_photos");
+      // Only on this variation: safe to delete from storage.
+      expect(await removeVariationPhoto(tx, orgId, id, key(11))).toBe(true);
+      expect((await getVariation(tx, orgId, id))!.variation.photos.map((p) => p.key)).toEqual(Array.from({ length: 11 }, (_, i) => key(i)));
+      const sent = await sendVariation(tx, orgId, { variationId: id, memberId, photoUrl: (k) => `https://cdn.example/${k}` });
+      expect(sent.snapshot.photos).toHaveLength(11);
+      expect(sent.snapshot.photos![0].url).toBe(`https://cdn.example/${key(0)}`);
+      expect(await reason(addVariationPhoto(tx, orgId, id, key(50)))).toBe("not_editable");
+      expect(await reason(removeVariationPhoto(tx, orgId, id, key(0)))).toBe("not_editable");
+      return id;
+    });
+
+    // A revision shares the photos: removing one from the new draft, or deleting the draft, keeps the files.
+    const next = await withTenant(orgId, (tx) => reviseVariation(tx, orgId, id, memberId));
+    await withTenant(orgId, async (tx) => {
+      expect((await getVariation(tx, orgId, next))!.variation.photos).toHaveLength(11);
+      expect(await removeVariationPhoto(tx, orgId, next, key(0))).toBe(false);
+      expect((await deleteVariation(tx, orgId, next)).orphans).toEqual([]);
+    });
+
+    const raw = postgres(appUrl(), { max: 1, onnotice: () => {} });
+    try {
+      await raw
+        .begin(async (t) => {
+          await t`select set_config('app.org_id', ${orgId}, true)`;
+          await t.unsafe(`update variations set photos = '[]' where id = '${id}'`);
+        })
+        .then(
+          () => expect.unreachable("photos on a sent variation changed"),
+          (e: { code?: string }) => expect(e.code).toBe("42501"),
+        );
     } finally {
       await raw.end();
     }

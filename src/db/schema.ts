@@ -33,7 +33,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { MAX_MARKUP_BPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, TEXT } from "../core/limits";
-import { VARIATION_STATUSES, type VariationLine } from "../core/variation";
+import { MAX_VARIATION_PHOTOS, VARIATION_STATUSES, type VariationLine, type VariationPhoto } from "../core/variation";
 import { LINE_KINDS, QUOTE_STATUSES, ROLES, SERVICE_KINDS, type Address, type PaymentPlanInput } from "../core/schemas";
 
 /** Runtime role. Created (NOLOGIN) in migration 0000; login roles per environment are granted membership. */
@@ -587,6 +587,8 @@ export const variations = pgTable(
     title: text("title").notNull(),
     reason: text("reason"),
     lines: jsonb("lines").$type<VariationLine[]>().notNull().default(sql`'[]'::jsonb`),
+    /** Site photos (storage keys). Frozen into the snapshot as URLs when sent. */
+    photos: jsonb("photos").$type<VariationPhoto[]>().notNull().default(sql`'[]'::jsonb`),
     vatRateBps: integer("vat_rate_bps").notNull(),
     status: variationStatus("status").notNull().default("draft"),
     netPence: integer("net_pence").notNull().default(0),
@@ -622,6 +624,7 @@ export const variations = pgTable(
     len("variations_reason_len", t.reason, TEXT.note, 0),
     between("variations_vat_range", t.vatRateBps, 0, MAX_VAT_BPS),
     check("variations_lines_array", sql`jsonb_typeof(${t.lines}) = 'array'`),
+    check("variations_photos_array", sql`jsonb_typeof(${t.photos}) = 'array' and jsonb_array_length(${t.photos}) <= ${n(MAX_VARIATION_PHOTOS)}`),
     between("variations_total_range", t.totalPence, -MAX_RATE_PENCE, MAX_RATE_PENCE),
     check("variations_amounts_add_up", sql`${t.netPence} + ${t.vatPence} = ${t.totalPence}`),
     check("variations_sent_frozen", sql`${t.status} = 'draft' or (${t.snapshot} is not null and ${t.contentHash} ~ '^[0-9a-f]{64}$' and ${t.sentAt} is not null)`),

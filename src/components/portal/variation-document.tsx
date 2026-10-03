@@ -21,6 +21,21 @@ export function VariationDocument({ snapshot, sentAt }: { snapshot: VariationSna
         {snapshot.reason && <p className="mt-2 leading-[1.6] whitespace-pre-line text-ink-2">{snapshot.reason}</p>}
       </section>
 
+      {snapshot.photos && snapshot.photos.length > 0 && (
+        <section className="rounded-[14px] bg-white px-5 py-4 shadow-ring print:shadow-none print:break-inside-avoid">
+          <h2 className="mb-2.5 font-semibold">Photos</h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {snapshot.photos.map((p, i) => (
+              <a key={p.url} href={p.url} target="_blank" rel="noreferrer noopener" className="block aspect-[4/3] overflow-hidden rounded-[10px] bg-muted">
+                {/* Our CDN, set per environment, so a plain <img> rather than next/image. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.url} alt={`Photo ${i + 1}`} referrerPolicy="no-referrer" loading="lazy" className="size-full object-cover" />
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="overflow-hidden rounded-[14px] bg-white shadow-ring print:shadow-none">
         <div className="flex flex-col px-5 py-2">
           {snapshot.lines.map((l) => (

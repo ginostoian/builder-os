@@ -13,6 +13,12 @@ export type VariationStatus = (typeof VARIATION_STATUSES)[number];
 /** Most lines on one variation. */
 export const MAX_VARIATION_LINES = 200;
 
+/** Most photos on one variation. */
+export const MAX_VARIATION_PHOTOS = 12;
+
+/** A photo on a draft: its storage key (the URL is built from it when shown or sent). */
+export type VariationPhoto = { key: string };
+
 export type VariationLine = { id: string; name: string; qty: number; unit: string; ratePence: number; markupBps: number; omit: boolean };
 
 /** "Q-0012-V2": the quote's reference plus the variation's number on that quote. */
@@ -49,6 +55,8 @@ export type VariationSnapshot = {
   vatRateBps: number;
   lines: { id: string; name: string; qty: number; unit: string; unitPrice: number; total: number; omit: boolean }[];
   totals: { net: number; vat: number; total: number };
+  /** Site photos, as public URLs (random, unguessable names). Older snapshots have none. */
+  photos?: { url: string }[];
 };
 
 export function buildVariationSnapshot(input: {
@@ -60,6 +68,7 @@ export function buildVariationSnapshot(input: {
   quote: { number: number; title: string };
   vatRateBps: number;
   lines: VariationLine[];
+  photoUrls?: string[];
 }): VariationSnapshot {
   const totals = variationTotals(input.lines, input.vatRateBps);
   return {
@@ -74,5 +83,6 @@ export function buildVariationSnapshot(input: {
     vatRateBps: input.vatRateBps,
     lines: input.lines.map((l) => ({ id: l.id, name: l.name, qty: l.qty, unit: l.unit, unitPrice: sellRate({ rate: l.ratePence, markup: l.markupBps }), total: variationLineTotal(l), omit: l.omit })),
     totals: { net: totals.net, vat: totals.vat, total: totals.total },
+    photos: (input.photoUrls ?? []).map((url) => ({ url })),
   };
 }

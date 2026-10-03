@@ -5,14 +5,14 @@
  */
 import "server-only";
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
-import { buildVariationSnapshot, variationTotals, type VariationLine, type VariationSnapshot } from "@/core/variation";
+import { MAX_VARIATION_PHOTOS, buildVariationSnapshot, variationTotals, type VariationLine, type VariationSnapshot } from "@/core/variation";
 import { canonicalJson, type QuoteSnapshot } from "@/core/quote-snapshot";
 import type { PortalDecisionInput, VariationSaveInput } from "@/core/schemas";
 import type { Tx } from "./index";
 import { clients, invoices, organizations, quoteDecisions, quoteVersions, quotes, variations } from "./schema";
 import { sha256 } from "./sending";
 
-export type VariationErrorReason = "not_found" | "not_accepted" | "not_editable" | "empty" | "not_open" | "decided";
+export type VariationErrorReason = "not_found" | "not_accepted" | "not_editable" | "empty" | "not_open" | "decided" | "too_many_photos";
 
 export class VariationError extends Error {
   constructor(readonly reason: VariationErrorReason) {
@@ -112,17 +112,54 @@ export async function saveVariation(tx: Tx, orgId: string, input: VariationSaveI
   if (rows.length === 0) throw new VariationError("not_editable");
 }
 
+/** Delete a draft. Returns its quote, and the photo keys no other variation uses (safe to delete from storage). */
 export async function deleteVariation(tx: Tx, orgId: string, variationId: string) {
   const rows = await tx
     .delete(variations)
     .where(and(eq(variations.orgId, orgId), eq(variations.id, variationId), eq(variations.status, "draft")))
-    .returning({ quoteId: variations.quoteId });
+    .returning({ quoteId: variations.quoteId, photos: variations.photos });
   if (rows.length === 0) throw new VariationError("not_editable");
-  return rows[0].quoteId;
+  const orphans: string[] = [];
+  for (const p of rows[0].photos) if (!(await photoInUse(tx, orgId, p.key))) orphans.push(p.key);
+  return { quoteId: rows[0].quoteId, orphans };
+}
+
+/** Whether any variation of the company still has this photo (revisions share photos with the original). */
+async function photoInUse(tx: Tx, orgId: string, key: string) {
+  const [row] = await tx
+    .select({ id: variations.id })
+    .from(variations)
+    .where(and(eq(variations.orgId, orgId), sql`${variations.photos} @> ${JSON.stringify([{ key }])}::jsonb`))
+    .limit(1);
+  return Boolean(row);
+}
+
+/** Attach an uploaded photo to a draft, up to the limit. */
+export async function addVariationPhoto(tx: Tx, orgId: string, variationId: string, key: string) {
+  const rows = await tx
+    .update(variations)
+    .set({ photos: sql`${variations.photos} || ${JSON.stringify([{ key }])}::jsonb` })
+    .where(and(eq(variations.orgId, orgId), eq(variations.id, variationId), eq(variations.status, "draft"), sql`jsonb_array_length(${variations.photos}) < ${MAX_VARIATION_PHOTOS}`))
+    .returning({ id: variations.id });
+  if (rows.length > 0) return;
+  const found = await getVariation(tx, orgId, variationId);
+  if (!found) throw new VariationError("not_found");
+  throw new VariationError(found.variation.status === "draft" ? "too_many_photos" : "not_editable");
+}
+
+/** Take a photo off a draft. Returns true if no variation uses it any more (so it can be deleted from storage). */
+export async function removeVariationPhoto(tx: Tx, orgId: string, variationId: string, key: string): Promise<boolean> {
+  const rows = await tx
+    .update(variations)
+    .set({ photos: sql`coalesce((select jsonb_agg(p) from jsonb_array_elements(${variations.photos}) p where p->>'key' <> ${key}), '[]'::jsonb)` })
+    .where(and(eq(variations.orgId, orgId), eq(variations.id, variationId), eq(variations.status, "draft")))
+    .returning({ id: variations.id });
+  if (rows.length === 0) throw new VariationError("not_editable");
+  return !(await photoInUse(tx, orgId, key));
 }
 
 /** Freeze a draft and send it: the client can then approve or reject it in their portal. */
-export async function sendVariation(tx: Tx, orgId: string, input: { variationId: string; memberId: string }) {
+export async function sendVariation(tx: Tx, orgId: string, input: { variationId: string; memberId: string; photoUrl?: (key: string) => string }) {
   const found = await getVariation(tx, orgId, input.variationId);
   if (!found) throw new VariationError("not_found");
   const v = found.variation;
@@ -138,6 +175,7 @@ export async function sendVariation(tx: Tx, orgId: string, input: { variationId:
     quote: { number: found.quoteNumber, title: found.quoteTitle },
     vatRateBps: v.vatRateBps,
     lines: v.lines,
+    photoUrls: input.photoUrl ? v.photos.map((p) => input.photoUrl!(p.key)) : [],
   });
   const rows = await tx
     .update(variations)
@@ -182,7 +220,7 @@ export async function reviseVariation(tx: Tx, orgId: string, variationId: string
   const t = variationTotals(v.lines, v.vatRateBps);
   await tx
     .update(variations)
-    .set({ title: v.title, reason: v.reason, lines: v.lines, netPence: t.net, vatPence: t.vat, totalPence: t.total })
+    .set({ title: v.title, reason: v.reason, lines: v.lines, photos: v.photos, netPence: t.net, vatPence: t.vat, totalPence: t.total })
     .where(and(eq(variations.orgId, orgId), eq(variations.id, id)));
   return id;
 }

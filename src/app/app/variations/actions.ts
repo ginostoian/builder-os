@@ -6,10 +6,13 @@ import { formatGBP } from "@/core/money";
 import { can } from "@/core/roles";
 import { id, sendVariationInput, variationSaveInput } from "@/core/schemas";
 import { memberEmail, ensurePortalToken } from "@/db/sending";
-import { VariationError, createVariation, deleteVariation, reviseVariation, saveVariation, sendVariation, withdrawVariation, type VariationErrorReason } from "@/db/variations";
+import { VariationError, addVariationPhoto, createVariation, deleteVariation, removeVariationPhoto, reviseVariation, saveVariation, sendVariation, withdrawVariation, type VariationErrorReason } from "@/db/variations";
 import { getSession, withSession, type Session } from "@/auth/session";
 import { emailConfigured, sendEmail } from "@/server/email";
 import { appOrigin, portalVariationUrl } from "@/server/origin";
+import { deleteObject, publicUrl, putObject, randomName, storageConfigured } from "@/server/storage";
+import { MAX_PHOTO_BYTES, orgFileKey, sniffImage } from "@/core/files";
+import { MAX_VARIATION_PHOTOS } from "@/core/variation";
 
 export type VariationActionResult = { ok: true } | { ok: false; message: string };
 export type SendVariationResult = { ok: true; link: string; emailed: boolean; emailError?: string; clientEmail: string | null } | { ok: false; message: string };
@@ -22,6 +25,7 @@ const MESSAGES: Record<VariationErrorReason, string> = {
   empty: "Add at least one line before sending.",
   not_open: "This variation has already been answered or withdrawn.",
   decided: "The client has already answered this variation.",
+  too_many_photos: `A variation can have up to ${MAX_VARIATION_PHOTOS} photos.`,
 };
 
 async function editor(): Promise<Session | null> {
@@ -67,14 +71,15 @@ export async function removeVariationDraft(variationId: string): Promise<Variati
   const session = await editor();
   if (!session) return { ok: false, message: NOT_ALLOWED };
   if (!id.safeParse(variationId).success) return { ok: false, message: MESSAGES.not_found };
-  let quoteId: string;
+  let removed: Awaited<ReturnType<typeof deleteVariation>>;
   try {
-    quoteId = await withSession(session, (tx) => deleteVariation(tx, session.orgId, variationId));
+    removed = await withSession(session, (tx) => deleteVariation(tx, session.orgId, variationId));
   } catch (error) {
     return fail(error);
   }
-  revalidatePath(`/app/quotes/${quoteId}`);
-  redirect(`/app/quotes/${quoteId}`);
+  for (const key of removed.orphans) await deleteObject(key);
+  revalidatePath(`/app/quotes/${removed.quoteId}`);
+  redirect(`/app/quotes/${removed.quoteId}`);
 }
 
 /** Freeze and send a draft. Gives the client's link, and emails it when asked and possible. */
@@ -88,7 +93,7 @@ export async function sendVariationToClient(input: unknown): Promise<SendVariati
   let replyTo: string | null;
   try {
     ({ sent, token, replyTo } = await withSession(session, async (tx) => {
-      const s = await sendVariation(tx, session.orgId, { variationId: parsed.data.variationId, memberId: session.memberId });
+      const s = await sendVariation(tx, session.orgId, { variationId: parsed.data.variationId, memberId: session.memberId, photoUrl: publicUrl });
       return { sent: s, token: await ensurePortalToken(tx, session.orgId, s.clientId), replyTo: await memberEmail(tx, session.orgId, session.memberId) };
     }));
   } catch (error) {
@@ -153,4 +158,52 @@ export async function reviseVariationAction(variationId: string): Promise<Variat
   }
   revalidatePath(`/app/variations/${variationId}`);
   redirect(`/app/variations/${next}`);
+}
+
+export type PhotoResult = { ok: true; key: string; url: string } | { ok: false; message: string };
+
+/**
+ * Add a site photo to a draft variation. The browser shrinks it and re-encodes it as JPEG first (which also
+ * drops location data); the bytes still decide the type here, whatever the name says.
+ */
+export async function uploadVariationPhoto(form: FormData): Promise<PhotoResult> {
+  const session = await editor();
+  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!storageConfigured()) return { ok: false, message: "File storage isn't set up yet, so photos can't be added." };
+  const variationId = form.get("variationId");
+  const file = form.get("photo");
+  if (typeof variationId !== "string" || !id.safeParse(variationId).success) return { ok: false, message: MESSAGES.not_found };
+  if (!(file instanceof File) || file.size === 0) return { ok: false, message: "Choose a photo." };
+  if (file.size > MAX_PHOTO_BYTES) return { ok: false, message: "That photo is too large. Try a smaller one." };
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const type = sniffImage(bytes);
+  if (!type) return { ok: false, message: "Use a JPEG, PNG or WebP photo." };
+  const key = orgFileKey(session.orgId, "photos", randomName(), type.ext);
+  const stored = await putObject(key, bytes, type.mime);
+  if (!stored.ok) return stored;
+  try {
+    await withSession(session, (tx) => addVariationPhoto(tx, session.orgId, variationId, key));
+  } catch (error) {
+    await deleteObject(key);
+    return fail(error) as PhotoResult;
+  }
+  revalidatePath(`/app/variations/${variationId}`);
+  return { ok: true, key, url: publicUrl(key) };
+}
+
+export async function removeVariationPhotoAction(variationId: string, key: string): Promise<VariationActionResult> {
+  const session = await editor();
+  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!id.safeParse(variationId).success) return { ok: false, message: MESSAGES.not_found };
+  // Only this company's photo keys: never a logo, never another company's file.
+  if (typeof key !== "string" || !new RegExp(`^orgs/${session.orgId}/photos/[A-Za-z0-9_-]{16,64}\\.(jpg|png|webp)$`).test(key)) return { ok: false, message: "That photo isn't on this variation." };
+  let unused: boolean;
+  try {
+    unused = await withSession(session, (tx) => removeVariationPhoto(tx, session.orgId, variationId, key));
+  } catch (error) {
+    return fail(error);
+  }
+  if (unused) await deleteObject(key);
+  revalidatePath(`/app/variations/${variationId}`);
+  return { ok: true };
 }

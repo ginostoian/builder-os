@@ -62,6 +62,7 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
      - `sent` → `withdrawn`, done by the team.
    - On an approved variation, only `invoice_id` can change after that.
    - "Revise" withdraws a sent variation and copies it into a new draft. The client never has two versions of the same change to approve.
+   - Photos (migration 0010): up to 12 per draft, stored in Bunny under `orgs/{companyId}/photos/` with random names. The browser shrinks each photo to at most 2,000 px and re-encodes it as JPEG, which also removes the location data. When the variation is sent, the photos go into the snapshot as URLs and are then frozen like everything else. A photo file is deleted from storage only when no variation uses it any more, because revisions share photos with the original.
    - Approved variations are billed on their own, or added to a payment's invoice; an invoice's `snapshot.lines` lists each part. A variation is billed while its `invoice_id` points at a live invoice, so voiding that invoice frees it again. Credits can reduce an invoice but never take it below zero.
 12. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
 

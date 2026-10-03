@@ -10,6 +10,8 @@ import { variationRef } from "@/core/variation";
 import { paymentSettings } from "@/db/invoices";
 import { currentPortalToken } from "@/db/sending";
 import { getVariation } from "@/db/variations";
+import { libraryForQuotes } from "@/db/quotes";
+import { publicUrl, storageConfigured } from "@/server/storage";
 import { requirePermission, withSession } from "@/auth/session";
 import { emailConfigured } from "@/server/email";
 import { appOrigin, portalVariationUrl } from "@/server/origin";
@@ -27,6 +29,7 @@ export default async function VariationPage({ params }: { params: Promise<{ id: 
       found,
       token: await currentPortalToken(tx, session.orgId, found.variation.clientId),
       bankReady: Boolean((await paymentSettings(tx, session.orgId))?.bankSortCode),
+      library: found.variation.status === "draft" ? await libraryForQuotes(tx, session.orgId) : [],
     };
   });
   if (!data) notFound();
@@ -45,6 +48,9 @@ export default async function VariationPage({ params }: { params: Promise<{ id: 
           clientName={found.clientName}
           clientEmail={found.clientEmail}
           emailEnabled={emailConfigured()}
+          library={data.library}
+          photos={v.photos.map((p) => ({ key: p.key, url: publicUrl(p.key) }))}
+          storageEnabled={storageConfigured()}
         />
       </LiveAppShell>
     );
