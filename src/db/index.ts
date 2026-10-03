@@ -9,7 +9,7 @@ import { sql } from "drizzle-orm";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { clerkOrgId, clerkUserId } from "@/core/clerk";
-import { id, portalToken } from "@/core/schemas";
+import { id, isoDate, portalToken } from "@/core/schemas";
 import { databaseUrl } from "./env";
 import * as schema from "./schema";
 
@@ -120,6 +120,17 @@ export async function findPortalAccess(token: string): Promise<{ accessId: strin
     sql`select access_id, org_id, client_id from app_portal_lookup(${parsed.data})`,
   );
   return rows[0] ? { accessId: rows[0].access_id, orgId: rows[0].org_id, clientId: rows[0].client_id } : null;
+}
+
+/**
+ * Companies with unpaid invoices due on or before `until` that have reminders switched on. The daily reminder
+ * job calls this first, then works through each company inside `withTenant`.
+ */
+export async function findOrgsWithDueInvoices(until: string): Promise<string[]> {
+  const day = isoDate.parse(until);
+  const database = await checkedDb();
+  const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_orgs_with_due_invoices(${day}::date) as org_id`);
+  return rows.map((row) => row.org_id);
 }
 
 /** Close the pool (scripts and tests; Next.js keeps it for the process lifetime). */

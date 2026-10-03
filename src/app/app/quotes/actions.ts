@@ -29,6 +29,7 @@ const MESSAGES: Record<QuoteErrorReason, string> = {
   too_many_lines: "A quote can have up to 2,000 lines.",
   empty: "Add at least one line before sending.",
   not_sent: "This quote hasn't been sent yet.",
+  bad_plan: "The payment plan doesn't add up to the quote total. Check the Payment plan tab.",
 };
 
 async function editor(): Promise<Session | null> {

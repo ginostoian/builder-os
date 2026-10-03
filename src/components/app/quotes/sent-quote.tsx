@@ -15,6 +15,7 @@ import { longDate, type QuoteSnapshot } from "@/core/quote-snapshot";
 import { cn } from "@/lib/utils";
 import { control } from "../form-fields";
 import { DuplicateButton } from "./duplicate-button";
+import { PaymentSchedule, type ScheduleRow } from "./payment-schedule";
 import { CopyButton } from "./send-dialog";
 import { QUOTE_STATUS } from "./status";
 
@@ -49,6 +50,11 @@ export function SentQuote({
   viewCount,
   lastViewedAt,
   versionCount,
+  schedule,
+  canInvoice,
+  bankReady,
+  emailEnabled,
+  clientEmail,
 }: {
   quoteId: string;
   status: string;
@@ -63,6 +69,11 @@ export function SentQuote({
   viewCount: number;
   lastViewedAt: Date | null;
   versionCount: number;
+  schedule: ScheduleRow[] | null;
+  canInvoice: boolean;
+  bankReady: boolean;
+  emailEnabled: boolean;
+  clientEmail: string | null;
 }) {
   const router = useRouter();
   const [revising, startRevise] = React.useTransition();
@@ -153,6 +164,9 @@ export function SentQuote({
           <div className="text-[24px] font-semibold tracking-[-0.02em] tabular">{formatGBP(snapshot.totals.total)}</div>
         </div>
         {decision && <DecisionCard decision={decision} />}
+        {schedule && schedule.length > 0 && (
+          <PaymentSchedule quoteId={quoteId} rows={schedule} canInvoice={canInvoice} bankReady={bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />
+        )}
         <Conversation quoteId={quoteId} comments={comments} clientName={clientName} snapshot={snapshot} />
         <div>
           <div className="mb-2 text-xs font-medium text-subtle">Activity</div>

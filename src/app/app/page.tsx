@@ -7,6 +7,7 @@ import { formatGBP } from "@/core/money";
 import { quoteRef } from "@/core/quote";
 import { can } from "@/core/roles";
 import { dashboardData } from "@/db/dashboard";
+import { invoiceTotals } from "@/db/invoices";
 import { getSession, withSession } from "@/auth/session";
 
 const ukHour = (d: Date) => Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "2-digit", hourCycle: "h23" }).format(d));
@@ -54,7 +55,8 @@ export default async function DashboardPage() {
     );
   }
 
-  const d = await withSession(session, (tx) => dashboardData(tx, session.orgId, now));
+  const canInvoice = can(session.role, "invoices.manage");
+  const [d, money] = await withSession(session, async (tx) => [await dashboardData(tx, session.orgId, now), canInvoice ? await invoiceTotals(tx, session.orgId) : null] as const);
   const kpis = [
     { label: "Awaiting reply", value: formatGBP(d.awaitingValue, 0), sub: `${d.awaiting.length} ${d.awaiting.length === 1 ? "quote" : "quotes"} sent` },
     { label: "Won this month", value: formatGBP(d.wonThisMonth.value, 0), sub: `${d.wonThisMonth.count} accepted`, tone: d.wonThisMonth.count > 0 ? "text-success" : undefined },
@@ -87,6 +89,26 @@ export default async function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {money && money.outstanding > 0 && (
+          <Link href="/app/payments" className="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl bg-white px-4 py-3 shadow-card hover:bg-surface">
+            <span className="font-medium">Payments</span>
+            <span className="tabular">
+              <span className="text-subtle">Unpaid </span>
+              {formatGBP(money.outstanding, 0)}
+            </span>
+            <span className={`tabular ${money.overdueCount > 0 ? "text-danger" : ""}`}>
+              <span className="text-subtle">Overdue </span>
+              {formatGBP(money.overdue, 0)}
+              {money.overdueCount > 0 && ` (${money.overdueCount})`}
+            </span>
+            <span className="tabular">
+              <span className="text-subtle">Due in 7 days </span>
+              {formatGBP(money.dueThisWeek, 0)}
+            </span>
+            <span className="ml-auto text-[12.5px] text-ink-2">View payments →</span>
+          </Link>
+        )}
 
         <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-start gap-3">
           <div className="flex flex-col gap-3">

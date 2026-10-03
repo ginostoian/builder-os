@@ -4,7 +4,7 @@ Both are optional. Without them the app still works: sending gives you a link to
 
 ## Email: Resend
 
-Used for quote emails to clients (with their portal link), and alerts to your team when a client opens, comments on, accepts or declines a quote. Coming next: invoice emails and payment reminders.
+Used for quote and invoice emails to clients (with their portal link), automatic payment reminders, and alerts to your team when a client opens, comments on, accepts or declines a quote.
 
 1. Create a Resend account, add your sending domain, and add the DNS records it gives you (SPF/DKIM).
 2. Create an API key with "sending access".
@@ -19,7 +19,30 @@ How messages look:
 - Replies go to the team member who sent the quote.
 - Team alerts go to whoever sent the quote, or to the company's Admins if that person has no email address. A client opening a quote triggers an alert only the first time they open each version.
 
-Code: `src/server/email.ts` (sending), `src/server/notify.ts` (team alerts).
+Code: `src/server/email.ts` (sending), `src/server/notify.ts` (team alerts), `src/core/invoice-email.ts` (invoice and reminder wording).
+
+## Payment reminders: Vercel Cron
+
+Clients get an email about an unpaid invoice 3 days before it's due, on the day, then 3 and 7 days late. Each reminder goes out once at most. Reminders stop when the invoice is marked paid or cancelled, and a company can switch them off in Settings → Payments.
+
+1. Generate a long random secret: `openssl rand -hex 32`.
+2. In Vercel (Production only), set `CRON_SECRET` to it. Vercel Cron sends it as `Authorization: Bearer …`.
+3. Email must be set up as above. Without `CRON_SECRET`, `/api/cron/reminders` answers 503.
+
+The schedule is in `vercel.json` (08:00 UTC daily, which is 08:00 or 09:00 in the UK). To run it by hand:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron/reminders
+```
+
+It returns `{ companies, sent, failed, skippedNoEmail }`.
+
+How it works:
+- A `SECURITY DEFINER` lookup (`app_orgs_with_due_invoices`) finds companies with unpaid invoices due within 3 days. It returns company ids only.
+- Each company is then handled inside its own tenant transaction.
+- Each reminder is recorded (`invoice_reminders`) before the email is sent, so overlapping runs can't double-send. If Resend refuses one, that reminder is skipped rather than retried.
+
+Code: `src/server/reminders.ts`, `src/app/api/cron/reminders/route.ts`.
 
 ## File storage: Bunny.net
 

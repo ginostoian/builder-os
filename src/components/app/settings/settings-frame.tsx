@@ -5,6 +5,7 @@ import { appRoutes } from "../routes";
 
 const tabs = [
   { id: "company", label: "Company", href: appRoutes.settings },
+  { id: "payments", label: "Payments", href: appRoutes.paymentSettings },
   { id: "team", label: "Team", href: appRoutes.team },
 ] as const;
 

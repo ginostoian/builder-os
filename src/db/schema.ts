@@ -33,7 +33,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { MAX_MARKUP_BPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, TEXT } from "../core/limits";
-import { LINE_KINDS, QUOTE_STATUSES, ROLES, SERVICE_KINDS, type Address } from "../core/schemas";
+import { LINE_KINDS, QUOTE_STATUSES, ROLES, SERVICE_KINDS, type Address, type PaymentPlanInput } from "../core/schemas";
 
 /** Runtime role. Created (NOLOGIN) in migration 0000; login roles per environment are granted membership. */
 export const appRole = pgRole("builderos_app").existing();
@@ -100,6 +100,14 @@ export const organizations = pgTable(
     defaultMarkupBps: integer("default_markup_bps").notNull().default(0),
     defaultVatRateBps: integer("default_vat_rate_bps").notNull().default(2000),
     quoteTerms: text("quote_terms"),
+    /** Bank transfer details shown on invoices. Digits only for sort code and account number. */
+    bankAccountName: text("bank_account_name"),
+    bankSortCode: text("bank_sort_code"),
+    bankAccountNumber: text("bank_account_number"),
+    /** Days to pay an invoice that has no date of its own. */
+    paymentTermsDays: integer("payment_terms_days").notNull().default(14),
+    /** Email clients about invoices before and after they're due. */
+    remindersEnabled: boolean("reminders_enabled").notNull().default(true),
     /** Clerk event time of the last sync. Webhooks older than this are ignored (Svix can deliver out of order). */
     clerkSyncedAt: timestamp("clerk_synced_at", { withTimezone: true }),
     /** Set when the Clerk organization is deleted. Data is kept for a grace period, then purged (plan §7). */
@@ -122,6 +130,10 @@ export const organizations = pgTable(
     between("organizations_default_markup_range", t.defaultMarkupBps, 0, MAX_MARKUP_BPS),
     between("organizations_default_vat_range", t.defaultVatRateBps, 0, MAX_VAT_BPS),
     len("organizations_quote_terms_len", t.quoteTerms, TEXT.terms, 0),
+    len("organizations_bank_account_name_len", t.bankAccountName, TEXT.name),
+    check("organizations_bank_sort_code_format", sql`${t.bankSortCode} is null or ${t.bankSortCode} ~ '^[0-9]{6}$'`),
+    check("organizations_bank_account_number_format", sql`${t.bankAccountNumber} is null or ${t.bankAccountNumber} ~ '^[0-9]{8}$'`),
+    between("organizations_payment_terms_range", t.paymentTermsDays, 0, 120),
   ],
 ).enableRLS();
 
@@ -257,6 +269,8 @@ export const quotes = pgTable(
     vatRateBps: integer("vat_rate_bps").notNull(),
     /** Optimistic concurrency for patch-based autosave (plan §4). */
     version: integer("version").notNull().default(0),
+    /** The payment plan (validated by paymentPlanInput); frozen into each sent version's snapshot. */
+    paymentPlan: jsonb("payment_plan").$type<PaymentPlanInput>(),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
     ...timestamps,
@@ -273,6 +287,7 @@ export const quotes = pgTable(
     between("quotes_markup_range", t.markupBps, 0, MAX_MARKUP_BPS),
     between("quotes_vat_range", t.vatRateBps, 0, MAX_VAT_BPS),
     check("quotes_version_nonneg", sql`${t.version} >= 0`),
+    check("quotes_payment_plan_array", sql`${t.paymentPlan} is null or jsonb_typeof(${t.paymentPlan}) = 'array'`),
   ],
 ).enableRLS();
 
@@ -475,5 +490,76 @@ export const quoteDecisions = pgTable(
     check("quote_decisions_hash_format", sql`${t.contentHash} ~ '^[0-9a-f]{64}$'`),
     len("quote_decisions_ip_len", t.ip, 64, 0),
     len("quote_decisions_user_agent_len", t.userAgent, 500, 0),
+  ],
+).enableRLS();
+
+// ── Invoices (bank transfer) ──────────────────────────────────────────────────
+
+export const invoiceStatus = pgEnum("invoice_status", ["issued", "paid", "void"]);
+
+/**
+ * An invoice, usually for one stage of an accepted quote's payment plan. Amounts, bank details and wording
+ * are frozen in `snapshot` when it's raised; only the payment status changes afterwards. Invoices are voided,
+ * never deleted (the app role has no DELETE, migration 0008).
+ */
+export const invoices = pgTable(
+  "invoices",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    number: integer("number").notNull(),
+    clientId: uuid("client_id").notNull(),
+    quoteId: uuid("quote_id"),
+    /** The plan stage this bills (an id from the accepted version's snapshot). */
+    stageId: uuid("stage_id"),
+    status: invoiceStatus("status").notNull().default("issued"),
+    issueDate: date("issue_date").notNull(),
+    dueDate: date("due_date").notNull(),
+    netPence: integer("net_pence").notNull(),
+    vatPence: integer("vat_pence").notNull(),
+    totalPence: integer("total_pence").notNull(),
+    snapshot: jsonb("snapshot").notNull(),
+    paidOn: date("paid_on"),
+    paidReference: text("paid_reference"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    createdByMemberId: uuid("created_by_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    pgPolicy("reminder_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
+    unique("invoices_org_id_id_key").on(t.orgId, t.id),
+    unique("invoices_org_number_key").on(t.orgId, t.number),
+    // One live invoice per plan stage; a voided one can be raised again.
+    uniqueIndex("invoices_one_per_stage").on(t.orgId, t.quoteId, t.stageId).where(sql`${t.status} <> 'void' and ${t.stageId} is not null`),
+    foreignKey({ name: "invoices_client_fk", columns: [t.orgId, t.clientId], foreignColumns: [clients.orgId, clients.id] }),
+    foreignKey({ name: "invoices_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
+    foreignKey({ name: "invoices_member_fk", columns: [t.orgId, t.createdByMemberId], foreignColumns: [members.orgId, members.id] }),
+    index("invoices_org_status_due_idx").on(t.orgId, t.status, t.dueDate),
+    check("invoices_number_positive", sql`${t.number} > 0`),
+    between("invoices_total_range", t.totalPence, 0, MAX_RATE_PENCE),
+    check("invoices_amounts_add_up", sql`${t.netPence} + ${t.vatPence} = ${t.totalPence} and ${t.netPence} >= 0 and ${t.vatPence} >= 0`),
+    check("invoices_due_after_issue", sql`${t.dueDate} >= ${t.issueDate}`),
+    check("invoices_paid_has_date", sql`(${t.status} = 'paid') = (${t.paidOn} is not null)`),
+    check("invoices_snapshot_object", sql`jsonb_typeof(${t.snapshot}) = 'object'`),
+    len("invoices_paid_reference_len", t.paidReference, TEXT.short, 0),
+  ],
+).enableRLS();
+
+/** Each payment reminder emailed for an invoice: at most one of each kind (append-only). */
+export const invoiceReminders = pgTable(
+  "invoice_reminders",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    invoiceId: uuid("invoice_id").notNull(),
+    kind: text("kind").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    unique("invoice_reminders_once").on(t.orgId, t.invoiceId, t.kind),
+    foreignKey({ name: "invoice_reminders_invoice_fk", columns: [t.orgId, t.invoiceId], foreignColumns: [invoices.orgId, invoices.id] }),
+    check("invoice_reminders_kind", sql`${t.kind} in ('before', 'due', 'overdue_3', 'overdue_7')`),
   ],
 ).enableRLS();

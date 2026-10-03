@@ -3,7 +3,7 @@
 import * as React from "react";
 import { saveQuoteChanges } from "@/app/app/quotes/actions";
 import { enqueueOp, takeBatch } from "@/core/quote-ops";
-import type { QuoteHeaderInput, QuoteOp } from "@/core/schemas";
+import type { PaymentPlanInput, QuoteHeaderInput, QuoteOp } from "@/core/schemas";
 
 export type SaveStatus = "saved" | "pending" | "saving" | "retrying" | "blocked";
 
@@ -20,6 +20,7 @@ export function useQuoteSaver(quoteId: string, initialVersion: number) {
   const version = React.useRef(initialVersion);
   const queue = React.useRef<QuoteOp[]>([]);
   const header = React.useRef<QuoteHeaderInput | undefined>(undefined);
+  const plan = React.useRef<PaymentPlanInput | undefined>(undefined);
   const inFlight = React.useRef(false);
   const blocked = React.useRef(false);
   const attempts = React.useRef(0);
@@ -28,7 +29,7 @@ export function useQuoteSaver(quoteId: string, initialVersion: number) {
   const [message, setMessage] = React.useState<string>();
   const [savedAt, setSavedAt] = React.useState<Date>();
 
-  const hasWork = () => queue.current.length > 0 || header.current !== undefined;
+  const hasWork = () => queue.current.length > 0 || header.current !== undefined || plan.current !== undefined;
 
   const flush = React.useCallback(async function run(): Promise<void> {
     clearTimeout(timer.current);
@@ -37,18 +38,21 @@ export function useQuoteSaver(quoteId: string, initialVersion: number) {
 
     const { batch, rest } = takeBatch(queue.current);
     const sentHeader = header.current;
+    const sentPlan = plan.current;
     queue.current = rest;
     header.current = undefined;
+    plan.current = undefined;
     inFlight.current = true;
     setStatus("saving");
 
     let result: Awaited<ReturnType<typeof saveQuoteChanges>> | undefined;
     try {
-      result = await saveQuoteChanges({ quoteId, baseVersion: version.current, header: sentHeader, ops: batch });
+      result = await saveQuoteChanges({ quoteId, baseVersion: version.current, header: sentHeader, ops: batch, paymentPlan: sentPlan });
     } catch {
       // Offline or the server didn't answer: put everything back in order and try again later.
       queue.current = [...batch, ...queue.current];
       header.current ??= sentHeader;
+      plan.current ??= sentPlan;
       inFlight.current = false;
       const delay = RETRY_MS[Math.min(attempts.current, RETRY_MS.length - 1)];
       attempts.current++;
@@ -93,6 +97,15 @@ export function useQuoteSaver(quoteId: string, initialVersion: number) {
     [schedule],
   );
 
+  /** Replace the payment plan (the whole plan is sent; it's small). */
+  const savePlan = React.useCallback(
+    (p: PaymentPlanInput) => {
+      plan.current = p;
+      schedule();
+    },
+    [schedule],
+  );
+
   // Warn before leaving with unsaved changes, and try to send them when the tab is hidden.
   React.useEffect(() => {
     const beforeUnload = (e: BeforeUnloadEvent) => {
@@ -123,5 +136,5 @@ export function useQuoteSaver(quoteId: string, initialVersion: number) {
     return blocked.current ? null : version.current;
   }, [flush]);
 
-  return { push, saveHeader, flush, settle, status, message, savedAt };
+  return { push, saveHeader, savePlan, flush, settle, status, message, savedAt };
 }

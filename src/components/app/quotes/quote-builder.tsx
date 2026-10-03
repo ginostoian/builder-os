@@ -29,8 +29,11 @@ import { MAX_MARKUP_BPS, MAX_VAT_BPS, TEXT } from "@/core/limits";
 import { formatBps, formatGBP, formatRate, parsePence, parsePercentToBps } from "@/core/money";
 import { lineTotal, quoteRef, quoteTotals, sectionTotal, type QuoteSection } from "@/core/quote";
 import { LINE_KINDS, qty as qtySchema, quoteHeaderInput, singleLine, type Address, type QuoteHeaderInput, type QuoteOp } from "@/core/schemas";
+import { paymentPlanInput } from "@/core/schemas";
+import type { PlanStage } from "@/core/payment-plan";
 import { cn } from "@/lib/utils";
 import { Field, control } from "../form-fields";
+import { PaymentPlanEditor } from "./payment-plan-editor";
 import { DuplicateButton } from "./duplicate-button";
 import { SendDialog } from "./send-dialog";
 import { useQuoteSaver, type SaveStatus } from "./use-quote-saver";
@@ -64,6 +67,7 @@ export type BuilderQuote = {
   markupBps: number;
   vatRateBps: number;
   sections: BuilderSection[];
+  paymentPlan: PlanStage[];
 };
 export type LibraryOption = {
   id: string;
@@ -130,7 +134,8 @@ export function QuoteBuilder({
     validUntil: initial.validUntil ?? undefined,
   }));
   const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set());
-  const [tab, setTab] = React.useState<"items" | "details">("items");
+  const [tab, setTab] = React.useState<"items" | "plan" | "details">("items");
+  const [plan, setPlan] = React.useState<PlanStage[]>(initial.paymentPlan);
   const blocked = saver.status === "blocked";
 
   const totals = quoteTotals(toCore(sections), header.vatRateBps);
@@ -214,6 +219,13 @@ export function QuoteBuilder({
     if (parsed.success) saver.saveHeader(parsed.data);
   };
 
+  const commitPlan = (next: PlanStage[]) => {
+    if (blocked) return;
+    setPlan(next);
+    const parsed = paymentPlanInput.safeParse(next);
+    if (parsed.success) saver.savePlan(parsed.data);
+  };
+
   return (
     <div className="relative flex min-h-0 flex-1">
       <div className="flex min-w-0 flex-1 flex-col">
@@ -278,7 +290,7 @@ export function QuoteBuilder({
 
         <div className="flex items-center border-b border-hairline px-6">
           <div className="flex gap-5" role="tablist">
-            {(["items", "details"] as const).map((t) => (
+            {(["items", "plan", "details"] as const).map((t) => (
               <button
                 key={t}
                 type="button"
@@ -287,7 +299,7 @@ export function QuoteBuilder({
                 onClick={() => setTab(t)}
                 className={cn("-mb-px border-b-2 py-2.5 font-medium", tab === t ? "border-ink text-ink" : "border-transparent text-subtle hover:text-ink-2")}
               >
-                {t === "items" ? "Items" : "Details"}
+                {{ items: "Items", plan: "Payment plan", details: "Details" }[t]}
               </button>
             ))}
           </div>
@@ -346,6 +358,8 @@ export function QuoteBuilder({
               </div>
             </div>
           </fieldset>
+        ) : tab === "plan" ? (
+          <PaymentPlanEditor plan={plan} total={totals.total} disabled={blocked} onChange={commitPlan} />
         ) : (
           <DetailsTab header={header} clients={clients} quoteId={initial.id} disabled={blocked} onChange={commitHeader} />
         )}

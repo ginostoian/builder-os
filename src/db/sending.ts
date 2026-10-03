@@ -3,9 +3,10 @@
  * replies, and the activity timeline. Runs inside the tenant transaction like every other query.
  */
 import "server-only";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, inArray, isNull, max, sql } from "drizzle-orm";
-import { buildSnapshot, canonicalJson, type QuoteSnapshot } from "@/core/quote-snapshot";
+import { DEFAULT_PLAN } from "@/core/payment-plan";
+import { PlanError, buildSnapshot, canonicalJson, type QuoteSnapshot } from "@/core/quote-snapshot";
 import type { Tx } from "./index";
 import { QuoteError, getQuote } from "./quotes";
 import { clients, members, organizations, portalAccess, quoteComments, quoteDecisions, quoteEvents, quoteVersions, quotes } from "./schema";
@@ -78,13 +79,20 @@ export async function sendQuote(tx: Tx, orgId: string, input: { quoteId: string;
     .where(and(eq(quoteVersions.orgId, orgId), eq(quoteVersions.quoteId, input.quoteId)));
   const versionNo = (last ?? 0) + 1;
   const q = loaded.quote;
-  const snapshot = buildSnapshot({
+  let snapshot: QuoteSnapshot;
+  try {
+    snapshot = buildSnapshot({
     company: org,
     clientName: loaded.client?.name ?? "",
     quote: { number: q.number, title: q.title, siteAddress: q.siteAddress, validUntil: q.validUntil, vatRateBps: q.vatRateBps },
     versionNo,
+    paymentPlan: q.paymentPlan?.length ? q.paymentPlan : DEFAULT_PLAN(randomUUID()),
     sections: loaded.sections,
-  });
+    });
+  } catch (error) {
+    if (error instanceof PlanError) throw new QuoteError("bad_plan");
+    throw error;
+  }
   const [version] = await tx
     .insert(quoteVersions)
     .values({ orgId, quoteId: q.id, versionNo, snapshot, contentHash: sha256(canonicalJson(snapshot)), totalPence: snapshot.totals.total, sentByMemberId: input.memberId })

@@ -8,6 +8,7 @@
  * - Money is integer pence, percentages are basis points, quantities have at most 3 decimals.
  */
 import { z } from "zod";
+import { MAX_PAYMENT_STAGES, PAYMENT_AMOUNT_KINDS, PAYMENT_DUE_KINDS } from "./payment-plan";
 import { MAX_BUNDLE_ITEMS, MAX_LINES_PER_QUOTE, MAX_MARKUP_BPS, MAX_PATCH_OPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, QTY_DECIMALS, TEXT } from "./limits";
 
 // Control characters other than tab and newline. They break PDFs and CSV exports and hide content.
@@ -201,6 +202,27 @@ export const quotePatch = z.strictObject({
 });
 export type QuotePatch = z.infer<typeof quotePatch>;
 
+/** One payment in a quote's plan. Percent is basis points of the total; fixed is pence, VAT included. */
+export const paymentStageInput = z
+  .strictObject({
+    id,
+    label: singleLine(TEXT.name),
+    amountKind: z.enum(PAYMENT_AMOUNT_KINDS),
+    amountValue: z.int().min(0).max(MAX_RATE_PENCE).optional(),
+    dueKind: z.enum(PAYMENT_DUE_KINDS),
+    dueDate: isoDate.optional(),
+  })
+  .refine((st) => st.amountKind === "balance" || st.amountValue !== undefined, "Enter an amount")
+  .refine((st) => st.amountKind !== "percent" || (st.amountValue ?? 0) <= 10_000, "A percentage can't be more than 100%")
+  .refine((st) => st.dueKind !== "date" || st.dueDate !== undefined, "Pick a due date");
+
+export const paymentPlanInput = z
+  .array(paymentStageInput)
+  .max(MAX_PAYMENT_STAGES)
+  .refine((plan) => plan.filter((st) => st.amountKind === "balance").length <= 1, "Only one payment can be the remaining balance")
+  .refine((plan) => new Set(plan.map((st) => st.id)).size === plan.length, "Duplicate payment");
+export type PaymentPlanInput = z.infer<typeof paymentPlanInput>;
+
 /** One autosave from the quote builder: header changes, grid ops, or both, against `baseVersion`. */
 export const quoteSave = z
   .strictObject({
@@ -208,8 +230,10 @@ export const quoteSave = z
     baseVersion: z.int().min(0),
     header: quoteHeaderInput.optional(),
     ops: z.array(quoteOp).max(MAX_PATCH_OPS).default([]),
+    /** The whole plan (replaces the old one); an empty array clears it. */
+    paymentPlan: paymentPlanInput.optional(),
   })
-  .refine((s) => s.header !== undefined || s.ops.length > 0, "Nothing to save");
+  .refine((s) => s.header !== undefined || s.ops.length > 0 || s.paymentPlan !== undefined, "Nothing to save");
 export type QuoteSave = z.infer<typeof quoteSave>;
 
 /** Starting a quote: who it's for and what it's called. Everything else comes from company defaults. */
@@ -247,3 +271,32 @@ export type PortalDecisionInput = z.infer<typeof portalDecisionInput>;
 
 /** A reply from the team on a sent quote. */
 export const staffReplyInput = z.strictObject({ quoteId: id, body: multiLine(TEXT.note).pipe(z.string().min(1, "Write a reply")) });
+
+// ── Payments and invoices ────────────────────────────────────────────────────
+
+/** UK bank details for "pay by bank transfer". Sort code and account number are stored as digits. */
+export const paymentSettingsInput = z.strictObject({
+  bankAccountName: singleLine(TEXT.name).optional(),
+  bankSortCode: z
+    .string()
+    .transform((v) => v.replace(/[\s-]/g, ""))
+    .pipe(z.string().regex(/^\d{6}$/, "Enter a 6-digit sort code, e.g. 12-34-56"))
+    .optional(),
+  bankAccountNumber: z
+    .string()
+    .transform((v) => v.replace(/\s/g, ""))
+    .pipe(z.string().regex(/^\d{8}$/, "Enter an 8-digit account number"))
+    .optional(),
+  paymentTermsDays: z.int().min(0).max(120),
+  remindersEnabled: z.boolean(),
+});
+export type PaymentSettingsInput = z.infer<typeof paymentSettingsInput>;
+
+/** Raise an invoice for one stage of an accepted quote's plan. */
+export const createInvoiceInput = z.strictObject({ quoteId: id, stageId: id, email: z.boolean() });
+
+export const markPaidInput = z.strictObject({
+  invoiceId: id,
+  paidOn: isoDate,
+  reference: singleLine(TEXT.short).optional(),
+});

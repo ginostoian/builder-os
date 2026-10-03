@@ -7,6 +7,7 @@ const input = {
   clientName: "Sarah",
   quote: { number: 7, title: "Kitchen", siteAddress: null, validUntil: "2026-10-31", vatRateBps: 2000 },
   versionNo: 1,
+  paymentPlan: [{ id: "p1", label: "Payment on completion", amountKind: "balance" as const, dueKind: "milestone" as const }],
   sections: [
     {
       id: "s1",
@@ -34,6 +35,26 @@ describe("buildSnapshot", () => {
 
   it("makes each line's total equal quantity × the unit price shown", () => {
     for (const l of buildSnapshot(input).sections[0].lines) expect(l.total).toBe(Math.round(l.qty * l.unitPrice));
+  });
+});
+
+describe("payment plan in the snapshot", () => {
+  it("freezes each payment's amount, adding up to the total", () => {
+    const s = buildSnapshot({
+      ...input,
+      paymentPlan: [
+        { id: "d", label: "Deposit", amountKind: "percent", amountValue: 2500, dueKind: "on_acceptance" },
+        { id: "b", label: "On completion", amountKind: "balance", dueKind: "milestone" },
+      ],
+    });
+    expect(s.paymentPlan).toEqual([
+      { id: "d", label: "Deposit", amount: 4_453, dueKind: "on_acceptance", dueDate: null },
+      { id: "b", label: "On completion", amount: 17_810 - 4_453, dueKind: "milestone", dueDate: null },
+    ]);
+  });
+
+  it("refuses to send a plan that doesn't add up", () => {
+    expect(() => buildSnapshot({ ...input, paymentPlan: [{ id: "x", label: "Half", amountKind: "percent", amountValue: 5000, dueKind: "milestone" }] })).toThrow(/less than/);
   });
 });
 

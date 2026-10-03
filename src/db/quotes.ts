@@ -27,7 +27,8 @@ export type QuoteErrorReason =
   | "unknown_service"
   | "too_many_lines"
   | "empty"
-  | "not_sent";
+  | "not_sent"
+  | "bad_plan";
 
 /** A save that can't be applied. Nothing from it is written (the transaction rolls back). */
 export class QuoteError extends Error {
@@ -284,6 +285,12 @@ export async function saveQuote(tx: Tx, orgId: string, save: QuoteSave): Promise
         .where(and(eq(quotes.orgId, orgId), eq(quotes.id, save.quoteId)));
     }
     for (const op of save.ops) await applyOp(tx, orgId, save.quoteId, op, touched);
+    if (save.paymentPlan !== undefined) {
+      await tx
+        .update(quotes)
+        .set({ paymentPlan: save.paymentPlan.length ? save.paymentPlan : null })
+        .where(and(eq(quotes.orgId, orgId), eq(quotes.id, save.quoteId)));
+    }
   } catch (error) {
     // A service id from another company (or a deleted one) fails the composite foreign key.
     if (pgCode(error) === PG_FOREIGN_KEY) throw new QuoteError("unknown_service");
@@ -468,7 +475,7 @@ export async function duplicateQuote(tx: Tx, orgId: string, quoteId: string): Pr
   const newId = await createQuote(tx, orgId, { clientId: q.clientId, title });
   await tx
     .update(quotes)
-    .set({ siteAddress: q.siteAddress, markupBps: q.markupBps, vatRateBps: q.vatRateBps })
+    .set({ siteAddress: q.siteAddress, markupBps: q.markupBps, vatRateBps: q.vatRateBps, paymentPlan: q.paymentPlan })
     .where(and(eq(quotes.orgId, orgId), eq(quotes.id, newId)));
   // Replace the starter section with copies of the source's sections and lines.
   await tx.delete(quoteSections).where(and(eq(quoteSections.orgId, orgId), eq(quoteSections.quoteId, newId)));
