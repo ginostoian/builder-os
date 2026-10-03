@@ -29,6 +29,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { MAX_MARKUP_BPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, TEXT } from "../core/limits";
@@ -325,5 +326,154 @@ export const quoteLines = pgTable(
     between("quote_lines_rate_range", t.ratePence, 0, MAX_RATE_PENCE),
     between("quote_lines_markup_range", t.markupBps, 0, MAX_MARKUP_BPS),
     len("quote_lines_note_len", t.note, TEXT.note, 0),
+  ],
+).enableRLS();
+
+// ── Sending, the client portal, and what clients do there ────────────────────
+
+export const QUOTE_EVENT_KINDS = ["sent", "viewed", "commented", "replied", "accepted", "declined", "revised"] as const;
+export const quoteEventKind = pgEnum("quote_event_kind", QUOTE_EVENT_KINDS);
+
+/**
+ * A client's private portal link. The token is the secret in `/portal/{token}`: 32 random bytes, base64url.
+ * It's stored as-is so the office can copy the link again later; it only unlocks this client's sent quotes,
+ * and rotating it (revoke + new row) kills the old link. Public pages find it through `app_portal_lookup`
+ * (migration 0007), which runs as builderos_lookup and sees only the columns it needs.
+ */
+export const portalAccess = pgTable(
+  "portal_access",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    lastViewedAt: timestamp("last_viewed_at", { withTimezone: true }),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    pgPolicy("portal_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
+    unique("portal_access_org_id_id_key").on(t.orgId, t.id),
+    foreignKey({ name: "portal_access_client_fk", columns: [t.orgId, t.clientId], foreignColumns: [clients.orgId, clients.id] }).onDelete("cascade"),
+    uniqueIndex("portal_access_one_active_per_client").on(t.orgId, t.clientId).where(sql`${t.revokedAt} is null`),
+    check("portal_access_token_format", sql`${t.token} ~ '^[A-Za-z0-9_-]{43}$'`),
+  ],
+).enableRLS();
+
+/**
+ * What the client was sent: an immutable snapshot of the quote at that moment (no costs or markups, only
+ * what the client sees), with a SHA-256 of it so a signature can be tied to exact content. The app role can
+ * insert but never update or delete these (migration 0007).
+ */
+export const quoteVersions = pgTable(
+  "quote_versions",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    quoteId: uuid("quote_id").notNull(),
+    versionNo: integer("version_no").notNull(),
+    snapshot: jsonb("snapshot").notNull(),
+    contentHash: text("content_hash").notNull(),
+    totalPence: integer("total_pence").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+    sentByMemberId: uuid("sent_by_member_id"),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    unique("quote_versions_org_id_id_key").on(t.orgId, t.id),
+    unique("quote_versions_quote_version_key").on(t.orgId, t.quoteId, t.versionNo),
+    foreignKey({ name: "quote_versions_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
+    foreignKey({ name: "quote_versions_member_fk", columns: [t.orgId, t.sentByMemberId], foreignColumns: [members.orgId, members.id] }),
+    check("quote_versions_version_positive", sql`${t.versionNo} > 0`),
+    check("quote_versions_snapshot_object", sql`jsonb_typeof(${t.snapshot}) = 'object'`),
+    check("quote_versions_hash_format", sql`${t.contentHash} ~ '^[0-9a-f]{64}$'`),
+  ],
+).enableRLS();
+
+/** Timeline of a quote: sent, opened by the client, comments, decisions. Append-only. */
+export const quoteEvents = pgTable(
+  "quote_events",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    quoteId: uuid("quote_id").notNull(),
+    versionId: uuid("version_id"),
+    kind: quoteEventKind("kind").notNull(),
+    actor: text("actor").notNull(),
+    memberId: uuid("member_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    foreignKey({ name: "quote_events_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
+    foreignKey({ name: "quote_events_version_fk", columns: [t.orgId, t.versionId], foreignColumns: [quoteVersions.orgId, quoteVersions.id] }),
+    index("quote_events_quote_idx").on(t.orgId, t.quoteId, t.createdAt),
+    check("quote_events_actor", sql`${t.actor} in ('client', 'staff')`),
+  ],
+).enableRLS();
+
+/** Comments on a sent quote, from the client or the team, optionally about one line of the snapshot. */
+export const quoteComments = pgTable(
+  "quote_comments",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    quoteId: uuid("quote_id").notNull(),
+    versionId: uuid("version_id").notNull(),
+    /** A line id from the version's snapshot, or null for the quote as a whole. */
+    lineId: uuid("line_id"),
+    authorKind: text("author_kind").notNull(),
+    authorName: text("author_name").notNull(),
+    memberId: uuid("member_id"),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    foreignKey({ name: "quote_comments_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
+    foreignKey({ name: "quote_comments_version_fk", columns: [t.orgId, t.versionId], foreignColumns: [quoteVersions.orgId, quoteVersions.id] }),
+    foreignKey({ name: "quote_comments_member_fk", columns: [t.orgId, t.memberId], foreignColumns: [members.orgId, members.id] }),
+    index("quote_comments_quote_idx").on(t.orgId, t.quoteId, t.createdAt),
+    check("quote_comments_author_kind", sql`${t.authorKind} in ('client', 'staff')`),
+    len("quote_comments_author_name_len", t.authorName, TEXT.name),
+    len("quote_comments_body_len", t.body, TEXT.note),
+  ],
+).enableRLS();
+
+/**
+ * The client's decision on one version: accepted (with name and typed signature) or declined. One per
+ * version; append-only. Keeps the evidence for an e-signature: who, when, from where, and the content hash
+ * of exactly what they agreed to.
+ */
+export const quoteDecisions = pgTable(
+  "quote_decisions",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    quoteId: uuid("quote_id").notNull(),
+    versionId: uuid("version_id").notNull(),
+    decision: text("decision").notNull(),
+    fullName: text("full_name").notNull(),
+    signature: text("signature"),
+    reason: text("reason"),
+    contentHash: text("content_hash").notNull(),
+    ip: text("ip"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    unique("quote_decisions_version_key").on(t.orgId, t.versionId),
+    foreignKey({ name: "quote_decisions_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
+    foreignKey({ name: "quote_decisions_version_fk", columns: [t.orgId, t.versionId], foreignColumns: [quoteVersions.orgId, quoteVersions.id] }),
+    check("quote_decisions_kind", sql`${t.decision} in ('accepted', 'declined')`),
+    check("quote_decisions_signed", sql`${t.decision} = 'declined' or ${t.signature} is not null`),
+    len("quote_decisions_full_name_len", t.fullName, TEXT.name),
+    len("quote_decisions_signature_len", t.signature, TEXT.name),
+    len("quote_decisions_reason_len", t.reason, TEXT.note, 0),
+    check("quote_decisions_hash_format", sql`${t.contentHash} ~ '^[0-9a-f]{64}$'`),
+    len("quote_decisions_ip_len", t.ip, 64, 0),
+    len("quote_decisions_user_agent_len", t.userAgent, 500, 0),
   ],
 ).enableRLS();

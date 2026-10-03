@@ -9,7 +9,7 @@ import { sql } from "drizzle-orm";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { clerkOrgId, clerkUserId } from "@/core/clerk";
-import { id } from "@/core/schemas";
+import { id, portalToken } from "@/core/schemas";
 import { databaseUrl } from "./env";
 import * as schema from "./schema";
 
@@ -106,6 +106,20 @@ export async function findOrgsForClerkUser(clerkId: string): Promise<string[]> {
   const database = await checkedDb();
   const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_orgs_for_clerk_user(${key}) as org_id`);
   return rows.map((row) => row.org_id);
+}
+
+/**
+ * The company and client an active portal token belongs to, or null. Public portal pages call this first,
+ * then do everything else inside `withTenant` for that company.
+ */
+export async function findPortalAccess(token: string): Promise<{ accessId: string; orgId: string; clientId: string } | null> {
+  const parsed = portalToken.safeParse(token);
+  if (!parsed.success) return null;
+  const database = await checkedDb();
+  const rows = await database.execute<{ access_id: string; org_id: string; client_id: string }>(
+    sql`select access_id, org_id, client_id from app_portal_lookup(${parsed.data})`,
+  );
+  return rows[0] ? { accessId: rows[0].access_id, orgId: rows[0].org_id, clientId: rows[0].client_id } : null;
 }
 
 /** Close the pool (scripts and tests; Next.js keeps it for the process lifetime). */

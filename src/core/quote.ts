@@ -24,9 +24,17 @@ export function lineCost(line: Pick<QuoteLine, "qty" | "rate">): Pence {
   return Math.round(line.qty * line.rate);
 }
 
-/** Line total = round(qty × rate × (1 + markup)), excluding VAT. */
+/**
+ * The client's unit price: rate plus markup, rounded to the penny. Integer maths, so 1450 × 1.15 is exact.
+ * Rounding the unit price first means quantity × the unit price a client sees always equals the line total.
+ */
+export function sellRate(line: Pick<QuoteLine, "rate" | "markup">): Pence {
+  return Math.round((line.rate * (10_000 + line.markup)) / 10_000);
+}
+
+/** Line total = round(qty × sellRate), excluding VAT. */
 export function lineTotal(line: Pick<QuoteLine, "qty" | "rate" | "markup">): Pence {
-  return Math.round(line.qty * line.rate * (1 + line.markup / 10_000));
+  return Math.round(line.qty * sellRate(line));
 }
 
 export function sectionTotal(section: QuoteSection): Pence {

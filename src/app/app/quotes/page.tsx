@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { formatGBP } from "@/core/money";
 import { quoteRef } from "@/core/quote";
 import { countQuotes, listQuotes } from "@/db/quotes";
+import { viewCounts } from "@/db/sending";
 import { requirePermission, withSession } from "@/auth/session";
 
 export const metadata: Metadata = { title: "Quotes" };
@@ -24,10 +25,10 @@ export default async function QuotesPage({ searchParams }: { searchParams: Searc
   const params = await searchParams;
   const search = one(params.q).trim();
   const page = Math.max(1, Number.parseInt(one(params.page), 10) || 1);
-  const [{ quotes, hasMore }, total] = await withSession(session, async (tx) => [
-    await listQuotes(tx, session.orgId, { search, page }),
-    await countQuotes(tx, session.orgId),
-  ]);
+  const { quotes, hasMore, total, views } = await withSession(session, async (tx) => {
+    const list = await listQuotes(tx, session.orgId, { search, page });
+    return { ...list, total: await countQuotes(tx, session.orgId), views: await viewCounts(tx, session.orgId, list.quotes.map((q) => q.id)) };
+  });
   const href = (p: number) => {
     const qs = new URLSearchParams();
     if (search) qs.set("q", search);
@@ -92,7 +93,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Searc
                   <th className="w-[90px] px-4 py-2.5 font-medium">Number</th>
                   <th className="px-4 py-2.5 font-medium">Title</th>
                   <th className="w-[24%] px-4 py-2.5 font-medium">Client</th>
-                  <th className="w-[100px] px-4 py-2.5 font-medium">Status</th>
+                  <th className="w-[170px] px-4 py-2.5 font-medium">Status</th>
                   <th className="w-[130px] px-4 py-2.5 text-right font-medium">Total inc. VAT</th>
                   <th className="w-[100px] px-4 py-2.5 text-right font-medium">Updated</th>
                 </tr>
@@ -109,6 +110,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Searc
                     <td className="truncate px-4 py-2.5 text-ink-2">{q.clientName}</td>
                     <td className="px-4 py-2.5">
                       <Badge tone={QUOTE_STATUS[q.status]?.tone ?? "grey"}>{QUOTE_STATUS[q.status]?.label ?? q.status}</Badge>
+                      {(views.get(q.id) ?? 0) > 0 && <span className="ml-2 text-[12px] text-subtle">opened {views.get(q.id)}×</span>}
                     </td>
                     <td className="px-4 py-2.5 text-right font-medium tabular">{formatGBP(q.total)}</td>
                     <td className="px-4 py-2.5 text-right text-subtle">{dateFormat.format(q.updatedAt)}</td>

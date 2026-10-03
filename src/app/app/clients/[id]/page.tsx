@@ -5,6 +5,7 @@ import { ArrowLeft, Mail, Phone, Plus } from "lucide-react";
 import { LiveAppShell } from "@/components/app/live-app-shell";
 import { Panel } from "@/components/app/app-shell";
 import { ArchivePanel } from "@/components/app/archive-panel";
+import { PortalLinkPanel } from "@/components/app/clients/portal-link";
 import { ClientForm } from "@/components/app/clients/client-form";
 import { SectionHeading } from "@/components/app/form-fields";
 import { Badge } from "@/components/ui/badge";
@@ -111,6 +112,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
               )}
               <p className="text-[12px] text-subtle">Added {dateFormat.format(client.createdAt)}</p>
             </Panel>
+            {canQuote && <PortalLinkPanel clientId={client.id} clientName={client.name} canReset={canManage} />}
             {canManage && (
               <ArchivePanel
                 noun="client"

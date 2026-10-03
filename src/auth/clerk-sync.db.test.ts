@@ -60,15 +60,17 @@ describe("lookups", () => {
   });
 
   it("don't give the app role a way past RLS", async () => {
-    // The app role can't become the lookup role, and the lookup role can't read anything but ids.
+    // The app role can't become the lookup role, and the lookup role can't read anything but ids (and, for
+    // the portal lookup, the token it matches on).
     await expect(raw`set role builderos_lookup`).rejects.toMatchObject({ code: "42501" });
     const fns = await raw<{ name: string; owner: string; definer: boolean }[]>`
       select p.proname as name, r.rolname as owner, p.prosecdef as definer
       from pg_proc p join pg_roles r on r.oid = p.proowner
-      where p.proname in ('app_org_for_clerk', 'app_orgs_for_clerk_user') order by 1`;
+      where p.proname in ('app_org_for_clerk', 'app_orgs_for_clerk_user', 'app_portal_lookup') order by 1`;
     expect(fns).toEqual([
       { name: "app_org_for_clerk", owner: "builderos_lookup", definer: true },
       { name: "app_orgs_for_clerk_user", owner: "builderos_lookup", definer: true },
+      { name: "app_portal_lookup", owner: "builderos_lookup", definer: true },
     ]);
     const visible = await raw<{ table: string; column: string }[]>`
       select c.relname as table, a.attname as column
@@ -82,6 +84,11 @@ describe("lookups", () => {
       { table: "organizations", column: "clerk_org_id" },
       { table: "organizations", column: "deleted_at" },
       { table: "organizations", column: "id" },
+      { table: "portal_access", column: "client_id" },
+      { table: "portal_access", column: "id" },
+      { table: "portal_access", column: "org_id" },
+      { table: "portal_access", column: "revoked_at" },
+      { table: "portal_access", column: "token" },
     ]);
   });
 });
