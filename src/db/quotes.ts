@@ -455,3 +455,48 @@ async function refreshUsage(tx: Tx, orgId: string, serviceIds: string[]) {
     })
     .where(and(eq(services.orgId, orgId), inArray(services.id, serviceIds)));
 }
+
+/**
+ * Copy a quote (draft or sent) into a new draft for the same client: sections, lines, markups, VAT and site
+ * address. Gets its own number; no valid-until date, history, versions or decisions are copied.
+ */
+export async function duplicateQuote(tx: Tx, orgId: string, quoteId: string): Promise<string> {
+  const source = await getQuote(tx, orgId, quoteId);
+  if (!source) throw new QuoteError("not_found");
+  const q = source.quote;
+  const title = `${q.title} (copy)`.slice(0, 200);
+  const newId = await createQuote(tx, orgId, { clientId: q.clientId, title });
+  await tx
+    .update(quotes)
+    .set({ siteAddress: q.siteAddress, markupBps: q.markupBps, vatRateBps: q.vatRateBps })
+    .where(and(eq(quotes.orgId, orgId), eq(quotes.id, newId)));
+  // Replace the starter section with copies of the source's sections and lines.
+  await tx.delete(quoteSections).where(and(eq(quoteSections.orgId, orgId), eq(quoteSections.quoteId, newId)));
+  const serviceIds = new Set<string>();
+  for (const [si, s] of source.sections.entries()) {
+    const [section] = await tx.insert(quoteSections).values({ orgId, quoteId: newId, position: si, name: s.name }).returning({ id: quoteSections.id });
+    if (s.lines.length === 0) continue;
+    await tx.insert(quoteLines).values(
+      s.lines.map((l, li) => {
+        if (l.serviceId) serviceIds.add(l.serviceId);
+        return {
+          orgId,
+          sectionId: section.id,
+          position: li,
+          serviceId: l.serviceId,
+          name: l.name,
+          qty: String(l.qty),
+          unit: l.unit,
+          ratePence: l.ratePence,
+          markupBps: l.markupBps,
+          note: l.note,
+          noteVisible: l.noteVisible,
+          kind: l.kind,
+        };
+      }),
+    );
+  }
+  if (source.sections.length === 0) await tx.insert(quoteSections).values({ orgId, quoteId: newId, position: 0, name: "Works" });
+  await refreshUsage(tx, orgId, [...serviceIds]);
+  return newId;
+}

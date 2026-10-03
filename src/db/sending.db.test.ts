@@ -112,7 +112,7 @@ describe("portal", () => {
     const { token } = await withTenant(orgId, async (tx) => sendQuote(tx, orgId, { quoteId, baseVersion: await version(tx, orgId, quoteId), memberId }));
     const access = (await findPortalAccess(token))!;
     await withTenant(orgId, async (tx) => {
-      expect(await recordView(tx, orgId, access, number)).toBe(true);
+      expect(await recordView(tx, orgId, access, number)).toEqual({ quoteId, first: true });
       expect(await recordView(tx, orgId, access, number)).toBe(false);
       expect((await getQuote(tx, orgId, quoteId))?.quote.status).toBe("viewed");
       expect(await quoteActivity(tx, orgId, quoteId)).toMatchObject({ viewCount: 1 });

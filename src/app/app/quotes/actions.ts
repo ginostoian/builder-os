@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { can } from "@/core/roles";
 import { id, newQuoteInput, quoteSave, sendQuoteInput, staffReplyInput } from "@/core/schemas";
-import { QuoteError, createQuote, deleteDraft, saveQuote, type QuoteErrorReason } from "@/db/quotes";
+import { QuoteError, createQuote, deleteDraft, duplicateQuote, saveQuote, type QuoteErrorReason } from "@/db/quotes";
 import { addStaffReply, memberEmail, reviseQuote, sendQuote } from "@/db/sending";
-import { emailConfigured, escapeHtml, sendEmail } from "@/server/email";
+import { emailConfigured, sendEmail } from "@/server/email";
+import { formatGBP } from "@/core/money";
+import { longDate } from "@/core/quote-snapshot";
 import { appOrigin, portalUrl } from "@/server/origin";
 import { getSession, withSession, type Session } from "@/auth/session";
 import type { RecordActionResult } from "@/components/app/archive-panel";
@@ -129,13 +131,19 @@ export async function sendQuoteToClient(input: unknown): Promise<SendQuoteResult
     to: sent.clientEmail,
     replyTo: senderEmail,
     subject: `${sent.versionNo > 1 ? "Updated quote" : "Your quote"} from ${company}: ${s.quote.title}`,
-    text: [`Hi ${s.client.name},`, "", message ?? `${company} has sent you a quote for ${s.quote.title}.`, "", `View, ask questions and accept it here: ${link}`, "", session.memberName, company].join("\n"),
-    html: [
-      `<p>Hi ${escapeHtml(s.client.name)},</p>`,
-      `<p>${escapeHtml(message ?? `${company} has sent you a quote for ${s.quote.title}.`).replace(/\n/g, "<br>")}</p>`,
-      `<p><a href="${escapeHtml(link)}">View your quote</a>: you can ask questions and accept it online.</p>`,
-      `<p>${escapeHtml(session.memberName)}<br>${escapeHtml(company)}</p>`,
-    ].join(""),
+    content: {
+      company: { name: company, brandColour: s.company.brandColour },
+      preheader: `${s.quote.ref} for ${formatGBP(s.totals.total)} inc. VAT`,
+      heading: sent.versionNo > 1 ? `Your updated quote for ${s.quote.title}` : `Your quote for ${s.quote.title}`,
+      paragraphs: [`Hi ${s.client.name},`, message ?? `${company} has sent you a quote for ${s.quote.title}. You can read it, ask questions and accept it online.`],
+      details: [
+        ["Quote", s.quote.ref],
+        ["Total inc. VAT", formatGBP(s.totals.total)],
+        ...(s.quote.validUntil ? ([["Valid until", longDate(s.quote.validUntil)]] as [string, string][]) : []),
+      ],
+      button: { label: "View your quote", href: link },
+      footer: `${session.memberName}, ${company}. Reply to this email to reach us.`,
+    },
   });
   return { ok: true, link, emailed: result.ok, emailError: result.ok ? undefined : result.message, clientEmail: sent.clientEmail, versionNo: sent.versionNo };
 }
@@ -169,4 +177,20 @@ export async function replyToClient(input: unknown): Promise<RecordActionResult>
   }
   revalidatePath(`/app/quotes/${parsed.data.quoteId}`);
   return { ok: true };
+}
+
+/** Copy a quote into a new draft and open it. */
+export async function duplicateQuoteAction(quoteId: string): Promise<RecordActionResult> {
+  const session = await editor();
+  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!id.safeParse(quoteId).success) return { ok: false, message: MESSAGES.not_found };
+  let copy: string;
+  try {
+    copy = await withSession(session, (tx) => duplicateQuote(tx, session.orgId, quoteId));
+  } catch (error) {
+    if (error instanceof QuoteError) return { ok: false, message: error.reason === "unknown_client" ? "This client is archived. Restore them first to start a new quote." : MESSAGES[error.reason] };
+    throw error;
+  }
+  revalidatePath("/app/quotes");
+  redirect(`/app/quotes/${copy}`);
 }

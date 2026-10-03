@@ -14,6 +14,7 @@ import { formatGBP } from "@/core/money";
 import { longDate, type QuoteSnapshot } from "@/core/quote-snapshot";
 import { cn } from "@/lib/utils";
 import { control } from "../form-fields";
+import { DuplicateButton } from "./duplicate-button";
 import { CopyButton } from "./send-dialog";
 import { QUOTE_STATUS } from "./status";
 
@@ -97,6 +98,7 @@ export function SentQuote({
           </div>
           <div className="flex flex-wrap justify-end gap-2">
             {link && <CopyButton text={link} label="Copy client link" />}
+            <DuplicateButton quoteId={quoteId} />
             <Button variant="secondary" asChild>
               <Link href={`/app/quotes/${quoteId}/preview`} target="_blank">
                 <Eye className="text-ink-2" />

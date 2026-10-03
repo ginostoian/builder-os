@@ -5,9 +5,11 @@
  * action resolves it to its company and client first, then works inside that tenant only.
  */
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { portalCommentInput, portalDecisionInput } from "@/core/schemas";
 import { findPortalAccess, withTenant, type Tx } from "@/db";
 import { PortalError, addClientComment, decide, recordView, type PortalErrorReason } from "@/db/portal";
+import { notifyTeam } from "@/server/notify";
 import { isBot, requestEvidence } from "@/server/origin";
 
 export type PortalActionResult = { ok: true } | { ok: false; message: string };
@@ -31,30 +33,45 @@ export async function markViewed(token: string, number: number): Promise<void> {
   const n = quoteNumber(number);
   const access = typeof token === "string" ? await findPortalAccess(token) : null;
   if (!access || n === null) return;
-  await withTenant(access.orgId, (tx) => recordView(tx, access.orgId, access, n)).catch((error: unknown) => {
+  const viewed = await withTenant(access.orgId, (tx) => recordView(tx, access.orgId, access, n)).catch((error: unknown) => {
     if (!(error instanceof PortalError)) throw error;
+    return false as const;
   });
+  // Tell the team the first time the client opens each version, not on every visit.
+  if (viewed && viewed.first) after(() => notifyTeam(access.orgId, viewed.quoteId, { kind: "opened" }));
 }
 
 export async function postComment(token: string, number: number, input: unknown): Promise<PortalActionResult> {
   const parsed = portalCommentInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: "Write your name and a comment (up to 2,000 characters)." };
-  return runIn(token, number, (tx, orgId, clientId, n) => addClientComment(tx, orgId, clientId, n, parsed.data));
+  return runIn(token, number, (tx, orgId, clientId, n) => addClientComment(tx, orgId, clientId, n, parsed.data), (orgId, quoteId) =>
+    notifyTeam(orgId, quoteId, { kind: "commented", author: parsed.data.name, body: parsed.data.body }),
+  );
 }
 
 export async function decideQuote(token: string, number: number, input: unknown): Promise<PortalActionResult> {
   const parsed = portalDecisionInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: MESSAGES.invalid };
   const evidence = await requestEvidence();
-  return runIn(token, number, (tx, orgId, clientId, n) => decide(tx, orgId, clientId, n, parsed.data, evidence));
+  const d = parsed.data;
+  return runIn(token, number, (tx, orgId, clientId, n) => decide(tx, orgId, clientId, n, d, evidence), (orgId, quoteId) =>
+    notifyTeam(orgId, quoteId, d.decision === "accepted" ? { kind: "accepted", signer: d.signature } : { kind: "declined", name: d.fullName, reason: d.reason }),
+  );
 }
 
-async function runIn(token: string, number: unknown, fn: (tx: Tx, orgId: string, clientId: string, n: number) => Promise<unknown>): Promise<PortalActionResult> {
+/** Resolve the token, run `fn` in that company's tenant, then (after responding) `afterwards` with the quote id. */
+async function runIn(
+  token: string,
+  number: unknown,
+  fn: (tx: Tx, orgId: string, clientId: string, n: number) => Promise<string>,
+  afterwards?: (orgId: string, quoteId: string) => Promise<void>,
+): Promise<PortalActionResult> {
   const n = quoteNumber(number);
   const access = typeof token === "string" ? await findPortalAccess(token) : null;
   if (!access || n === null) return { ok: false, message: MESSAGES.bad_link };
   try {
-    await withTenant(access.orgId, (tx) => fn(tx, access.orgId, access.clientId, n));
+    const quoteId = await withTenant(access.orgId, (tx) => fn(tx, access.orgId, access.clientId, n));
+    if (afterwards) after(() => afterwards(access.orgId, quoteId));
   } catch (error) {
     if (error instanceof PortalError) return { ok: false, message: MESSAGES[error.reason] };
     throw error;

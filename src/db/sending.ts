@@ -179,3 +179,23 @@ export async function memberEmail(tx: Tx, orgId: string, memberId: string): Prom
   const [m] = await tx.select({ email: members.email }).from(members).where(and(eq(members.orgId, orgId), eq(members.id, memberId)));
   return m?.email ?? null;
 }
+
+/**
+ * Who to tell when a client acts on a quote, and what to say: the person who sent the latest version, or
+ * (if they have no email) the company's Admins. Empty `to` means nobody can be emailed.
+ */
+export async function alertContext(tx: Tx, orgId: string, quoteId: string) {
+  const version = await latestVersion(tx, orgId, quoteId);
+  if (!version) return undefined;
+  const s = version.snapshot;
+  let to: string[] = [];
+  if (version.sentByMemberId) {
+    const [m] = await tx.select({ email: members.email, active: members.active }).from(members).where(and(eq(members.orgId, orgId), eq(members.id, version.sentByMemberId)));
+    if (m?.email && m.active) to = [m.email];
+  }
+  if (to.length === 0) {
+    const admins = await tx.select({ email: members.email }).from(members).where(and(eq(members.orgId, orgId), eq(members.role, "admin"), eq(members.active, true)));
+    to = admins.flatMap((a) => (a.email ? [a.email] : []));
+  }
+  return { to, quoteRef: s.quote.ref, title: s.quote.title, clientName: s.client.name, total: s.totals.total, company: s.company.tradingName ?? s.company.name, brandColour: s.company.brandColour };
+}

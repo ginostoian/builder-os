@@ -10,6 +10,7 @@ import { formatBps } from "@/core/money";
 import { cn } from "@/lib/utils";
 import { Panel } from "../app-shell";
 import { Field, SectionHeading, control } from "../form-fields";
+import { LogoUpload } from "./logo-upload";
 
 export type CompanySettingsValues = {
   name: string;
@@ -47,7 +48,7 @@ const toForm = (v: CompanySettingsValues): FormValues => ({
   quoteTerms: v.quoteTerms ?? "",
 });
 
-export function CompanySettingsForm({ initial, canEdit }: { initial: CompanySettingsValues | undefined; canEdit: boolean }) {
+export function CompanySettingsForm({ initial, canEdit, storageEnabled }: { initial: CompanySettingsValues | undefined; canEdit: boolean; storageEnabled: boolean }) {
   const [state, setState] = React.useState<SaveSettingsState>({ status: "idle" });
   const [pending, startTransition] = React.useTransition();
   // Submitted from onSubmit rather than <form action>: React resets a form after an action, which would
@@ -113,9 +114,17 @@ export function CompanySettingsForm({ initial, canEdit }: { initial: CompanySett
         <Panel className="flex flex-col gap-4 p-5">
           <SectionHeading title="Branding" hint="Used on quotes, invoices and the client portal." />
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Logo link" hint="A link to your logo, starting with https://. Upload is coming soon." error={error("logoUrl")}>
-              <input name="logoUrl" type="url" value={values.logoUrl} onChange={set("logoUrl")} placeholder="https://" className={control} />
-            </Field>
+            {storageEnabled ? (
+              <>
+                {/* Uploads save on their own; this keeps the current logo when the rest of the form is saved. */}
+                <input type="hidden" name="logoUrl" value={values.logoUrl} />
+                <LogoUpload logoUrl={values.logoUrl} onChange={(logoUrl) => setValues((v) => ({ ...v, logoUrl }))} disabled={!canEdit} />
+              </>
+            ) : (
+              <Field label="Logo link" hint="A link to your logo, starting with https://." error={error("logoUrl")}>
+                <input name="logoUrl" type="url" value={values.logoUrl} onChange={set("logoUrl")} placeholder="https://" className={control} />
+              </Field>
+            )}
             <Field label="Brand colour" hint="Hex colour for accents on your documents." error={error("brandColour")}>
               <div className="flex items-center gap-2">
                 <span

@@ -31,6 +31,7 @@ import { lineTotal, quoteRef, quoteTotals, sectionTotal, type QuoteSection } fro
 import { LINE_KINDS, qty as qtySchema, quoteHeaderInput, singleLine, type Address, type QuoteHeaderInput, type QuoteOp } from "@/core/schemas";
 import { cn } from "@/lib/utils";
 import { Field, control } from "../form-fields";
+import { DuplicateButton } from "./duplicate-button";
 import { SendDialog } from "./send-dialog";
 import { useQuoteSaver, type SaveStatus } from "./use-quote-saver";
 
@@ -244,6 +245,7 @@ export function QuoteBuilder({
                 Library
               </Link>
             </Button>
+            <DuplicateButton quoteId={initial.id} beforeCopy={saver.settle} />
             <SendDialog
               quoteId={initial.id}
               quoteRef={quoteRef(initial.number)}

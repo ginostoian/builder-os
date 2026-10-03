@@ -6,6 +6,7 @@ import { SettingsFrame } from "@/components/app/settings/settings-frame";
 import { can } from "@/core/roles";
 import { organizations } from "@/db/schema";
 import { requirePermission, withSession } from "@/auth/session";
+import { storageConfigured } from "@/server/storage";
 
 export const metadata: Metadata = { title: "Company settings" };
 
@@ -30,7 +31,7 @@ export default async function CompanySettingsPage() {
   return (
     <LiveAppShell active="settings" crumbs={["Settings", "Company"]}>
       <SettingsFrame active="company" title="Company" subtitle="How your company appears on quotes, invoices and the client portal.">
-        <CompanySettingsForm initial={org} canEdit={can(session.role, "settings.manage")} />
+        <CompanySettingsForm initial={org} canEdit={can(session.role, "settings.manage")} storageEnabled={storageConfigured()} />
       </SettingsFrame>
     </LiveAppShell>
   );
