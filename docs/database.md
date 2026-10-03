@@ -47,7 +47,14 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
    - `quote_versions`, `quote_events`, `quote_comments` and `quote_decisions` are append-only for the app role: `UPDATE` and `DELETE` are revoked. `portal_access` rows can only be revoked or touched (`revoked_at`, `last_viewed_at`).
    - An e-signature (`quote_decisions`) stores the full name, typed signature, time, IP, user agent, and the SHA-256 of the exact snapshot accepted. There's one decision per version.
    - Opens are recorded from the page in the browser after 1.5 s on screen, not on the server render, and at most once per half hour. So link previews, email scanners and refreshes don't count, and the team's "Preview as client" never does.
-10. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
+10. **Payment plans and invoices (migration 0008).** Bank transfer only; no card payments.
+   - A quote's payment plan (`quotes.payment_plan`) is frozen into the version snapshot when it's sent. The client accepts the amounts they saw.
+   - Each payment in the accepted version's plan can be raised as one invoice. A partial unique index allows one live (not void) invoice per payment, and numbers are per company (`INV-0001`).
+   - An invoice freezes its amounts, dates, client details and the company's bank details in `snapshot`. For the app role, `invoices` allows updates only to `status, paid_on, paid_reference, sent_at, updated_at`, and no deletes. So "paid", "unpaid" and "void" are the only changes possible after raising.
+   - `invoice_reminders` is append-only. Its unique `(invoice, kind)` key is how the reminder job claims each reminder exactly once.
+   - Bank details and reminder settings live on `organizations`, with column grants for the app role.
+   - The daily reminder job finds companies through `app_orgs_with_due_invoices(date)`, a `SECURITY DEFINER` function owned by `builderos_lookup` that returns only company ids. The lookup role can read just `invoices (org_id, status, due_date)` and `organizations.reminders_enabled` for it. Everything else runs in `withTenant`.
+11. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
 
 **Adding a table:**
 - Give it `org_id`, `tenantPolicy(t.orgId)`, `.enableRLS()`, and a `unique(org_id, id)` if anything references it.

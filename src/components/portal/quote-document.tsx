@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const KIND: Record<string, string> = { pc_sum: "PC sum", provisional: "Provisional sum" };
 const qty = (n: number) => String(Number(n.toFixed(3)));
+const planDue = (p: { dueKind: string; dueDate: string | null }) => (p.dueKind === "on_acceptance" ? "On acceptance" : p.dueKind === "date" && p.dueDate ? longDate(p.dueDate) : "At this stage of the work");
 
 /**
  * A sent quote as the client sees it, rendered from the version snapshot only. Shared by the client portal,
@@ -131,6 +132,25 @@ export function QuoteDocument({
           </div>
         </div>
       </section>
+
+      {snapshot.paymentPlan && snapshot.paymentPlan.length > 0 && (
+        <section className="rounded-[14px] bg-white px-6 py-5 shadow-ring print:shadow-none print:break-inside-avoid">
+          <h2 className="font-semibold">How you&apos;ll pay</h2>
+          <p className="mt-0.5 text-[12.5px] text-subtle">By bank transfer. You&apos;ll get an invoice for each payment, with the bank details.</p>
+          <ol className="mt-3 flex flex-col">
+            {snapshot.paymentPlan.map((p) => (
+              <li key={p.id} className="flex items-baseline gap-3 border-t border-muted py-2.5 first:border-0">
+                <span className="min-w-0 flex-1">
+                  {p.label}
+                  <span className="block text-xs text-subtle sm:hidden">{planDue(p)}</span>
+                </span>
+                <span className="hidden text-xs text-subtle sm:inline">{planDue(p)}</span>
+                <span className="w-[96px] text-right font-medium tabular">{formatGBP(p.amount)}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {snapshot.company.terms && (
         <section className="rounded-[14px] bg-white px-6 py-5 shadow-ring print:shadow-none">

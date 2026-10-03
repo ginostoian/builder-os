@@ -57,6 +57,13 @@
       "when": 1790978013040,
       "tag": "0007_send_portal_decisions",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790991333489,
+      "tag": "0008_invoices_payment_plans",
+      "breakpoints": true
     }
   ]
 }

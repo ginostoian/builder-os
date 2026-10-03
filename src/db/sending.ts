@@ -3,9 +3,10 @@
  * replies, and the activity timeline. Runs inside the tenant transaction like every other query.
  */
 import "server-only";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, inArray, isNull, max, sql } from "drizzle-orm";
-import { buildSnapshot, canonicalJson, type QuoteSnapshot } from "@/core/quote-snapshot";
+import { DEFAULT_PLAN } from "@/core/payment-plan";
+import { PlanError, buildSnapshot, canonicalJson, type QuoteSnapshot } from "@/core/quote-snapshot";
 import type { Tx } from "./index";
 import { QuoteError, getQuote } from "./quotes";
 import { clients, members, organizations, portalAccess, quoteComments, quoteDecisions, quoteEvents, quoteVersions, quotes } from "./schema";
@@ -78,13 +79,20 @@ export async function sendQuote(tx: Tx, orgId: string, input: { quoteId: string;
     .where(and(eq(quoteVersions.orgId, orgId), eq(quoteVersions.quoteId, input.quoteId)));
   const versionNo = (last ?? 0) + 1;
   const q = loaded.quote;
-  const snapshot = buildSnapshot({
+  let snapshot: QuoteSnapshot;
+  try {
+    snapshot = buildSnapshot({
     company: org,
     clientName: loaded.client?.name ?? "",
     quote: { number: q.number, title: q.title, siteAddress: q.siteAddress, validUntil: q.validUntil, vatRateBps: q.vatRateBps },
     versionNo,
+    paymentPlan: q.paymentPlan?.length ? q.paymentPlan : DEFAULT_PLAN(randomUUID()),
     sections: loaded.sections,
-  });
+    });
+  } catch (error) {
+    if (error instanceof PlanError) throw new QuoteError("bad_plan");
+    throw error;
+  }
   const [version] = await tx
     .insert(quoteVersions)
     .values({ orgId, quoteId: q.id, versionNo, snapshot, contentHash: sha256(canonicalJson(snapshot)), totalPence: snapshot.totals.total, sentByMemberId: input.memberId })
@@ -178,4 +186,24 @@ export async function clientContact(tx: Tx, orgId: string, clientId: string) {
 export async function memberEmail(tx: Tx, orgId: string, memberId: string): Promise<string | null> {
   const [m] = await tx.select({ email: members.email }).from(members).where(and(eq(members.orgId, orgId), eq(members.id, memberId)));
   return m?.email ?? null;
+}
+
+/**
+ * Who to tell when a client acts on a quote, and what to say: the person who sent the latest version, or
+ * (if they have no email) the company's Admins. Empty `to` means nobody can be emailed.
+ */
+export async function alertContext(tx: Tx, orgId: string, quoteId: string) {
+  const version = await latestVersion(tx, orgId, quoteId);
+  if (!version) return undefined;
+  const s = version.snapshot;
+  let to: string[] = [];
+  if (version.sentByMemberId) {
+    const [m] = await tx.select({ email: members.email, active: members.active }).from(members).where(and(eq(members.orgId, orgId), eq(members.id, version.sentByMemberId)));
+    if (m?.email && m.active) to = [m.email];
+  }
+  if (to.length === 0) {
+    const admins = await tx.select({ email: members.email }).from(members).where(and(eq(members.orgId, orgId), eq(members.role, "admin"), eq(members.active, true)));
+    to = admins.flatMap((a) => (a.email ? [a.email] : []));
+  }
+  return { to, quoteRef: s.quote.ref, title: s.quote.title, clientName: s.client.name, total: s.totals.total, company: s.company.tradingName ?? s.company.name, brandColour: s.company.brandColour };
 }

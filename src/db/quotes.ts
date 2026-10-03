@@ -27,7 +27,8 @@ export type QuoteErrorReason =
   | "unknown_service"
   | "too_many_lines"
   | "empty"
-  | "not_sent";
+  | "not_sent"
+  | "bad_plan";
 
 /** A save that can't be applied. Nothing from it is written (the transaction rolls back). */
 export class QuoteError extends Error {
@@ -284,6 +285,12 @@ export async function saveQuote(tx: Tx, orgId: string, save: QuoteSave): Promise
         .where(and(eq(quotes.orgId, orgId), eq(quotes.id, save.quoteId)));
     }
     for (const op of save.ops) await applyOp(tx, orgId, save.quoteId, op, touched);
+    if (save.paymentPlan !== undefined) {
+      await tx
+        .update(quotes)
+        .set({ paymentPlan: save.paymentPlan.length ? save.paymentPlan : null })
+        .where(and(eq(quotes.orgId, orgId), eq(quotes.id, save.quoteId)));
+    }
   } catch (error) {
     // A service id from another company (or a deleted one) fails the composite foreign key.
     if (pgCode(error) === PG_FOREIGN_KEY) throw new QuoteError("unknown_service");
@@ -454,4 +461,49 @@ async function refreshUsage(tx: Tx, orgId: string, serviceIds: string[]) {
       usageCount: sql`(select count(distinct qs.quote_id)::int from ${quoteLines} l join ${quoteSections} qs on qs.org_id = l.org_id and qs.id = l.section_id where l.org_id = ${services.orgId} and l.service_id = ${services.id})`,
     })
     .where(and(eq(services.orgId, orgId), inArray(services.id, serviceIds)));
+}
+
+/**
+ * Copy a quote (draft or sent) into a new draft for the same client: sections, lines, markups, VAT and site
+ * address. Gets its own number; no valid-until date, history, versions or decisions are copied.
+ */
+export async function duplicateQuote(tx: Tx, orgId: string, quoteId: string): Promise<string> {
+  const source = await getQuote(tx, orgId, quoteId);
+  if (!source) throw new QuoteError("not_found");
+  const q = source.quote;
+  const title = `${q.title} (copy)`.slice(0, 200);
+  const newId = await createQuote(tx, orgId, { clientId: q.clientId, title });
+  await tx
+    .update(quotes)
+    .set({ siteAddress: q.siteAddress, markupBps: q.markupBps, vatRateBps: q.vatRateBps, paymentPlan: q.paymentPlan })
+    .where(and(eq(quotes.orgId, orgId), eq(quotes.id, newId)));
+  // Replace the starter section with copies of the source's sections and lines.
+  await tx.delete(quoteSections).where(and(eq(quoteSections.orgId, orgId), eq(quoteSections.quoteId, newId)));
+  const serviceIds = new Set<string>();
+  for (const [si, s] of source.sections.entries()) {
+    const [section] = await tx.insert(quoteSections).values({ orgId, quoteId: newId, position: si, name: s.name }).returning({ id: quoteSections.id });
+    if (s.lines.length === 0) continue;
+    await tx.insert(quoteLines).values(
+      s.lines.map((l, li) => {
+        if (l.serviceId) serviceIds.add(l.serviceId);
+        return {
+          orgId,
+          sectionId: section.id,
+          position: li,
+          serviceId: l.serviceId,
+          name: l.name,
+          qty: String(l.qty),
+          unit: l.unit,
+          ratePence: l.ratePence,
+          markupBps: l.markupBps,
+          note: l.note,
+          noteVisible: l.noteVisible,
+          kind: l.kind,
+        };
+      }),
+    );
+  }
+  if (source.sections.length === 0) await tx.insert(quoteSections).values({ orgId, quoteId: newId, position: 0, name: "Works" });
+  await refreshUsage(tx, orgId, [...serviceIds]);
+  return newId;
 }

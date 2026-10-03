@@ -8,6 +8,8 @@ import { id as uuid } from "@/core/schemas";
 import { clientOptions } from "@/db/clients";
 import { getQuote, libraryForQuotes } from "@/db/quotes";
 import { currentPortalToken, latestVersion, quoteActivity } from "@/db/sending";
+import { paymentSettings, quoteSchedule } from "@/db/invoices";
+import { can } from "@/core/roles";
 import { requirePermission, withSession } from "@/auth/session";
 import { emailConfigured } from "@/server/email";
 import { appOrigin, portalUrl } from "@/server/origin";
@@ -38,6 +40,8 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
       activity,
       version: (await latestVersion(tx, session.orgId, id))!,
       token: await currentPortalToken(tx, session.orgId, loaded.quote.clientId),
+      schedule: loaded.quote.status === "accepted" ? await quoteSchedule(tx, session.orgId, id) : null,
+      bankReady: Boolean((await paymentSettings(tx, session.orgId))?.bankSortCode),
     };
   });
   if (!data) notFound();
@@ -61,6 +65,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
             markupBps: q.markupBps,
             vatRateBps: q.vatRateBps,
             sections: data.loaded.sections,
+            paymentPlan: q.paymentPlan ?? [],
           }}
           clients={data.clients}
           library={data.library}
@@ -90,6 +95,11 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         viewCount={activity.viewCount}
         lastViewedAt={activity.lastViewedAt}
         versionCount={activity.versions.length}
+        schedule={data.schedule}
+        canInvoice={can(session.role, "invoices.manage")}
+        bankReady={data.bankReady}
+        emailEnabled={emailConfigured()}
+        clientEmail={data.loaded.client?.email ?? null}
       />
     </LiveAppShell>
   );

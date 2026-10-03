@@ -105,10 +105,15 @@ export async function recordView(tx: Tx, orgId: string, access: { accessId: stri
     .from(quoteEvents)
     .where(and(eq(quoteEvents.orgId, orgId), eq(quoteEvents.quoteId, q.quoteId), eq(quoteEvents.kind, "viewed"), gt(quoteEvents.createdAt, new Date(Date.now() - VIEW_WINDOW_MS))));
   if ((recent?.n ?? 0) > 0) return false;
+  const [earlier] = await tx
+    .select({ n: count() })
+    .from(quoteEvents)
+    .where(and(eq(quoteEvents.orgId, orgId), eq(quoteEvents.versionId, q.version.id), eq(quoteEvents.kind, "viewed")));
+  const first = (earlier?.n ?? 0) === 0;
   await tx.insert(quoteEvents).values({ orgId, quoteId: q.quoteId, versionId: q.version.id, kind: "viewed", actor: "client" });
   await tx.update(quotes).set({ status: "viewed" }).where(and(eq(quotes.orgId, orgId), eq(quotes.id, q.quoteId), eq(quotes.status, "sent")));
   await tx.update(portalAccess).set({ lastViewedAt: new Date() }).where(and(eq(portalAccess.orgId, orgId), eq(portalAccess.id, access.accessId)));
-  return true;
+  return { quoteId: q.quoteId, first };
 }
 
 export async function addClientComment(tx: Tx, orgId: string, clientId: string, number: number, input: PortalCommentInput) {
@@ -121,6 +126,7 @@ export async function addClientComment(tx: Tx, orgId: string, clientId: string, 
   if ((recent?.n ?? 0) >= MAX_CLIENT_COMMENTS_PER_HOUR) throw new PortalError("too_many");
   await tx.insert(quoteComments).values({ orgId, quoteId: q.quoteId, versionId: q.version.id, lineId: input.lineId ?? null, authorKind: "client", authorName: input.name, body: input.body });
   await tx.insert(quoteEvents).values({ orgId, quoteId: q.quoteId, versionId: q.version.id, kind: "commented", actor: "client" });
+  return q.quoteId;
 }
 
 /**
@@ -159,4 +165,5 @@ export async function decide(
     userAgent: evidence.userAgent?.slice(0, 500) ?? null,
   });
   await tx.insert(quoteEvents).values({ orgId, quoteId: q.quoteId, versionId: q.version.id, kind: input.decision, actor: "client" });
+  return q.quoteId;
 }

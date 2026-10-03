@@ -28,3 +28,5 @@ export async function isBot(): Promise<boolean> {
   const ua = (await headers()).get("user-agent") ?? "";
   return ua === "" || /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|slack|discord|telegram|skype|linkedin|embedly|headless|python|curl|wget/i.test(ua);
 }
+
+export const portalInvoiceUrl = (origin: string, token: string, number: number) => `${origin}/portal/${token}/invoices/${number}`;

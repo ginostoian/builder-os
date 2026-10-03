@@ -8,6 +8,7 @@ export const appRoutes = {
   clients: "/app/clients",
   settings: "/app/settings",
   team: "/app/settings/team",
+  paymentSettings: "/app/settings/payments",
   clientQuote: "/q/hale-sons/1042",
   employee: "/m",
 } as const;

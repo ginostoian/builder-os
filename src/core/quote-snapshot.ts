@@ -4,6 +4,7 @@
  * this, never from the live draft, so what a client signs is exactly what they were sent.
  */
 import type { Address } from "./schemas";
+import { computePlan, type DueKind, type PlanStage } from "./payment-plan";
 import { lineTotal, quoteRef, quoteTotals, sellRate } from "./quote";
 
 export type SnapshotLine = { id: string; name: string; qty: number; unit: string; unitPrice: number; total: number; note: string | null; kind: string };
@@ -16,19 +17,27 @@ export type QuoteSnapshot = {
   quote: { number: number; ref: string; title: string; siteAddress: Address | null; validUntil: string | null; vatRateBps: number; versionNo: number };
   sections: SnapshotSection[];
   totals: { net: number; vat: number; total: number };
+  /** How the client will pay: amounts worked out at send time, adding up to the total. */
+  paymentPlan?: SnapshotStage[];
 };
+
+export type SnapshotStage = { id: string; label: string; amount: number; dueKind: DueKind; dueDate: string | null };
 
 export type SnapshotInput = {
   company: QuoteSnapshot["company"];
   clientName: string;
   quote: { number: number; title: string; siteAddress: Address | null; validUntil: string | null; vatRateBps: number };
   versionNo: number;
+  /** The quote's plan; buildSnapshot throws PlanError if it doesn't add up. Empty means the default. */
+  paymentPlan: PlanStage[];
   sections: {
     id: string;
     name: string;
     lines: { id: string; name: string; qty: number; unit: string; ratePence: number; markupBps: number; note: string | null; noteVisible: boolean; kind: string }[];
   }[];
 };
+
+export class PlanError extends Error {}
 
 export function buildSnapshot(input: SnapshotInput): QuoteSnapshot {
   const sections = input.sections.map((s) => {
@@ -51,6 +60,8 @@ export function buildSnapshot(input: SnapshotInput): QuoteSnapshot {
     input.sections.map((s) => ({ id: s.id, name: s.name, lines: s.lines.map((l) => ({ id: l.id, name: l.name, unit: l.unit, qty: l.qty, rate: l.ratePence, markup: l.markupBps })) })),
     input.quote.vatRateBps,
   );
+  const plan = computePlan(input.paymentPlan, totals.total);
+  if (!plan.ok) throw new PlanError(plan.error);
   return {
     v: 1,
     company: input.company,
@@ -58,6 +69,7 @@ export function buildSnapshot(input: SnapshotInput): QuoteSnapshot {
     quote: { ...input.quote, ref: quoteRef(input.quote.number), versionNo: input.versionNo },
     sections,
     totals: { net: totals.net, vat: totals.vat, total: totals.total },
+    paymentPlan: plan.stages.map((st) => ({ id: st.id, label: st.label, amount: st.amount, dueKind: st.dueKind, dueDate: st.dueKind === "date" ? (st.dueDate ?? null) : null })),
   };
 }
 
