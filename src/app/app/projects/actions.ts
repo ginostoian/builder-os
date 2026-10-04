@@ -44,6 +44,7 @@ const MESSAGES: Record<ProjectErrorReason, string> = {
   exists: "This quote already has a project.",
   unknown_client: "Choose one of your clients.",
   unknown_member: "Choose someone from your team.",
+  unknown_worker: "Choose someone on your team (archived people can't be given tasks).",
   unknown_phase: "That stage isn't on this project any more. Reload to see the latest.",
   too_many: "This project has reached its limit.",
   too_many_photos: `A diary entry can have up to ${MAX_DIARY_PHOTOS} photos.`,

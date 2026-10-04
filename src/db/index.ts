@@ -133,6 +133,14 @@ export async function findOrgsWithDueInvoices(until: string): Promise<string[]> 
   return rows.map((row) => row.org_id);
 }
 
+/** Companies with current workers' certificates expiring by `until` that haven't been reminded about. */
+export async function findOrgsWithExpiringCertificates(until: string): Promise<string[]> {
+  const day = isoDate.parse(until);
+  const database = await checkedDb();
+  const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_orgs_with_expiring_certificates(${day}::date) as org_id`);
+  return rows.map((row) => row.org_id);
+}
+
 /** Close the pool (scripts and tests; Next.js keeps it for the process lifetime). */
 export async function closeDb(): Promise<void> {
   await client?.end();

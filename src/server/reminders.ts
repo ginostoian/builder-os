@@ -9,10 +9,12 @@
  */
 import "server-only";
 import { addDays, reminderDue, ukToday, type ReminderKind } from "@/core/payment-plan";
-import { findOrgsWithDueInvoices, withTenant } from "@/db";
+import { CERT_WARNING_DAYS } from "@/core/team";
+import { findOrgsWithDueInvoices, findOrgsWithExpiringCertificates, withTenant } from "@/db";
 import { claimReminder, invoicesForReminders, type InvoiceSnapshot } from "@/db/invoices";
 import { clientContact, ensurePortalToken, memberEmail } from "@/db/sending";
-import { emailConfigured } from "./email";
+import { certificateReminderContext, certificatesToRemind, markCertificatesReminded } from "@/db/team";
+import { emailConfigured, sendEmail } from "./email";
 import { emailInvoice } from "./invoice-mail";
 
 type Claimed = { kind: ReminderKind; to: string; clientName: string; token: string; replyTo: string | null; invoice: { number: number; snapshot: InvoiceSnapshot; dueDate: string; totalPence: number } };
@@ -58,6 +60,55 @@ export async function runReminders(origin: string, today = ukToday()): Promise<R
       const result = await emailInvoice({ kind: c.kind, origin, token: c.token, to: c.to, replyTo: c.replyTo, invoice: { ...c.invoice, clientName: c.clientName } });
       if (result.ok) run.sent++;
       else run.failed++;
+    }
+  }
+  return run;
+}
+
+const longDate = (iso: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
+
+export type CertificateRun = { companies: number; emails: number; certificates: number; failed: number };
+
+/**
+ * Certificates and cards (CSCS, Gas Safe, insurance) that expire within 30 days, or already have: one email
+ * per company to its admins and office, once per certificate. A certificate is marked as reminded only after
+ * the email goes out, so a failed send is tried again the next day. Changing the expiry date resets it.
+ */
+export async function runCertificateReminders(origin: string, today = ukToday()): Promise<CertificateRun> {
+  const run: CertificateRun = { companies: 0, emails: 0, certificates: 0, failed: 0 };
+  if (!emailConfigured()) return run;
+  const until = addDays(today, CERT_WARNING_DAYS);
+  for (const orgId of await findOrgsWithExpiringCertificates(until)) {
+    run.companies++;
+    try {
+      const { certs, ctx } = await withTenant(orgId, async (tx) => ({ certs: await certificatesToRemind(tx, orgId, until), ctx: await certificateReminderContext(tx, orgId) }));
+      if (certs.length === 0 || ctx.to.length === 0) continue;
+      const expired = certs.filter((c) => c.expiresOn! < today).length;
+      const subject = expired > 0 ? `${certs.length} team certificate${certs.length > 1 ? "s" : ""} expired or expiring` : `${certs.length} team certificate${certs.length > 1 ? "s" : ""} expiring soon`;
+      const result = await sendEmail({
+        to: ctx.to,
+        subject,
+        fromName: "Builder OS",
+        content: {
+          company: { name: ctx.company, brandColour: ctx.brandColour },
+          preheader: subject,
+          heading: "Certificates to renew",
+          paragraphs: ["These certificates and cards have expired or expire in the next 30 days. Renew them before the person is back on site, then update the date in Builder OS."],
+          details: certs.slice(0, 40).map((c) => [`${c.workerName}: ${c.name}`, `${c.expiresOn! < today ? "Expired" : "Expires"} ${longDate(c.expiresOn!)}`]),
+          button: { label: "Open the team", href: `${origin}/app/team` },
+          footer: "You're getting this because you're an admin or in the office in Builder OS. Each certificate is mentioned once.",
+        },
+      });
+      if (!result.ok) {
+        run.failed++;
+        continue;
+      }
+      await withTenant(orgId, (tx) => markCertificatesReminded(tx, orgId, certs.slice(0, 40).map((c) => c.id)));
+      run.emails++;
+      run.certificates += Math.min(certs.length, 40);
+    } catch (error) {
+      console.error("Certificate reminders failed for a company", error instanceof Error ? error.message : error);
+      run.failed++;
     }
   }
   return run;

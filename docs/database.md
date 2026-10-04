@@ -74,7 +74,13 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
 
      It never shows task titles or notes.
    - Diary photos and files are stored on Bunny under `orgs/{companyId}/photos/` and `orgs/{companyId}/files/` with random names. Files are PDFs or images, checked by their bytes, up to 4 MB, which is Vercel's request limit. Deleting an entry, a file or a project also deletes its files from storage.
-13. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
+13. **Team and site app (migrations 0012–0013).** `workers` is everyone who works for the company, with or without a login; `worker_certificates` holds their cards and tickets; `site_visits` holds check-ins and check-outs.
+   - A worker can be linked to one member (`workers.member_id`, unique per company). Every active member gets a worker automatically (`ensureWorkerForMember`, called from `syncMember`). It reuses an unlinked worker with the same email if there is one. Migration 0012 created workers for existing members.
+   - Tasks are assigned to workers (`project_tasks.worker_id`), not members, so labourers and subcontractors without a login can have tasks. Migration 0012 copied the old member assignments across, and 0013 dropped `assignee_member_id`. Marking someone as left unassigns their open tasks and closes any open visit.
+   - A worker has at most one open visit (a partial unique index). Checking in closes the previous visit first. Location is optional, numeric(9,6), and checked to be in range. Timesheets group visits by the UK day they started.
+   - The site app (`src/db/site.ts`) is scoped to the signed-in member's worker. It shows only active jobs they manage or have a task on, and changes only their own tasks and visits.
+   - Certificate reminders: the daily cron finds companies through `app_orgs_with_expiring_certificates(date)`, a `SECURITY DEFINER` function owned by `builderos_lookup`. It can read only `worker_certificates (org_id, worker_id, expires_on, reminded_at)` and `workers (id, org_id, archived_at)`. Each certificate is emailed once to admins and office. `reminded_at` is reset when its expiry date changes.
+14. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
 
 **Adding a table:**
 - Give it `org_id`, `tenantPolicy(t.orgId)`, `.enableRLS()`, and a `unique(org_id, id)` if anything references it.

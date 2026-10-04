@@ -9,13 +9,15 @@ export type Task = {
   notes: string | null;
   status: TaskStatus;
   position: number;
-  assigneeMemberId: string | null;
-  assigneeName: string | null;
+  workerId: string | null;
+  workerName: string | null;
   trade: string | null;
   startDate: string | null;
   dueDate: string | null;
 };
 export type Member = { id: string; name: string; role: string };
+/** Someone a task can be given to (with or without a login). */
+export type Worker = { id: string; name: string; trade: string | null; kind: string };
 
 export const PROJECT_TONE: Record<ProjectStatus, BadgeTone> = { booked: "blue", on_site: "green", snagging: "amber", complete: "muted", on_hold: "grey" };
 export const TASK_TONE: Record<TaskStatus, BadgeTone> = { todo: "grey", in_progress: "blue", waiting: "amber", done: "green" };
@@ -34,3 +36,14 @@ export const initials = (name: string) =>
     .slice(0, 2)
     .map((w) => w[0]!.toUpperCase())
     .join("");
+
+/** The project page's views. Here, not in the (client) header, because the server page reads it too. */
+export const PROJECT_VIEWS = [
+  { key: "overview", label: "Overview" },
+  { key: "board", label: "Board" },
+  { key: "list", label: "List" },
+  { key: "timeline", label: "Timeline" },
+  { key: "diary", label: "Site diary" },
+  { key: "files", label: "Files" },
+] as const;
+export type ProjectView = (typeof PROJECT_VIEWS)[number]["key"];

@@ -9,7 +9,7 @@ import { TEXT } from "@/core/limits";
 import { TASK_STATUSES, TASK_STATUS_LABEL, type TaskStatus } from "@/core/projects";
 import { cn } from "@/lib/utils";
 import { Field, control } from "../form-fields";
-import type { Member, Phase, Task } from "./types";
+import type { Phase, Task, Worker } from "./types";
 
 export type TaskDraft = Partial<Task> & { status: TaskStatus };
 
@@ -17,14 +17,14 @@ export type TaskDraft = Partial<Task> & { status: TaskStatus };
 export function TaskDialog({
   projectId,
   phases,
-  members,
+  workers,
   task,
   onClose,
   onSaved,
 }: {
   projectId: string;
   phases: Phase[];
-  members: Member[];
+  workers: Worker[];
   /** An existing task (has an id) or a draft with defaults. Null closes the dialog. */
   task: TaskDraft | null;
   onClose: () => void;
@@ -52,7 +52,7 @@ export function TaskDialog({
         title: form.title.trim(),
         status: form.status,
         phaseId: form.phaseId || undefined,
-        assigneeMemberId: form.assigneeMemberId || undefined,
+        workerId: form.workerId || undefined,
         trade: form.trade.trim() || undefined,
         startDate: form.startDate || undefined,
         dueDate: form.dueDate || undefined,
@@ -99,17 +99,18 @@ export function TaskDialog({
                 ))}
               </select>
             </Field>
-            <Field label="Who (your team)">
-              <select value={form.assigneeMemberId} onChange={set("assigneeMemberId")} className={control}>
+            <Field label="Who's doing it">
+              <select value={form.workerId} onChange={set("workerId")} className={control}>
                 <option value="">Nobody yet</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
+                {workers.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                    {w.trade ? ` · ${w.trade}` : ""}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="Trade or subcontractor" hint="e.g. Electrician, or Dave's Plastering">
+            <Field label="Trade" hint="e.g. Electrician. Or a firm that isn't on your team.">
               <input value={form.trade} onChange={set("trade")} maxLength={TEXT.short} className={control} />
             </Field>
             <Field label="Start">
@@ -167,7 +168,7 @@ function fromTask(t: TaskDraft | null) {
     title: t?.title ?? "",
     status: (t?.status ?? "todo") as TaskStatus,
     phaseId: t?.phaseId ?? "",
-    assigneeMemberId: t?.assigneeMemberId ?? "",
+    workerId: t?.workerId ?? "",
     trade: t?.trade ?? "",
     startDate: t?.startDate ?? "",
     dueDate: t?.dueDate ?? "",

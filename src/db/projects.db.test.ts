@@ -36,6 +36,7 @@ import {
   updateTask,
 } from "./projects";
 import { createQuote, getQuote, saveQuote } from "./quotes";
+import { createWorker } from "./team";
 import { sendQuote } from "./sending";
 
 const TODAY = "2026-10-04";
@@ -51,7 +52,8 @@ async function newOrg(name: string) {
   const orgId = randomUUID();
   await withTenant(orgId, (tx) => tx.execute(sql`insert into organizations (id, clerk_org_id, name) values (${orgId}, ${clerkId(orgId)}, ${name})`));
   const memberId = await withTenant(orgId, async (tx) => (await tx.execute<{ id: string }>(sql`insert into members (org_id, clerk_user_id, role, name) values (${orgId}, ${"user_" + orgId.slice(0, 8)}, 'admin', 'Jo') returning id`))[0].id);
-  return { orgId, memberId };
+  const workerId = await withTenant(orgId, (tx) => createWorker(tx, orgId, { name: "Jo", kind: "employee" }));
+  return { orgId, memberId, workerId };
 }
 
 /** A two-section quote, sent and (optionally) accepted. */
@@ -132,7 +134,7 @@ describe("starting projects", () => {
 
 describe("stages and tasks", () => {
   it("adds, edits, moves and completes tasks, and keeps them when a stage goes", async () => {
-    const { orgId, memberId } = await newOrg("Proj tasks");
+    const { orgId, memberId, workerId } = await newOrg("Proj tasks");
     const { quoteId } = await quote(orgId, memberId);
     const id = await withTenant(orgId, (tx) => createProjectFromQuote(tx, orgId, { quoteId, tasksFromLines: false }, memberId));
     const q2 = await quote(orgId, memberId);
@@ -147,7 +149,7 @@ describe("stages and tasks", () => {
       const a = await addTask(tx, orgId, task(id, { phaseId: strip.id, title: "Rip out", dueDate: "2026-10-01" }), memberId);
       const b = await addTask(tx, orgId, task(id, { phaseId: strip.id, title: "Skip", status: "waiting" }), memberId);
       const c = await addTask(tx, orgId, task(id, { phaseId: first.id, title: "Cables" }), memberId);
-      await updateTask(tx, orgId, c, task(id, { phaseId: first.id, title: "Cables and back boxes", trade: "Electrician", startDate: "2026-10-05", dueDate: "2026-10-07", assigneeMemberId: memberId }));
+      await updateTask(tx, orgId, c, task(id, { phaseId: first.id, title: "Cables and back boxes", trade: "Electrician", startDate: "2026-10-05", dueDate: "2026-10-07", workerId }));
 
       await setTaskStatus(tx, orgId, id, a, "done");
       // (Dates out of order are refused by the database too; see below, in its own transaction.)
@@ -156,7 +158,7 @@ describe("stages and tasks", () => {
       const after = (await getProject(tx, orgId, id))!;
       const byId = new Map(after.tasks.map((t) => [t.id, t]));
       expect(byId.get(a)!.completedAt).not.toBeNull();
-      expect(byId.get(c)).toMatchObject({ status: "waiting", trade: "Electrician", assigneeName: "Jo", dueDate: "2026-10-07" });
+      expect(byId.get(c)).toMatchObject({ status: "waiting", trade: "Electrician", workerName: "Jo", dueDate: "2026-10-07" });
       expect(after.tasks.filter((t) => t.status === "waiting").map((t) => t.id)).toEqual([c, b]);
       await setTaskStatus(tx, orgId, id, a, "todo");
       expect((await getProject(tx, orgId, id))!.tasks.find((t) => t.id === a)!.completedAt).toBeNull();

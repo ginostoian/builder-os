@@ -103,12 +103,12 @@ export function TaskBoard({
                 >
                   {t.phaseId && phaseName.get(t.phaseId) && <span className="truncate text-[11px] font-medium text-subtle">{phaseName.get(t.phaseId)}</span>}
                   <span className={cn("leading-snug font-medium", t.status === "done" && "line-through decoration-faint-2")}>{t.title}</span>
-                  {(t.assigneeName || t.trade || t.dueDate || t.notes) && (
+                  {(t.workerName || t.trade || t.dueDate || t.notes) && (
                     <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-subtle">
-                      {(t.assigneeName || t.trade) && (
+                      {(t.workerName || t.trade) && (
                         <span className="flex items-center gap-1">
                           <User className="size-3" />
-                          {[t.assigneeName, t.trade].filter(Boolean).join(" · ")}
+                          {[t.workerName, t.trade].filter(Boolean).join(" · ")}
                         </span>
                       )}
                       {t.dueDate && (

@@ -58,6 +58,11 @@ const PERMISSIONS = {
   /** Projects: tasks, diary and files. Site leads run jobs, so they can do all of it (without prices). */
   "projects.view": OFFICE,
   "projects.edit": OFFICE,
+  /** The Team page: everyone who works for the company, their certificates, the week's plan, timesheets. */
+  "team.view": OFFICE,
+  "team.edit": ["admin", "office"],
+  /** The site app at /m: today's jobs and tasks, site updates, check in and out. Everyone. */
+  "site.app": ["admin", "office", "estimator", "site_lead", "employee"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

@@ -10,6 +10,7 @@
 import { z } from "zod";
 import { MAX_VARIATION_LINES } from "./variation";
 import { PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "./projects";
+import { WORKER_KINDS } from "./team";
 import { MAX_PAYMENT_STAGES, PAYMENT_AMOUNT_KINDS, PAYMENT_DUE_KINDS } from "./payment-plan";
 import { MAX_BUNDLE_ITEMS, MAX_LINES_PER_QUOTE, MAX_MARKUP_BPS, MAX_PATCH_OPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, QTY_DECIMALS, TEXT } from "./limits";
 
@@ -365,7 +366,7 @@ export const taskInput = z
     title: singleLine(TEXT.line),
     notes: multiLine(TEXT.note).optional(),
     status: z.enum(TASK_STATUSES),
-    assigneeMemberId: id.optional(),
+    workerId: id.optional(),
     trade: singleLine(TEXT.short).optional(),
     startDate: optionalDate,
     dueDate: optionalDate,
@@ -384,3 +385,30 @@ export const diaryInput = z.strictObject({
   shareWithClient: z.boolean(),
 });
 export type DiaryInput = z.infer<typeof diaryInput>;
+
+// ── Team ─────────────────────────────────────────────────────────────────────
+
+/** Someone on the team. Only the name is required; most firms fill the rest in over time. */
+export const workerInput = z.strictObject({
+  name: singleLine(TEXT.name),
+  kind: z.enum(WORKER_KINDS),
+  trade: singleLine(TEXT.short).optional(),
+  phone: phone.optional(),
+  email: email.optional(),
+  dayRatePence: pence.optional(),
+  startedOn: isoDate.optional(),
+  emergencyName: singleLine(TEXT.name).optional(),
+  emergencyPhone: phone.optional(),
+  notes: multiLine(TEXT.note).optional(),
+});
+export type WorkerInput = z.infer<typeof workerInput>;
+
+export const certificateInput = z.strictObject({
+  name: singleLine(TEXT.name),
+  reference: singleLine(TEXT.short).optional(),
+  expiresOn: isoDate.optional(),
+});
+export type CertificateInput = z.infer<typeof certificateInput>;
+
+/** A site check-in or check-out location, when the phone shares it. */
+export const geoInput = z.strictObject({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).optional();

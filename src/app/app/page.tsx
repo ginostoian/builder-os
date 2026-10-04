@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  AlertTriangle,
   CheckCircle2,
   Eye,
   FilePen,
@@ -19,6 +20,7 @@ import { invoiceTotals } from "@/db/invoices";
 import { listProjects } from "@/db/projects";
 import { JobsPanel } from "@/components/app/projects/jobs-panel";
 import { ukToday } from "@/core/payment-plan";
+import { certificateAlerts } from "@/db/team";
 import { getSession, withSession } from "@/auth/session";
 
 const ukHour = (d: Date) =>
@@ -101,13 +103,14 @@ export default async function DashboardPage() {
   }
 
   const canInvoice = can(session.role, "invoices.manage");
-  const [d, money, jobs] = await withSession(
+  const [d, money, jobs, certs] = await withSession(
     session,
     async (tx) =>
       [
         await dashboardData(tx, session.orgId, now),
         canInvoice ? await invoiceTotals(tx, session.orgId) : null,
         await listProjects(tx, session.orgId, "active", ukToday()),
+        can(session.role, "team.view") ? await certificateAlerts(tx, session.orgId, ukToday()) : [],
       ] as const,
   );
   const kpis = [
@@ -195,6 +198,18 @@ export default async function DashboardPage() {
             <span className="ml-auto text-[12.5px] text-ink-2">
               View payments →
             </span>
+          </Link>
+        )}
+
+        {certs.length > 0 && (
+          <Link href="/app/team" className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-card hover:bg-surface">
+            <AlertTriangle className={`size-4 ${certs.some((c) => c.expiresOn! < ukToday()) ? "text-danger" : "text-warning"}`} />
+            <span className="font-medium">Team certificates</span>
+            <span className="min-w-0 flex-1 truncate text-ink-2">
+              {certs.length} expired or expiring in 30 days: {certs.slice(0, 3).map((c) => `${c.workerName} (${c.name})`).join(", ")}
+              {certs.length > 3 ? "…" : ""}
+            </span>
+            <span className="text-[12.5px] text-ink-2">View team →</span>
           </Link>
         )}
 

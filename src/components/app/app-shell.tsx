@@ -36,13 +36,13 @@ const nav: NavItem[] = [
   { id: "board", label: "Projects", icon: SquareKanban, href: appRoutes.projects, badge: "7", screen: "board" },
   { id: "invoices", label: "Payments", icon: Receipt, href: appRoutes.payments, screen: "invoices" },
   { id: "crm", label: "Clients", icon: Contact, href: appRoutes.clients, badge: "23", screen: "crm" },
-  { id: "team", label: "Team", icon: HardHat, href: appRoutes.employee },
+  { id: "team", label: "Team", icon: HardHat, href: appRoutes.people, screen: "people" },
   { id: "reports", label: "Reports", icon: ChartColumn, href: appRoutes.dashboard },
 ];
 
 const portals = [
   { label: "Client portal", icon: Globe, href: appRoutes.clientQuote },
-  { label: "Employee app", icon: Smartphone, href: appRoutes.employee },
+  { label: "Site app", icon: Smartphone, href: appRoutes.employee },
 ];
 
 const crumbs: Record<AdminScreen, [string, string]> = {
@@ -53,6 +53,7 @@ const crumbs: Record<AdminScreen, [string, string]> = {
   board: ["Projects", "14 Elm Road"],
   invoices: ["Payments", "14 Elm Road"],
   crm: ["Clients", "Pipeline"],
+  people: ["Team", "People"],
   settings: ["Settings", "Company"],
 };
 

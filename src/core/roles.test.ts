@@ -28,6 +28,14 @@ describe("permissions", () => {
     expect(can("admin", "settings.manage")).toBe(true);
   });
 
+  it("gives everyone the site app, but only office roles the team and projects", () => {
+    expect(can("employee", "site.app")).toBe(true);
+    expect(can("employee", "projects.view")).toBe(false);
+    expect(can("employee", "team.view")).toBe(false);
+    expect(can("site_lead", "team.view")).toBe(true);
+    expect(can("site_lead", "team.edit")).toBe(false);
+  });
+
   it("sends employees to the employee app", () => {
     expect(homePath("employee")).toBe("/m");
     expect(homePath("site_lead")).toBe("/app");

@@ -1,21 +1,99 @@
 import type { Metadata } from "next";
-import { BackToAdmin } from "@/components/app/back-to-admin";
-import { EmployeeAppScreen } from "@/components/app/screens/employee-app";
+import Link from "next/link";
+import { ChevronRight, HardHat, MapPin } from "lucide-react";
+import { CheckIn } from "@/components/site/check-in";
+import { MyTasks } from "@/components/site/my-tasks";
+import { SiteFrame, SiteHeading } from "@/components/site/site-frame";
+import { isForToday, toMyTask } from "@/components/site/to-my-task";
+import { formatAddress } from "@/core/clients";
+import { ukToday } from "@/core/payment-plan";
 import { can } from "@/core/roles";
-import { getSession } from "@/auth/session";
+import { myJobs, myTasks, openVisit, workerForMember } from "@/db/site";
+import { requirePermission, withSession } from "@/auth/session";
 
-export const metadata: Metadata = { title: "Today", robots: { index: false } };
+export const metadata: Metadata = { title: "Today" };
 
-/** On a phone the app fills the screen; on a desktop it sits in a phone frame for demos. */
-export default async function EmployeeAppPage() {
-  // Every role can open the employee app; only office roles get the shortcut back to the admin app.
-  const session = await getSession();
+const longToday = (iso: string) => new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
+
+function greeting() {
+  const h = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hourCycle: "h23", timeZone: "Europe/London" }).format(new Date()));
+  return h < 12 ? "Morning" : h < 18 ? "Afternoon" : "Evening";
+}
+
+/** The site app's home: check in, today's tasks across my jobs, and my jobs. */
+export default async function SiteTodayPage() {
+  const session = await requirePermission("site.app");
+  const today = ukToday();
+  const office = can(session.role, "app.office");
+  const data = await withSession(session, async (tx) => {
+    const worker = await workerForMember(tx, session.orgId, session.memberId);
+    if (!worker) return null;
+    const me = { workerId: worker.id, memberId: session.memberId };
+    return { worker, jobs: await myJobs(tx, session.orgId, me), tasks: await myTasks(tx, session.orgId, worker.id), open: await openVisit(tx, session.orgId, worker.id) };
+  });
+  const firstName = session.memberName.split(" ")[0];
+
+  if (!data) {
+    return (
+      <SiteFrame eyebrow={longToday(today)} title={`${greeting()}, ${firstName}`} office={office}>
+        <div className="flex flex-col items-center gap-2 rounded-2xl bg-white px-6 py-10 text-center shadow-ring">
+          <HardHat className="size-6 text-subtle" strokeWidth={1.5} />
+          <p className="font-medium">You&apos;re not on the team list</p>
+          <p className="text-subtle">Ask the office to add you under Team and link your login. Then your jobs and tasks show up here.</p>
+        </div>
+      </SiteFrame>
+    );
+  }
+
+  const all = data.tasks.map((t) => ({ row: t, task: toMyTask(t, today) }));
+  const todays = all.filter((t) => isForToday(t.row, today)).map((t) => t.task);
+  const later = all.filter((t) => !isForToday(t.row, today)).map((t) => t.task);
+  const done = todays.filter((t) => t.status === "done").length;
+
   return (
-    <div className="flex min-h-dvh items-stretch justify-center bg-[#EDECE8] sm:items-center sm:py-8">
-      <div className="h-dvh w-full overflow-hidden sm:h-[844px] sm:w-[390px] sm:rounded-[52px] sm:border-[11px] sm:border-ink sm:shadow-[0_30px_60px_-20px_rgb(0_0_0/0.35)]">
-        <EmployeeAppScreen />
-      </div>
-      {can(session.role, "app.office") && <BackToAdmin />}
-    </div>
+    <SiteFrame eyebrow={longToday(today)} title={`${greeting()}, ${firstName}`} office={office}>
+      {(data.open || data.jobs.length > 0) && (
+        <CheckIn open={data.open ? { projectId: data.open.projectId, projectName: data.open.projectName, checkedInAt: data.open.checkedInAt.toISOString() } : null} jobs={data.jobs.map((j) => ({ id: j.id, name: j.name }))} />
+      )}
+
+      <SiteHeading title="Today" aside={todays.length > 0 ? `${done} of ${todays.length} done` : undefined} />
+      <MyTasks tasks={todays} showJob />
+
+      {later.length > 0 && (
+        <>
+          <SiteHeading title="Coming up" aside={`${later.length}`} />
+          <MyTasks tasks={later} showJob />
+        </>
+      )}
+
+      <SiteHeading title="My jobs" />
+      {data.jobs.length === 0 ? (
+        <p className="rounded-2xl bg-white px-4 py-5 text-center text-subtle shadow-ring">No current jobs. When the office gives you a task on a job, it shows up here.</p>
+      ) : (
+        <ul className="overflow-hidden rounded-2xl bg-white shadow-ring">
+          {data.jobs.map((j) => (
+            <li key={j.id} className="border-b border-line last:border-0">
+              <Link href={`/m/jobs/${j.id}`} className="flex min-h-[64px] items-center gap-3 px-4 py-2.5">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{j.name}</span>
+                  <span className="flex items-center gap-1 truncate text-xs text-subtle">
+                    {j.siteAddress ? (
+                      <>
+                        <MapPin className="size-3 flex-none" />
+                        <span className="truncate">{formatAddress(j.siteAddress)}</span>
+                      </>
+                    ) : (
+                      j.clientName
+                    )}
+                  </span>
+                </span>
+                {j.openTasks > 0 && <span className="text-[13px] text-subtle tabular">{j.openTasks} to do</span>}
+                <ChevronRight className="size-4 text-faint-2" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </SiteFrame>
   );
 }
