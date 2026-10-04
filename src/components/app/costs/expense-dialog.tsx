@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FileText, Paperclip, Trash2, X } from "lucide-react";
 import { deleteExpenseAction, removeReceiptAction, saveExpenseAction, setRecoveredAction, uploadReceiptAction } from "@/app/app/purchases/actions";
 import { shrinkPhoto } from "@/components/app/shrink-photo";
+import { useReceiptReader } from "@/components/receipt-reader";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABEL, MAX_RECEIPTS, poRef, vatInGross, type ExpenseCategory } from "@/core/costs";
@@ -60,6 +61,18 @@ export function ExpenseDialog({
     markup: expense ? String(expense.rechargeMarkupBps / 100) : "0",
   }));
   const [files, setFiles] = React.useState<File[]>([]);
+  // The first receipt fills in whatever hasn't been typed yet.
+  const reader = useReceiptReader((r) =>
+    setV((x) => ({
+      ...x,
+      supplier: x.supplier.trim() ? x.supplier : (r.supplier ?? ""),
+      description: x.description.trim() ? x.description : (r.description ?? ""),
+      spentOn: !expense && r.spentOn && r.spentOn <= ukToday() ? r.spentOn : x.spentOn,
+      total: x.total.trim() || r.totalPence === null ? x.total : pounds(r.totalPence),
+      vat: (x.vat.trim() && parsePence(x.vat) !== 0) || r.vatPence === null ? x.vat : pounds(r.vatPence),
+      category: !expense && !draft?.category && r.category ? r.category : x.category,
+    })),
+  );
   const [receipts, setReceipts] = React.useState(expense?.receipts ?? []);
   const [error, setError] = React.useState<string>();
   const [progress, setProgress] = React.useState<string>();
@@ -270,6 +283,7 @@ export function ExpenseDialog({
                     className="sr-only"
                     onChange={(e) => {
                       const picked = [...(e.target.files ?? [])].slice(0, room);
+                      if (!locked && picked[0] && files.length === 0 && receipts.length === 0) void reader.read(picked[0]);
                       setFiles((x) => [...x, ...picked]);
                       e.target.value = "";
                     }}
@@ -277,6 +291,7 @@ export function ExpenseDialog({
                 </label>
               )}
             </div>
+            {(reader.reading || reader.note) && <p className="mt-1 text-[12px] text-ink-2">{reader.reading ? "Reading the receipt…" : reader.note}</p>}
             {!storageEnabled && <p className="mt-1 text-[12px] text-subtle">File storage isn&apos;t set up, so receipts can&apos;t be attached yet.</p>}
           </div>
 

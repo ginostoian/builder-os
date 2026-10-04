@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { LeadDialog } from "./lead-dialog";
 import type { Owner } from "./types";
 
-export function AddLeadButton({ owners, meId }: { owners: Owner[]; meId: string }) {
-  const [open, setOpen] = React.useState(false);
+/** `startOpen` comes from `?new=1` (the top bar's New menu). */
+export function AddLeadButton({ owners, meId, startOpen = false }: { owners: Owner[]; meId: string; startOpen?: boolean }) {
+  const [open, setOpen] = React.useState(startOpen);
   const [key, setKey] = React.useState(0);
   return (
     <>
@@ -20,7 +21,19 @@ export function AddLeadButton({ owners, meId }: { owners: Owner[]; meId: string 
         <Plus />
         Add lead
       </Button>
-      {open && <LeadDialog key={key} open onOpenChange={setOpen} owners={owners} meId={meId} />}
+      {open && (
+        <LeadDialog
+          key={key}
+          open
+          onOpenChange={(next) => {
+            setOpen(next);
+            // Don't reopen on refresh.
+            if (!next && startOpen) window.history.replaceState(null, "", window.location.pathname);
+          }}
+          owners={owners}
+          meId={meId}
+        />
+      )}
     </>
   );
 }

@@ -2,6 +2,10 @@ import { ROLE_LABELS, can } from "@/core/roles";
 import { requirePermission } from "@/auth/session";
 import { CompanySwitcher, UserMenu } from "./account";
 import { AppShell } from "./app-shell";
+import { CommandSearch } from "./shell/command-search";
+import { NewMenu } from "./shell/new-menu";
+import { NotificationBell } from "./shell/notification-bell";
+import { quickActionsFor } from "./shell/quick-actions";
 import type { AdminScreen } from "./routes";
 
 /**
@@ -18,6 +22,7 @@ export async function LiveAppShell({
   children: React.ReactNode;
 }) {
   const session = await requirePermission("app.office");
+  const actions = quickActionsFor(session.role);
   return (
     <AppShell
       active={active}
@@ -31,6 +36,9 @@ export async function LiveAppShell({
           />
         ),
         crumbs: crumbs ?? (active === "dashboard" ? [session.orgName, "Dashboard"] : undefined),
+        search: <CommandSearch actions={actions} />,
+        bell: <NotificationBell />,
+        newMenu: <NewMenu actions={actions} />,
       }}
     >
       {children}

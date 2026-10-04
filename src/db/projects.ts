@@ -6,9 +6,11 @@
 import "server-only";
 import { and, asc, count, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { MAX_DIARY_PHOTOS, MAX_PHASES_PER_PROJECT, MAX_TASKS_PER_PROJECT, type TaskStatus } from "@/core/projects";
+import { can } from "@/core/roles";
 import type { QuoteSnapshot } from "@/core/quote-snapshot";
 import type { DiaryInput, ProjectInput, TaskInput } from "@/core/schemas";
 import type { Tx } from "./index";
+import { notify } from "./notifications";
 import { clients, invoices, members, workers, projectDiary, projectFiles, projectPhases, projectTasks, projects, quoteDecisions, quoteVersions, quotes, variations } from "./schema";
 
 export type ProjectErrorReason = "not_found" | "not_accepted" | "exists" | "unknown_client" | "unknown_member" | "unknown_worker" | "unknown_phase" | "too_many" | "too_many_photos";
@@ -333,6 +335,20 @@ async function assertPhase(tx: Tx, orgId: string, projectId: string, phaseId: st
   if (!p) throw new ProjectError("unknown_phase");
 }
 
+/** Tell the worker's login (if they have one) that a task is now theirs. */
+async function notifyAssigned(tx: Tx, orgId: string, projectId: string, workerId: string, title: string, actor: string | null) {
+  const [w] = await tx
+    .select({ memberId: workers.memberId, role: members.role, project: projects.name })
+    .from(workers)
+    .innerJoin(projects, and(eq(projects.orgId, workers.orgId), eq(projects.id, projectId)))
+    .innerJoin(members, and(eq(members.orgId, workers.orgId), eq(members.id, workers.memberId)))
+    .where(and(eq(workers.orgId, orgId), eq(workers.id, workerId)));
+  if (!w?.memberId) return;
+  // Employees only have the site app.
+  const href = can(w.role, "projects.view") ? `/app/projects/${projectId}?view=list` : `/m/jobs/${projectId}`;
+  await notify(tx, orgId, [w.memberId], { kind: "task_assigned", title: `New task: ${title}`, body: w.project, href }, actor);
+}
+
 const doneAt = (status: TaskStatus) => (status === "done" ? sql`coalesce(${projectTasks.completedAt}, now())` : null);
 
 /** Add a task at the end of its column. */
@@ -363,12 +379,17 @@ export async function addTask(tx: Tx, orgId: string, input: TaskInput, memberId:
       createdByMemberId: memberId,
     })
     .returning({ id: projectTasks.id });
+  if (input.workerId) await notifyAssigned(tx, orgId, input.projectId, input.workerId, input.title, memberId);
   return row.id;
 }
 
-export async function updateTask(tx: Tx, orgId: string, taskId: string, input: TaskInput) {
+export async function updateTask(tx: Tx, orgId: string, taskId: string, input: TaskInput, actor: string | null = null) {
   await assertPhase(tx, orgId, input.projectId, input.phaseId);
   await assertWorker(tx, orgId, input.workerId);
+  const [before] = await tx
+    .select({ workerId: projectTasks.workerId })
+    .from(projectTasks)
+    .where(and(eq(projectTasks.orgId, orgId), eq(projectTasks.projectId, input.projectId), eq(projectTasks.id, taskId)));
   const rows = await tx
     .update(projectTasks)
     .set({
@@ -385,6 +406,7 @@ export async function updateTask(tx: Tx, orgId: string, taskId: string, input: T
     .where(and(eq(projectTasks.orgId, orgId), eq(projectTasks.projectId, input.projectId), eq(projectTasks.id, taskId)))
     .returning({ id: projectTasks.id });
   if (rows.length === 0) throw new ProjectError("not_found");
+  if (input.workerId && input.workerId !== before?.workerId) await notifyAssigned(tx, orgId, input.projectId, input.workerId, input.title, actor);
 }
 
 export async function setTaskStatus(tx: Tx, orgId: string, projectId: string, taskId: string, status: TaskStatus) {

@@ -25,7 +25,7 @@ Code: `src/server/email.ts` (sending), `src/server/notify.ts` (team alerts), `sr
 
 Clients get an email about an unpaid invoice 3 days before it's due, on the day, then 3 and 7 days late. Each reminder goes out once at most. Reminders stop when the invoice is marked paid or cancelled, and a company can switch them off in Settings → Payments.
 
-The same daily job also emails admins and office about team certificates (CSCS, Gas Safe, insurance) that expire within 30 days or have already expired. Each certificate is mentioned once, until its date changes.
+The same daily job also tells admins and office about team certificates (CSCS, Gas Safe, insurance) that expire within 30 days or have already expired: in the notification bell always, and by email when email is set up. Each certificate is mentioned once, until its date changes.
 
 It also sends the sales pipeline's automation emails that are due that day. Same-day ones go out straight away, when the lead is added or moves stage. Each automatic email carries:
 - an unsubscribe link (`/unsubscribe/{token}`);
@@ -87,3 +87,14 @@ If an upload fails with "The file couldn't be stored", the message ends with a c
 Vercel's logs (Logs, filter "Bunny") show the same explanation for failed uploads. Settings pasted with spaces, a trailing slash or an `https://` prefix are tidied automatically. After changing a setting, redeploy.
 
 Code: `src/server/storage.ts`, `src/core/files.ts`.
+
+## Reading receipts: Claude (optional)
+
+With an Anthropic API key, picking a receipt photo or PDF (office expense form, or "Add a receipt" in the site app) fills in the shop, what was bought, the date, the total and the VAT. People check it before saving; anything they've already typed is kept. Without the key, the forms work as before.
+
+1. Create an API key at console.anthropic.com (Settings → API keys) and add some credit.
+2. In Vercel, set `ANTHROPIC_API_KEY` (Production and Preview), then redeploy.
+
+Each receipt is one request to Claude (`claude-opus-5-5`, low effort); the photo is shrunk in the browser first. If Claude declines a request, the API retries it on a fallback model (`fallbacks: "default"`). Nothing is stored by the reader itself: the file is sent once to read it, and uploaded to Bunny as usual when the expense is saved.
+
+Code: `src/server/receipt-reader.ts`, `src/app/receipt-actions.ts`, `src/components/receipt-reader.ts`.

@@ -199,13 +199,18 @@ export async function alertContext(tx: Tx, orgId: string, quoteId: string) {
   if (!version) return undefined;
   const s = version.snapshot;
   let to: string[] = [];
+  // Who hears about it, in the app and by email: whoever sent the quote, or the Admins if they've gone.
+  let memberIds: string[] = [];
   if (version.sentByMemberId) {
     const [m] = await tx.select({ email: members.email, active: members.active }).from(members).where(and(eq(members.orgId, orgId), eq(members.id, version.sentByMemberId)));
+    if (m?.active) memberIds = [version.sentByMemberId];
     if (m?.email && m.active) to = [m.email];
   }
-  if (to.length === 0) {
-    const admins = await tx.select({ email: members.email }).from(members).where(and(eq(members.orgId, orgId), eq(members.role, "admin"), eq(members.active, true)));
+  // Email falls back to the Admins too when the sender has no address; the bell stays with the sender.
+  if (memberIds.length === 0 || to.length === 0) {
+    const admins = await tx.select({ id: members.id, email: members.email }).from(members).where(and(eq(members.orgId, orgId), eq(members.role, "admin"), eq(members.active, true)));
+    if (memberIds.length === 0) memberIds = admins.map((a) => a.id);
     to = admins.flatMap((a) => (a.email ? [a.email] : []));
   }
-  return { to, quoteRef: s.quote.ref, title: s.quote.title, clientName: s.client.name, total: s.totals.total, company: s.company.tradingName ?? s.company.name, brandColour: s.company.brandColour };
+  return { to, memberIds, quoteRef: s.quote.ref, title: s.quote.title, clientName: s.client.name, total: s.totals.total, company: s.company.tradingName ?? s.company.name, brandColour: s.company.brandColour };
 }
