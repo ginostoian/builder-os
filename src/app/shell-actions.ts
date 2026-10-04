@@ -4,6 +4,8 @@ import { getSession, withSession } from "@/auth/session";
 import { id } from "@/core/schemas";
 import { listNotifications, markRead } from "@/db/notifications";
 import { search, type SearchHit } from "@/db/search";
+import { recordActivity } from "@/db/platform";
+import { ukToday } from "@/core/payment-plan";
 
 /** What the bell and the ⌘K search ask for. Used in the office app and the site app alike. */
 
@@ -29,4 +31,14 @@ export async function searchAction(q: string): Promise<SearchHit[]> {
   if (typeof q !== "string") return [];
   const s = await getSession();
   return withSession(s, (tx) => search(tx, s.orgId, s.role, q));
+}
+
+/** A page view, for the platform team's usage numbers (daily and monthly actives). Never fails the page. */
+export async function activityAction(site: boolean): Promise<void> {
+  try {
+    const s = await getSession();
+    await withSession(s, (tx) => recordActivity(tx, s.orgId, s.memberId, ukToday(), site === true));
+  } catch {
+    // Signed out, or the database is busy: usage numbers can miss a view.
+  }
 }

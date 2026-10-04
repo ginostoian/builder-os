@@ -57,6 +57,16 @@ export const lookupRole = pgRole("builderos_lookup").existing();
  */
 export const billingRole = pgRole("builderos_billing").existing();
 
+/**
+ * Owner of the platform metrics functions (migration 0019). NOLOGIN, no BYPASSRLS, read-only. It can read
+ * the few columns the platform team's dashboard counts (through `platform_metrics` policies and column
+ * grants), and the functions it owns return only totals and per-company counts.
+ */
+export const metricsRole = pgRole("builderos_metrics").existing();
+
+/** Read-only, all rows, for the metrics role only. Column grants (migration 0019) limit what it can see. */
+const metricsPolicy = () => pgPolicy("platform_metrics", { as: "permissive", for: "select", to: metricsRole, using: sql`true` });
+
 /** Read-only, all rows, for the lookup role only. Column grants (migration 0004) limit what it can see. */
 const lookupPolicy = () => pgPolicy("clerk_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` });
 
@@ -139,6 +149,8 @@ export const organizations = pgTable(
     /** The company's Stripe account for client payments can take charges / has finished onboarding. */
     connectChargesEnabled: boolean("connect_charges_enabled").notNull().default(false),
     connectDetailsSubmitted: boolean("connect_details_submitted").notNull().default(false),
+    /** What the live subscription pays us a month, in pence (0 unless active or past due). Migration 0019. */
+    mrrPence: integer("mrr_pence").notNull().default(0),
     /** Clerk event time of the last sync. Webhooks older than this are ignored (Svix can deliver out of order). */
     clerkSyncedAt: timestamp("clerk_synced_at", { withTimezone: true }),
     /** Set when the Clerk organization is deleted. Data is kept for a grace period, then purged (plan §7). */
@@ -155,6 +167,8 @@ export const organizations = pgTable(
     }),
     lookupPolicy(),
     pgPolicy("billing_access", { as: "permissive", for: "all", to: billingRole, using: sql`true`, withCheck: sql`true` }),
+    metricsPolicy(),
+    check("organizations_mrr_range", sql`${t.mrrPence} between 0 and 100000000`),
     check("organizations_subscription_status", sql`${t.subscriptionStatus} is null or ${t.subscriptionStatus} ~ '^[a-z_]{1,30}$'`),
     check("organizations_stripe_ids", sql`(${t.stripeCustomerId} is null or ${t.stripeCustomerId} ~ '^cus_[A-Za-z0-9]+$') and (${t.stripeSubscriptionId} is null or ${t.stripeSubscriptionId} ~ '^sub_[A-Za-z0-9]+$') and (${t.connectAccountId} is null or ${t.connectAccountId} ~ '^acct_[A-Za-z0-9]+$')`),
     len("organizations_name_len", t.name, TEXT.name),
@@ -188,11 +202,20 @@ export const members = pgTable(
     active: boolean("active").notNull().default(true),
     /** Clerk event time of the last sync, as on organizations. */
     clerkSyncedAt: timestamp("clerk_synced_at", { withTimezone: true }),
+    // ── Getting started (migration 0019), per person ──
+    /** When they finished or skipped the welcome tour. Null shows it on their next visit. */
+    onboardingTourAt: timestamp("onboarding_tour_at", { withTimezone: true }),
+    /** They closed the getting-started checklist (Settings → Getting started brings it back). */
+    onboardingHidden: boolean("onboarding_hidden").notNull().default(false),
+    /** Guide steps they've read ("Got it"), for steps there's nothing to do but learn. */
+    onboardingSeen: text("onboarding_seen").array().notNull().default(sql`'{}'::text[]`),
     ...timestamps,
   },
   (t) => [
     tenantPolicy(t.orgId),
     lookupPolicy(),
+    metricsPolicy(),
+    check("members_onboarding_seen_size", sql`cardinality(${t.onboardingSeen}) <= 60`),
     unique("members_org_id_id_key").on(t.orgId, t.id),
     unique("members_org_clerk_user_key").on(t.orgId, t.clerkUserId),
     len("members_name_len", t.name, TEXT.name),
@@ -433,6 +456,7 @@ export const quoteVersions = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    metricsPolicy(),
     unique("quote_versions_org_id_id_key").on(t.orgId, t.id),
     unique("quote_versions_quote_version_key").on(t.orgId, t.quoteId, t.versionNo),
     foreignKey({ name: "quote_versions_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
@@ -566,6 +590,7 @@ export const invoices = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    metricsPolicy(),
     pgPolicy("reminder_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
     unique("invoices_org_id_id_key").on(t.orgId, t.id),
     unique("invoices_org_number_key").on(t.orgId, t.number),
@@ -775,6 +800,7 @@ export const projects = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    metricsPolicy(),
     unique("projects_org_id_id_key").on(t.orgId, t.id),
     uniqueIndex("projects_one_per_quote").on(t.orgId, t.quoteId).where(sql`${t.quoteId} is not null`),
     foreignKey({ name: "projects_client_fk", columns: [t.orgId, t.clientId], foreignColumns: [clients.orgId, clients.id] }),
@@ -1077,6 +1103,7 @@ export const leads = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    metricsPolicy(),
     pgPolicy("lead_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
     unique("leads_org_id_id_key").on(t.orgId, t.id),
     unique("leads_unsubscribe_token_key").on(t.unsubscribeToken),
@@ -1349,5 +1376,64 @@ export const portalCodes = pgTable(
     uniqueIndex("portal_codes_link_hash").on(t.secretHash).where(sql`${t.kind} = 'link'`),
     check("portal_codes_hash_format", sql`${t.secretHash} ~ '^[0-9a-f]{64}$'`),
     between("portal_codes_attempts_range", t.attempts, 0, 10),
+  ],
+).enableRLS();
+
+// ── Platform metrics (migration 0019) ────────────────────────────────────────
+
+/**
+ * How much each person used the app each day (UK date): page views, and sessions (a visit after 30 minutes
+ * away counts as a new one). Feeds the platform team's daily and monthly active users; nothing else.
+ */
+export const memberActivity = pgTable(
+  "member_activity",
+  {
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    memberId: uuid("member_id").notNull(),
+    day: date("day").notNull(),
+    views: integer("views").notNull().default(1),
+    sessions: integer("sessions").notNull().default(1),
+    /** Views in the site app (/m), out of `views`. */
+    siteViews: integer("site_views").notNull().default(0),
+    firstAt: timestamp("first_at", { withTimezone: true }).notNull().defaultNow(),
+    lastAt: timestamp("last_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    metricsPolicy(),
+    primaryKey({ name: "member_activity_pkey", columns: [t.orgId, t.memberId, t.day] }),
+    foreignKey({ name: "member_activity_member_fk", columns: [t.orgId, t.memberId], foreignColumns: [members.orgId, members.id] }).onDelete("cascade"),
+    index("member_activity_day_idx").on(t.day),
+    between("member_activity_views_range", t.views, 0, 1000000),
+    between("member_activity_sessions_range", t.sessions, 0, 100000),
+    check("member_activity_site_views_range", sql`${t.siteViews} between 0 and ${t.views}`),
+  ],
+).enableRLS();
+
+/**
+ * Every change to what a company pays us, written by the billing function as it applies a subscription.
+ * MRR history, new business, upgrades, downgrades and churn are all worked out from these. The app can't
+ * read or write them; the metrics role reads them for the platform dashboard.
+ */
+export const subscriptionEvents = pgTable(
+  "subscription_events",
+  {
+    id: pk(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    plan: plan("plan").notNull(),
+    status: text("status").notNull(),
+    mrrBeforePence: integer("mrr_before_pence").notNull(),
+    mrrAfterPence: integer("mrr_after_pence").notNull(),
+  },
+  (t) => [
+    pgPolicy("billing_insert", { as: "permissive", for: "insert", to: billingRole, withCheck: sql`true` }),
+    metricsPolicy(),
+    index("subscription_events_at_idx").on(t.at),
+    index("subscription_events_org_idx").on(t.orgId, t.at),
+    check("subscription_events_status", sql`${t.status} ~ '^[a-z_]{1,30}$'`),
+    check("subscription_events_mrr_range", sql`${t.mrrBeforePence} between 0 and 100000000 and ${t.mrrAfterPence} between 0 and 100000000`),
   ],
 ).enableRLS();

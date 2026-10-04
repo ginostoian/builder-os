@@ -207,7 +207,13 @@ describe("schema coverage", () => {
         where n.nspname = 'public' and c.relkind in ('r', 'p')
         order by 1`;
       expect(tables.length).toBeGreaterThan(0);
-      for (const t of tables) expect(t, t.table).toMatchObject({ enabled: true, forced: true, policies: 1 });
+      // Platform-only tables: no app policy, and no privileges either (the app can't read or write them at all).
+      const platformOnly = ["subscription_events"];
+      for (const t of tables) expect(t, t.table).toMatchObject({ enabled: true, forced: true, policies: platformOnly.includes(t.table) ? 0 : 1 });
+      for (const table of platformOnly) {
+        const [p] = await owner<{ any: boolean }[]>`select has_table_privilege('builderos_app', ${table}, 'SELECT, INSERT, UPDATE, DELETE') as any`;
+        expect(p.any, table).toBe(false);
+      }
     } finally {
       await owner.end();
     }

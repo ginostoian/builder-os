@@ -79,6 +79,19 @@ export async function withTenant<T>(orgId: string, fn: (tx: Tx) => Promise<T>): 
   });
 }
 
+/**
+ * A transaction with no tenant, for the website owner's admin area. RLS hides every tenant row here, so
+ * the only thing it can usefully do is call the platform functions (counts and billing switches, owned by
+ * `builderos_metrics` and `builderos_billing`). Callers must check `isPlatformAdmin()` first.
+ */
+export async function withPlatform<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+  const database = await checkedDb();
+  return database.transaction(async (tx) => {
+    await tx.execute(sql`select set_config('statement_timeout', ${STATEMENT_TIMEOUT}, true)`);
+    return fn(tx);
+  });
+}
+
 async function checkedDb(): Promise<Db> {
   const database = getDb();
   roleCheck ??= assertRestrictedRole(database).catch((error: unknown) => {

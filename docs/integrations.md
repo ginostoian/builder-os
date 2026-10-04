@@ -137,7 +137,7 @@ Setup:
    - `STRIPE_CONNECT_WEBHOOK_SECRET`: the signing secret of the "connected accounts" endpoint.
    - Optional `STRIPE_PORTAL_CONFIGURATION`: the id `pnpm stripe:setup` printed (otherwise your default portal settings are used).
    - Optional `STRIPE_AUTOMATIC_TAX=1` once Stripe Tax is set up with your VAT registration.
-   - `PLATFORM_ADMIN_EMAILS`: comma-separated emails of the Builder OS team. They see `/app/admin`, where any company can be given or lose complimentary Pro.
+   - `PLATFORM_ADMIN_EMAILS`: comma-separated emails of the website owner's team. They get the owner admin area at `/admin`, outside every company (a gauge icon by their name in the app links to it): customers by plan, MRR and its movements, churn, trial conversion, daily and monthly active users, and each company's usage, with complimentary Pro switches. It checks the signed-in user's verified email and needs two-step verification on their login (set `PLATFORM_ADMIN_ALLOW_NO_2FA=1` only in development). Everyone else gets a 404. It works without Stripe too.
 5. Payment methods for clients (card, Pay by Bank, Apple Pay and so on) follow the platform's Connect payment method settings in Stripe.
 
 Without `STRIPE_SECRET_KEY`, the plan page shows plans but can't take payment, and online invoice payments stay off.

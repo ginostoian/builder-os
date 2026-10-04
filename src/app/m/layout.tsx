@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { ActivityBeacon } from "@/components/activity-beacon";
 import { AuthProvider } from "@/components/auth/auth-provider";
 
 export const metadata: Metadata = {
@@ -12,5 +13,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#FAFAF9", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export default function SiteAppLayout({ children }: { children: React.ReactNode }) {
-  return <AuthProvider>{children}</AuthProvider>;
+  return (
+    <AuthProvider>
+      <ActivityBeacon site />
+      {children}
+    </AuthProvider>
+  );
 }

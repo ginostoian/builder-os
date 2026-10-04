@@ -24,6 +24,8 @@ import { ukToday } from "@/core/payment-plan";
 import { followUpsDue } from "@/db/pipeline";
 import { certificateAlerts } from "@/db/team";
 import { getSession, withSession } from "@/auth/session";
+import { getGuide } from "@/server/onboarding";
+import { GuideCard } from "@/components/app/onboarding/guide-card";
 
 const ukHour = (d: Date) =>
   Number(
@@ -68,6 +70,11 @@ export default async function DashboardPage() {
   const now = new Date();
   const hour = ukHour(now);
   const greeting = `${hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"}, ${session.memberName.split(" ")[0]}`;
+  const guide = await getGuide();
+  const guideCard =
+    guide.hidden || guide.complete ? null : (
+      <GuideCard percent={guide.percent} level={guide.level} levels={guide.levels} chapter={guide.chapters.filter((c) => !c.locked)[guide.level - 1]?.title ?? ""} next={guide.next} />
+    );
 
   // Site leads use the office app but never see prices: give them a simple start page.
   if (!can(session.role, "quotes.edit")) {
@@ -85,6 +92,7 @@ export default async function DashboardPage() {
             </h1>
             <div className="mt-0.5 text-subtle">{today(now)}</div>
           </div>
+          {guideCard && <div className="max-w-[760px]">{guideCard}</div>}
           {can(session.role, "projects.view") && (
             <div className="max-w-[760px]">
               <JobsPanel jobs={jobs} />
@@ -159,6 +167,7 @@ export default async function DashboardPage() {
             </Link>
           </Button>
         </div>
+        {guideCard}
 
         <div className="grid grid-cols-4 gap-3">
           {kpis.map((k) => (

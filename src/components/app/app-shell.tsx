@@ -81,6 +81,8 @@ export type ShellAccount = {
   locked?: AdminScreen[];
   /** Trial days left, or an upgrade nudge, in the top bar. */
   banner?: React.ReactNode;
+  /** Getting started: the checklist pill, guide and tour. */
+  guide?: React.ReactNode;
 };
 
 /**
@@ -120,7 +122,7 @@ export function AppShell({
           </button>
         )}
         {account ? (
-          account.search
+          <div data-tour="search">{account.search}</div>
         ) : (
           <button type="button" className="flex h-8 items-center gap-2 rounded-md bg-white px-2.5 text-subtle shadow-ring">
             <Search className="size-3.5" />
@@ -128,7 +130,7 @@ export function AppShell({
             <kbd className="rounded bg-line px-[5px] py-px font-mono text-[10.5px] text-ink-2">⌘K</kbd>
           </button>
         )}
-        <nav className="flex flex-col gap-px" aria-label="Main">
+        <nav className="flex flex-col gap-px" aria-label="Main" data-tour="nav">
           {nav.map((n) => {
             const isActive = n.screen === active;
             return (
@@ -174,7 +176,7 @@ export function AppShell({
             </div>
           )}
           {account ? (
-            account.user
+            <div data-tour="account">{account.user}</div>
           ) : (
             <div className="flex items-center gap-2.5 p-1.5">
               <Avatar initials={currentUser.initials} size={28} className="text-[11px]" />
@@ -196,9 +198,10 @@ export function AppShell({
           <div className="flex-1" />
           {account ? (
             <div className="flex items-center gap-1.5">
+              {account.guide}
               {account.banner}
-              {account.bell}
-              {account.newMenu}
+              <div data-tour="bell">{account.bell}</div>
+              <div data-tour="new">{account.newMenu}</div>
             </div>
           ) : (
             <div className="flex items-center gap-1.5">

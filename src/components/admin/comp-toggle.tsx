@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { setCompedAction } from "@/app/app/admin/actions";
+import { setCompedAction } from "@/app/admin/actions";
 
 export function CompToggle({ orgId, comped }: { orgId: string; comped: boolean }) {
   const [on, setOn] = React.useState(comped);

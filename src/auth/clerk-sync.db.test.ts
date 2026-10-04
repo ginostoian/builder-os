@@ -65,10 +65,11 @@ describe("lookups", () => {
     // the portal lookup, the token it matches on).
     await expect(raw`set role builderos_lookup`).rejects.toMatchObject({ code: "42501" });
     await expect(raw`set role builderos_billing`).rejects.toMatchObject({ code: "42501" });
+    await expect(raw`set role builderos_metrics`).rejects.toMatchObject({ code: "42501" });
     const fns = await raw<{ name: string; owner: string; definer: boolean }[]>`
       select p.proname as name, r.rolname as owner, p.prosecdef as definer
       from pg_proc p join pg_roles r on r.oid = p.proowner
-      where p.proname in ('app_billing_apply_subscription', 'app_billing_set_comped', 'app_billing_set_connect', 'app_billing_set_customer', 'app_enquiry_form_lookup', 'app_lead_unsubscribe_lookup', 'app_org_for_clerk', 'app_orgs_for_clerk_user', 'app_orgs_with_due_automations', 'app_orgs_with_due_invoices', 'app_orgs_with_due_survey_reminders', 'app_orgs_with_expiring_certificates', 'app_platform_companies', 'app_portal_by_email', 'app_portal_lookup') order by 1`;
+      where p.proname in ('app_billing_apply_subscription', 'app_billing_set_comped', 'app_billing_set_connect', 'app_billing_set_customer', 'app_enquiry_form_lookup', 'app_lead_unsubscribe_lookup', 'app_org_for_clerk', 'app_orgs_for_clerk_user', 'app_orgs_with_due_automations', 'app_orgs_with_due_invoices', 'app_orgs_with_due_survey_reminders', 'app_orgs_with_expiring_certificates', 'app_platform_companies', 'app_platform_company_stats', 'app_platform_daily_activity', 'app_platform_subscription_events', 'app_platform_user_signups', 'app_portal_by_email', 'app_portal_lookup') order by 1`;
     expect(fns).toEqual([
       { name: "app_billing_apply_subscription", owner: "builderos_billing", definer: true },
       { name: "app_billing_set_comped", owner: "builderos_billing", definer: true },
@@ -83,6 +84,10 @@ describe("lookups", () => {
       { name: "app_orgs_with_due_survey_reminders", owner: "builderos_lookup", definer: true },
       { name: "app_orgs_with_expiring_certificates", owner: "builderos_lookup", definer: true },
       { name: "app_platform_companies", owner: "builderos_billing", definer: true },
+      { name: "app_platform_company_stats", owner: "builderos_metrics", definer: true },
+      { name: "app_platform_daily_activity", owner: "builderos_metrics", definer: true },
+      { name: "app_platform_subscription_events", owner: "builderos_metrics", definer: true },
+      { name: "app_platform_user_signups", owner: "builderos_metrics", definer: true },
       { name: "app_portal_by_email", owner: "builderos_lookup", definer: true },
       { name: "app_portal_lookup", owner: "builderos_lookup", definer: true },
     ]);

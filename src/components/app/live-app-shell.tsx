@@ -1,7 +1,11 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { PLAN_LABEL, planHas, type Feature } from "@/core/plans";
 import { ROLE_LABELS, can } from "@/core/roles";
 import { getEntitlement } from "@/server/plan";
+import { isPlatformAdmin } from "@/auth/platform-admin";
+import { getGuide } from "@/server/onboarding";
+import { Onboarding } from "./onboarding/onboarding";
 import { SCREEN_FEATURE } from "./shell/screen-features";
 import { UpgradePanel } from "./shell/upgrade";
 import { requirePermission } from "@/auth/session";
@@ -55,6 +59,7 @@ export async function LiveAppShell({
             name={session.memberName}
             roleLabel={ROLE_LABELS[session.role]}
             canOpenSettings={can(session.role, "settings.view")}
+            platformAdmin={await isPlatformAdmin()}
           />
         ),
         crumbs: crumbs ?? (active === "dashboard" ? [session.orgName, "Dashboard"] : undefined),
@@ -63,6 +68,11 @@ export async function LiveAppShell({
         newMenu: <NewMenu actions={actions} />,
         locked,
         banner,
+        guide: (
+          <Suspense>
+            <Onboarding guide={await getGuide()} autoTour={active === "dashboard"} />
+          </Suspense>
+        ),
       }}
     >
       {lockedHere ? <UpgradePanel feature={lockedHere} /> : children}
