@@ -13,6 +13,7 @@ import { CERT_WARNING_DAYS } from "@/core/team";
 import { findOrgsWithDueInvoices, findOrgsWithExpiringCertificates, withTenant } from "@/db";
 import { claimReminder, invoicesForReminders, type InvoiceSnapshot } from "@/db/invoices";
 import { clientContact, ensurePortalToken, memberEmail } from "@/db/sending";
+import { membersWithRoles, notify } from "@/db/notifications";
 import { certificateReminderContext, certificatesToRemind, markCertificatesReminded } from "@/db/team";
 import { emailConfigured, sendEmail } from "./email";
 import { emailInvoice } from "./invoice-mail";
@@ -76,36 +77,48 @@ export type CertificateRun = { companies: number; emails: number; certificates: 
  */
 export async function runCertificateReminders(origin: string, today = ukToday()): Promise<CertificateRun> {
   const run: CertificateRun = { companies: 0, emails: 0, certificates: 0, failed: 0 };
-  if (!emailConfigured()) return run;
+  const email = emailConfigured();
   const until = addDays(today, CERT_WARNING_DAYS);
   for (const orgId of await findOrgsWithExpiringCertificates(until)) {
     run.companies++;
     try {
       const { certs, ctx } = await withTenant(orgId, async (tx) => ({ certs: await certificatesToRemind(tx, orgId, until), ctx: await certificateReminderContext(tx, orgId) }));
-      if (certs.length === 0 || ctx.to.length === 0) continue;
+      if (certs.length === 0) continue;
+      const batch = certs.slice(0, 40);
       const expired = certs.filter((c) => c.expiresOn! < today).length;
       const subject = expired > 0 ? `${certs.length} team certificate${certs.length > 1 ? "s" : ""} expired or expiring` : `${certs.length} team certificate${certs.length > 1 ? "s" : ""} expiring soon`;
-      const result = await sendEmail({
-        to: ctx.to,
-        subject,
-        fromName: "Builder OS",
-        content: {
-          company: { name: ctx.company, brandColour: ctx.brandColour },
-          preheader: subject,
-          heading: "Certificates to renew",
-          paragraphs: ["These certificates and cards have expired or expire in the next 30 days. Renew them before the person is back on site, then update the date in Builder OS."],
-          details: certs.slice(0, 40).map((c) => [`${c.workerName}: ${c.name}`, `${c.expiresOn! < today ? "Expired" : "Expires"} ${longDate(c.expiresOn!)}`]),
-          button: { label: "Open the team", href: `${origin}/app/team` },
-          footer: "You're getting this because you're an admin or in the office in Builder OS. Each certificate is mentioned once.",
-        },
-      });
-      if (!result.ok) {
-        run.failed++;
-        continue;
+      if (email && ctx.to.length > 0) {
+        const result = await sendEmail({
+          to: ctx.to,
+          subject,
+          fromName: "Builder OS",
+          content: {
+            company: { name: ctx.company, brandColour: ctx.brandColour },
+            preheader: subject,
+            heading: "Certificates to renew",
+            paragraphs: ["These certificates and cards have expired or expire in the next 30 days. Renew them before the person is back on site, then update the date in Builder OS."],
+            details: batch.map((c) => [`${c.workerName}: ${c.name}`, `${c.expiresOn! < today ? "Expired" : "Expires"} ${longDate(c.expiresOn!)}`]),
+            button: { label: "Open the team", href: `${origin}/app/team` },
+            footer: "You're getting this because you're an admin or in the office in Builder OS. Each certificate is mentioned once.",
+          },
+        });
+        if (!result.ok) {
+          run.failed++;
+          continue;
+        }
+        run.emails++;
       }
-      await withTenant(orgId, (tx) => markCertificatesReminded(tx, orgId, certs.slice(0, 40).map((c) => c.id)));
-      run.emails++;
-      run.certificates += Math.min(certs.length, 40);
+      // The bell gets it whether or not email is set up; either way each certificate is mentioned once.
+      await withTenant(orgId, async (tx) => {
+        await notify(tx, orgId, await membersWithRoles(tx, orgId, ["admin", "office"]), {
+          kind: "certificate_expiring",
+          title: subject,
+          body: batch.slice(0, 5).map((c) => `${c.workerName}: ${c.name}`).join(", ") + (batch.length > 5 ? ` and ${batch.length - 5} more` : ""),
+          href: "/app/team",
+        });
+        await markCertificatesReminded(tx, orgId, batch.map((c) => c.id));
+      });
+      run.certificates += batch.length;
     } catch (error) {
       console.error("Certificate reminders failed for a company", error instanceof Error ? error.message : error);
       run.failed++;

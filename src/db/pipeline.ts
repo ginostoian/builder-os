@@ -20,6 +20,7 @@ import {
 import type { AutomationInput, LeadInput, StageChangeInput } from "@/core/schemas";
 import type { Tx } from "./index";
 import { createClient } from "./clients";
+import { membersWithRoles, notify } from "./notifications";
 import { createQuote } from "./quotes";
 import { automationRuns, automations, clients, leadActivities, leads, members, organizations, quotes } from "./schema";
 
@@ -154,15 +155,25 @@ export async function createLead(tx: Tx, orgId: string, input: LeadInput, opts: 
   const now = opts.now ?? new Date();
   if (opts.viaWebForm) await enroll(tx, orgId, row.id, "web_enquiry", "new", now);
   await enroll(tx, orgId, row.id, "lead_created", "new", now);
+  const what = input.projectType ? `, ${input.projectType.toLowerCase()}` : "";
+  if (opts.viaWebForm) {
+    await notify(tx, orgId, await membersWithRoles(tx, orgId, ["admin", "office"]), { kind: "enquiry", title: `New enquiry from ${input.name}${what}`, body: input.description ?? null, href: `/app/pipeline/${row.id}` });
+  } else {
+    await notify(tx, orgId, [input.ownerMemberId], { kind: "lead_assigned", title: `New lead for you: ${input.name}${what}`, body: input.description ?? null, href: `/app/pipeline/${row.id}` }, opts.memberId);
+  }
   return row.id;
 }
 
-export async function updateLead(tx: Tx, orgId: string, leadId: string, input: LeadInput) {
+export async function updateLead(tx: Tx, orgId: string, leadId: string, input: LeadInput, actor: string | null = null) {
   await assertMember(tx, orgId, input.ownerMemberId);
+  const [before] = await tx.select({ owner: leads.ownerMemberId }).from(leads).where(and(eq(leads.orgId, orgId), eq(leads.id, leadId)));
   const rows = await tx.update(leads).set(leadColumns(input)).where(and(eq(leads.orgId, orgId), eq(leads.id, leadId))).returning({ id: leads.id, email: leads.email });
   if (rows.length === 0) throw new PipelineError("not_found");
   // No email address any more: nothing left to send.
   if (!rows[0].email) await stopRuns(tx, orgId, leadId, "No email address");
+  if (input.ownerMemberId && input.ownerMemberId !== before?.owner) {
+    await notify(tx, orgId, [input.ownerMemberId], { kind: "lead_assigned", title: `${input.name} is now your lead`, body: input.projectType ?? null, href: `/app/pipeline/${leadId}` }, actor);
+  }
 }
 
 export async function deleteLead(tx: Tx, orgId: string, leadId: string) {

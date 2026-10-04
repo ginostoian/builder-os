@@ -98,7 +98,16 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
      - `app_orgs_with_due_automations(now)`, for the daily cron.
 
      The lookup role can read only the columns those functions match on.
-16. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
+16. **Notifications (migration 0016).** One `notifications` row per person per event (the bell), with forced RLS and an FK to `members` that cascades.
+   - `notify` writes them inside the same tenant transaction as the event. It skips inactive members, repeats and, usually, whoever did it. It also clears that person's rows older than 90 days.
+   - Who hears about what:
+     - quote opened, commented on, accepted or declined, and variation decisions: whoever sent the quote, or the admins if they've left;
+     - web enquiries and receipts logged from the site app: admins and office;
+     - leads and tasks handed to someone: the new owner, or the worker's linked login (employees get a site app link);
+     - expiring certificates: admins and office, from the daily cron, even when email isn't set up.
+   - `href` must be a path inside the app (check constraint: starts with `/`, not `//`).
+   - Search (`src/db/search.ts`) and the calendar (`src/db/calendar.ts`) only read, inside the tenant transaction, and check the role per kind of result.
+17. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
 
 **Adding a table:**
 - Give it `org_id`, `tenantPolicy(t.orgId)`, `.enableRLS()`, and a `unique(org_id, id)` if anything references it.

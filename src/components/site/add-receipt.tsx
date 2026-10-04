@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Camera, Receipt, X } from "lucide-react";
 import { addSiteReceiptAction, uploadSiteReceiptAction } from "@/app/m/actions";
 import { shrinkPhoto } from "@/components/app/shrink-photo";
+import { useReceiptReader } from "@/components/receipt-reader";
 import { MAX_RECEIPTS } from "@/core/costs";
 import { formatGBP, parsePence } from "@/core/money";
 
@@ -19,6 +20,16 @@ export function AddReceipt({ projectId, photosEnabled }: { projectId: string; ph
   const [open, setOpen] = React.useState(false);
   const [v, setV] = React.useState({ description: "", supplier: "", total: "", includesVat: true, forClient: false });
   const [photos, setPhotos] = React.useState<{ file: File; url: string }[]>([]);
+  // The first photo fills in whatever hasn't been typed yet.
+  const reader = useReceiptReader((r) =>
+    setV((x) => ({
+      ...x,
+      description: x.description.trim() ? x.description : (r.description ?? ""),
+      supplier: x.supplier.trim() ? x.supplier : (r.supplier ?? ""),
+      total: x.total.trim() || r.totalPence === null ? x.total : (r.totalPence / 100).toFixed(2),
+      includesVat: r.vatPence === null ? x.includesVat : r.vatPence > 0,
+    })),
+  );
   const [status, setStatus] = React.useState<{ ok: boolean; text: string }>();
   const [pending, startTransition] = React.useTransition();
   const urls = React.useRef(new Set<string>());
@@ -106,6 +117,7 @@ export function AddReceipt({ projectId, photosEnabled }: { projectId: string; ph
                   if (f) {
                     const url = URL.createObjectURL(f);
                     urls.current.add(url);
+                    if (photos.length === 0) void reader.read(f);
                     setPhotos((x) => [...x, { file: f, url }]);
                   }
                   e.target.value = "";
@@ -115,6 +127,7 @@ export function AddReceipt({ projectId, photosEnabled }: { projectId: string; ph
           )}
         </>
       )}
+      {(reader.reading || reader.note) && <p className="text-[13px] text-ink-2">{reader.reading ? "Reading the receipt…" : reader.note}</p>}
       <input value={v.description} onChange={(e) => setV((x) => ({ ...x, description: e.target.value }))} maxLength={300} placeholder="What for? e.g. Screws and silicone" aria-label="What for" className={input} />
       <div className="flex gap-2">
         <input value={v.supplier} onChange={(e) => setV((x) => ({ ...x, supplier: e.target.value }))} maxLength={120} placeholder="Shop" aria-label="Shop" className={input} />

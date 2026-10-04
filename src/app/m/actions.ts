@@ -12,6 +12,10 @@ import { ProjectError, addDiaryEntry, addDiaryPhoto } from "@/db/projects";
 import { CostError, addReceipt, createExpense } from "@/db/costs";
 import { SiteError, checkIn, checkOut, isMyJob, setMyTaskStatus, workerForMember } from "@/db/site";
 import { getSession, withSession, type Session } from "@/auth/session";
+import { and, eq } from "drizzle-orm";
+import { formatGBP } from "@/core/money";
+import { membersWithRoles, notify } from "@/db/notifications";
+import { projects, workers } from "@/db/schema";
 import { storeReceipt } from "@/server/receipts";
 import { deleteObject, putObject, randomName, storageConfigured } from "@/server/storage";
 
@@ -151,7 +155,7 @@ export async function addSiteReceiptAction(projectId: string, input: { descripti
     (m) =>
       withSession(m.session, async (tx) => {
         if (!(await isMyJob(tx, m.session.orgId, m, projectId))) throw new SiteError("not_yours");
-        return createExpense(
+        const expenseId = await createExpense(
           tx,
           m.session.orgId,
           {
@@ -167,6 +171,22 @@ export async function addSiteReceiptAction(projectId: string, input: { descripti
           },
           m.memberId,
         );
+        const office = await membersWithRoles(tx, m.session.orgId, ["admin", "office"]);
+        const who = await tx.select({ name: workers.name }).from(workers).where(and(eq(workers.orgId, m.session.orgId), eq(workers.id, m.workerId)));
+        const job = await tx.select({ name: projects.name }).from(projects).where(and(eq(projects.orgId, m.session.orgId), eq(projects.id, projectId)));
+        await notify(
+          tx,
+          m.session.orgId,
+          office,
+          {
+            kind: "receipt_added",
+            title: `${who[0]?.name ?? "Someone"} logged ${formatGBP(total.data)}: ${description.data}`,
+            body: [job[0]?.name, input.forClient === true ? "To bill back to the client" : null].filter(Boolean).join(" · "),
+            href: `/app/projects/${projectId}?view=costs`,
+          },
+          m.memberId,
+        );
+        return expenseId;
       }),
     `/app/projects/${projectId}`,
     "/app/purchases",

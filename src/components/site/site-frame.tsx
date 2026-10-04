@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, LayoutDashboard } from "lucide-react";
+import { NotificationBell } from "@/components/app/shell/notification-bell";
 
 /**
  * The site app's page frame. Built for phones (big targets, often used with gloves on); on a desktop it
@@ -19,6 +20,7 @@ export function SiteFrame({ title, eyebrow, back, office, children }: { title: s
             {eyebrow && <div className="truncate text-[13px] text-subtle">{eyebrow}</div>}
             <h1 className="truncate text-[22px] font-semibold tracking-[-0.025em]">{title}</h1>
           </div>
+          <NotificationBell className="size-11 rounded-full bg-white shadow-ring hover:bg-white" />
           {office && (
             <Link href="/app" className="flex h-9 flex-none items-center gap-1.5 rounded-full bg-white px-3 text-[13px] font-medium text-ink-2 shadow-ring hover:text-ink">
               <LayoutDashboard className="size-3.5" />

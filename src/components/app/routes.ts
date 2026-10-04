@@ -16,10 +16,11 @@ export const appRoutes = {
   purchases: "/app/purchases",
   pipeline: "/app/pipeline",
   reports: "/app/reports",
+  calendar: "/app/calendar",
   paymentSettings: "/app/settings/payments",
   clientQuote: "/q/hale-sons/1042",
   employee: "/m",
 } as const;
 
-export type AdminScreen = "dashboard" | "quote" | "templates" | "variations" | "board" | "invoices" | "crm" | "people" | "purchases" | "reports" | "pipeline" | "settings";
-export type ScreenId = Exclude<AdminScreen, "settings" | "variations" | "people" | "purchases" | "reports" | "pipeline"> | "client" | "mobile";
+export type AdminScreen = "dashboard" | "quote" | "templates" | "variations" | "board" | "invoices" | "crm" | "people" | "purchases" | "reports" | "pipeline" | "calendar" | "settings";
+export type ScreenId = Exclude<AdminScreen, "settings" | "variations" | "people" | "purchases" | "reports" | "pipeline" | "calendar"> | "client" | "mobile";

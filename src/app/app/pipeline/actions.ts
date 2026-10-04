@@ -86,7 +86,7 @@ export async function saveLeadAction(leadId: string | null, input: unknown): Pro
     (s) =>
       withSession(s, async (tx) => {
         if (leadId) {
-          await updateLead(tx, s.orgId, leadId, parsed.data);
+          await updateLead(tx, s.orgId, leadId, parsed.data, s.memberId);
           return leadId;
         }
         return createLead(tx, s.orgId, { ...parsed.data, ownerMemberId: parsed.data.ownerMemberId ?? s.memberId }, { memberId: s.memberId, today: ukToday() });

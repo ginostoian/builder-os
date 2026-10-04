@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   Bell,
+  CalendarDays,
   ChartColumn,
   ChevronRight,
   ChevronsUpDown,
@@ -37,6 +38,7 @@ const nav: NavItem[] = [
   { id: "templates", label: "Service library", icon: Library, href: appRoutes.library, screen: "templates" },
   { id: "variations", label: "Variations", icon: FileDiff, href: appRoutes.variations, badge: "2", screen: "variations" },
   { id: "board", label: "Projects", icon: SquareKanban, href: appRoutes.projects, badge: "7", screen: "board" },
+  { id: "calendar", label: "Calendar", icon: CalendarDays, href: appRoutes.calendar, screen: "calendar" },
   { id: "invoices", label: "Payments", icon: Receipt, href: appRoutes.payments, screen: "invoices" },
   { id: "purchases", label: "Purchases", icon: ShoppingCart, href: appRoutes.purchases, screen: "purchases" },
   { id: "crm", label: "Clients", icon: Contact, href: appRoutes.clients, badge: "23", screen: "crm" },
@@ -61,11 +63,20 @@ const crumbs: Record<AdminScreen, [string, string]> = {
   purchases: ["Purchases", "Expenses"],
   reports: ["Reports", "Job costing"],
   pipeline: ["Pipeline", "Board"],
+  calendar: ["Calendar", "This month"],
   settings: ["Settings", "Company"],
 };
 
 /** The signed-in account, rendered by `LiveAppShell`. Screenshots leave it out and show demo data. */
-export type ShellAccount = { company: React.ReactNode; user: React.ReactNode; crumbs?: [string, string] };
+export type ShellAccount = {
+  company: React.ReactNode;
+  user: React.ReactNode;
+  crumbs?: [string, string];
+  /** The live search box, notification bell and New menu. */
+  search: React.ReactNode;
+  bell: React.ReactNode;
+  newMenu: React.ReactNode;
+};
 
 /**
  * Admin app frame: 228px sidebar, 52px top bar. Dense by design (13px body, 32px controls).
@@ -103,14 +114,15 @@ export function AppShell({
             <ChevronsUpDown className="size-3.5 text-subtle" />
           </button>
         )}
-        <button
-          type="button"
-          className="flex h-8 items-center gap-2 rounded-md bg-white px-2.5 text-subtle shadow-ring"
-        >
-          <Search className="size-3.5" />
-          <span className="flex-1 text-left">Search</span>
-          <kbd className="rounded bg-line px-[5px] py-px font-mono text-[10.5px] text-ink-2">⌘K</kbd>
-        </button>
+        {account ? (
+          account.search
+        ) : (
+          <button type="button" className="flex h-8 items-center gap-2 rounded-md bg-white px-2.5 text-subtle shadow-ring">
+            <Search className="size-3.5" />
+            <span className="flex-1 text-left">Search</span>
+            <kbd className="rounded bg-line px-[5px] py-px font-mono text-[10.5px] text-ink-2">⌘K</kbd>
+          </button>
+        )}
         <nav className="flex flex-col gap-px" aria-label="Main">
           {nav.map((n) => {
             const isActive = n.screen === active;
@@ -145,13 +157,16 @@ export function AppShell({
           ))}
         </div>
         <div className="mt-auto flex flex-col gap-2.5">
-          <div className="rounded-[10px] bg-white p-3 shadow-ring">
-            <div className="text-[12.5px] font-medium">Pro trial · 9 days left</div>
-            <div className="my-2 h-1 rounded bg-line">
-              <div className="h-1 w-[36%] rounded bg-ink" />
+          {/* Marketing screenshots only, until billing exists. */}
+          {!account && (
+            <div className="rounded-[10px] bg-white p-3 shadow-ring">
+              <div className="text-[12.5px] font-medium">Pro trial · 9 days left</div>
+              <div className="my-2 h-1 rounded bg-line">
+                <div className="h-1 w-[36%] rounded bg-ink" />
+              </div>
+              <div className="text-xs text-ink-2">Upgrade to keep CRM &amp; projects</div>
             </div>
-            <div className="text-xs text-ink-2">Upgrade to keep CRM &amp; projects</div>
-          </div>
+          )}
           {account ? (
             account.user
           ) : (
@@ -173,16 +188,23 @@ export function AppShell({
           <ChevronRight className="size-[13px] text-faint" />
           <span className="font-medium">{crumbB}</span>
           <div className="flex-1" />
-          <div className="flex items-center gap-1.5">
-            <button type="button" aria-label="Notifications" className="relative flex size-8 items-center justify-center rounded-md text-ink-2 hover:bg-accent">
-              <Bell className="size-4" />
-              <span className="absolute top-2 right-2 size-1.5 rounded-full bg-brand" />
-            </button>
-            <Button>
-              <Plus />
-              New
-            </Button>
-          </div>
+          {account ? (
+            <div className="flex items-center gap-1.5">
+              {account.bell}
+              {account.newMenu}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <button type="button" aria-label="Notifications" className="relative flex size-8 items-center justify-center rounded-md text-ink-2 hover:bg-accent">
+                <Bell className="size-4" />
+                <span className="absolute top-2 right-2 size-1.5 rounded-full bg-brand" />
+              </button>
+              <Button>
+                <Plus />
+                New
+              </Button>
+            </div>
+          )}
         </div>
         {children}
       </main>

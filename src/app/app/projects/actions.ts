@@ -166,7 +166,7 @@ export async function updateTaskAction(taskId: string, input: unknown): Promise<
   const parsed = taskInput.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
   if (!id.safeParse(taskId).success) return { ok: false, message: MESSAGES.not_found };
-  return change(parsed.data.projectId, (s) => withSession(s, (tx) => updateTask(tx, s.orgId, taskId, parsed.data)));
+  return change(parsed.data.projectId, (s) => withSession(s, (tx) => updateTask(tx, s.orgId, taskId, parsed.data, s.memberId)));
 }
 
 export async function setTaskStatusAction(projectId: string, taskId: string, status: TaskStatus): Promise<ProjectActionResult> {

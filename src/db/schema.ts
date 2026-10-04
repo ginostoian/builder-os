@@ -33,6 +33,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { MAX_MARKUP_BPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, TEXT } from "../core/limits";
+import { NOTIFICATION_KINDS } from "../core/notifications";
 import { AUTOMATION_TRIGGERS, LEAD_SOURCES, LEAD_STAGES, LOST_REASONS, MAX_AUTOMATION_STEPS, type AutomationStep } from "../core/pipeline";
 import { EXPENSE_CATEGORIES, MAX_PO_LINES, MAX_RECEIPTS, PO_STATUSES, type PoLine } from "../core/costs";
 import { MAX_DIARY_PHOTOS, PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "../core/projects";
@@ -1148,5 +1149,33 @@ export const automationRuns = pgTable(
     check("automation_runs_step", sql`${t.step} >= 0`),
     check("automation_runs_active_has_next", sql`${t.status} <> 'active' or ${t.nextAt} is not null`),
     len("automation_runs_reason_len", t.endedReason, TEXT.short),
+  ],
+).enableRLS();
+
+// ── Notifications ────────────────────────────────────────────────────────────
+
+export const notificationKind = pgEnum("notification_kind", NOTIFICATION_KINDS);
+
+/** The bell: one row per person per event, with a link. Read ones stay until the daily clean-up. */
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    memberId: uuid("member_id").notNull(),
+    kind: notificationKind("kind").notNull(),
+    title: text("title").notNull(),
+    body: text("body"),
+    href: text("href").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    foreignKey({ name: "notifications_member_fk", columns: [t.orgId, t.memberId], foreignColumns: [members.orgId, members.id] }).onDelete("cascade"),
+    index("notifications_member_idx").on(t.orgId, t.memberId, t.createdAt),
+    len("notifications_title_len", t.title, TEXT.line),
+    len("notifications_body_len", t.body, 600),
+    check("notifications_href_local", sql`${t.href} like '/%' and ${t.href} not like '//%'`),
   ],
 ).enableRLS();

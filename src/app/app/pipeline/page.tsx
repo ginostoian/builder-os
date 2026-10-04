@@ -52,7 +52,7 @@ const toCard = (l: LeadRow): LeadCard => ({
 });
 
 /** Every enquiry from first call to won or lost: a board to work from, a list to search, and what's working. */
-export default async function PipelinePage({ searchParams }: { searchParams: Promise<{ view?: string | string[]; q?: string | string[]; stage?: string | string[]; mine?: string | string[] }> }) {
+export default async function PipelinePage({ searchParams }: { searchParams: Promise<{ view?: string | string[]; q?: string | string[]; stage?: string | string[]; mine?: string | string[]; new?: string | string[] }> }) {
   const session = await requirePermission("leads.view");
   const p = await searchParams;
   const view: View = VIEWS.find((v) => v.key === first(p.view))?.key ?? "board";
@@ -107,7 +107,7 @@ export default async function PipelinePage({ searchParams }: { searchParams: Pro
                 </Button>
               </>
             )}
-            {canEdit && <AddLeadButton owners={data.owners} meId={session.memberId} />}
+            {canEdit && <AddLeadButton owners={data.owners} meId={session.memberId} startOpen={first(p.new) === "1"} />}
           </ScreenTitle>
 
           {data.due.length > 0 && view !== "insights" && (
