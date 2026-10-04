@@ -12,6 +12,7 @@ import { ProjectError, addDiaryEntry, addDiaryPhoto } from "@/db/projects";
 import { CostError, addReceipt, createExpense } from "@/db/costs";
 import { SiteError, checkIn, checkOut, isMyJob, setMyTaskStatus, workerForMember } from "@/db/site";
 import { getSession, withSession, type Session } from "@/auth/session";
+import { hasFeature, upgradeMessage } from "@/server/plan";
 import { and, eq } from "drizzle-orm";
 import { formatGBP } from "@/core/money";
 import { membersWithRoles, notify } from "@/db/notifications";
@@ -38,6 +39,7 @@ const MESSAGES = {
 async function me(): Promise<Me | { ok: false; message: string }> {
   const session = await getSession();
   if (!can(session.role, "site.app")) return { ok: false, message: MESSAGES.not_allowed };
+  if (!(await hasFeature("site_app"))) return { ok: false, message: upgradeMessage("site_app") };
   const w = await withSession(session, (tx) => workerForMember(tx, session.orgId, session.memberId));
   if (!w) return { ok: false, message: MESSAGES.no_worker };
   return { session, workerId: w.id, memberId: session.memberId };

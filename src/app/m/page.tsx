@@ -13,6 +13,8 @@ import { MySurveys } from "@/components/site/my-surveys";
 import { can } from "@/core/roles";
 import { myJobs, myTasks, openVisit, workerForMember } from "@/db/site";
 import { requirePermission, withSession } from "@/auth/session";
+import { hasFeature } from "@/server/plan";
+import { SiteLocked } from "@/components/site/site-locked";
 
 export const metadata: Metadata = { title: "Today" };
 
@@ -26,6 +28,7 @@ function greeting() {
 /** The site app's home: check in, today's tasks across my jobs, and my jobs. */
 export default async function SiteTodayPage() {
   const session = await requirePermission("site.app");
+  if (!(await hasFeature("site_app"))) return <SiteLocked office={can(session.role, "app.office")} />;
   const today = ukToday();
   const office = can(session.role, "app.office");
   // Today's and tomorrow's survey visits are mine whether or not I'm on the team list (estimators often aren't).

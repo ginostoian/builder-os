@@ -1,6 +1,6 @@
 # Integrations
 
-Both are optional. Without them the app still works: sending gives you a link to share yourself, and the logo is a link instead of an upload.
+All are optional. Without them the app still works: sending gives you a link to share yourself, and the logo is a link instead of an upload.
 
 ## Email: Resend
 
@@ -118,3 +118,32 @@ Turn it on under Pipeline → Online booking. Set how long a visit takes, the tr
 - The client gets a confirmation with a calendar invite (`.ics`), and a reminder the day before (from the daily job). They can move or cancel it from the same link.
 - The surveyor gets a notification. The visit shows on the lead, in the calendar and in their site app (with directions and a call button).
 - The office can move or cancel any visit from the lead's page, or book one at any time with anyone.
+
+## Plans and online payments: Stripe
+
+Two separate things, both through Stripe:
+- **Plans.** Companies subscribe to Essentials (£49 a month) or Pro (£119 a month), plus VAT, by Stripe Checkout, and manage cards, invoices and cancelling in Stripe's billing portal (Settings → Plan & billing). New companies get 14 days of Pro with no card; after that, without a subscription, they're on Free: 3 sent quotes a month, 25 library items, 1 user, quote links and e-signature. Screens their plan doesn't include show what it would unlock instead.
+- **Clients paying invoices online.** Each company connects its own Stripe account (Settings → Payments → Take payments online, Stripe Express). Invoice emails and the portal then get a "Pay now" button. The money goes straight to the company's account (a direct charge); Builder OS takes no fee. The invoice is marked paid automatically and admins and office are notified. Bank transfer still works as before.
+
+Setup:
+1. In Stripe, set up Connect (Platform, Express accounts, UK).
+2. With `STRIPE_SECRET_KEY` in `.env.local`, run `pnpm stripe:setup`. It creates the two products and their monthly GBP prices (found by lookup keys `builderos_essentials_monthly` and `builderos_pro_monthly`, so no price ids to copy) and a billing portal configuration. Run it once in test mode and once with the live key.
+3. Add two webhook endpoints, both to `https://<your-domain>/api/webhooks/stripe`:
+   - **Your account:** `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.paused`, `customer.subscription.resumed`, `checkout.session.completed`.
+   - **Connected accounts:** `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `account.updated`.
+4. In Vercel:
+   - `STRIPE_SECRET_KEY`: the secret (or restricted) key.
+   - `STRIPE_WEBHOOK_SECRET`: the signing secret of the "your account" endpoint.
+   - `STRIPE_CONNECT_WEBHOOK_SECRET`: the signing secret of the "connected accounts" endpoint.
+   - Optional `STRIPE_PORTAL_CONFIGURATION`: the id `pnpm stripe:setup` printed (otherwise your default portal settings are used).
+   - Optional `STRIPE_AUTOMATIC_TAX=1` once Stripe Tax is set up with your VAT registration.
+   - `PLATFORM_ADMIN_EMAILS`: comma-separated emails of the Builder OS team. They see `/app/admin`, where any company can be given or lose complimentary Pro.
+5. Payment methods for clients (card, Pay by Bank, Apple Pay and so on) follow the platform's Connect payment method settings in Stripe.
+
+Without `STRIPE_SECRET_KEY`, the plan page shows plans but can't take payment, and online invoice payments stay off.
+
+How it works:
+- Webhooks are verified with either signing secret. The app doesn't trust the event body: it re-fetches the subscription or account from Stripe and stores what Stripe says. Returning from Checkout does the same, so the page is right even before the webhook lands.
+- A client payment is accepted only if the connected account is the company's own and the amount equals the invoice. The same payment twice changes nothing.
+
+Code: `src/core/plans.ts` (plans and features), `src/server/stripe.ts`, `src/server/stripe-events.ts`, `src/app/api/webhooks/stripe/route.ts`, `src/db/billing.ts`, `scripts/stripe-setup.ts`.

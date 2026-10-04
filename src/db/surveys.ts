@@ -11,6 +11,7 @@ import { OPEN_STAGES, type LeadStage } from "@/core/pipeline";
 import { DEFAULT_SURVEY_SETTINGS, availableSlots, slotLabels, type Busy, type Slot, type SurveySettings, type SurveyWindow } from "@/core/surveys";
 import { londonDay } from "@/core/team";
 import type { Tx } from "./index";
+import { planAllows } from "./billing";
 import { notify } from "./notifications";
 import { logLeadActivity, setFollowUp, setStage } from "./pipeline";
 import { leads, members, organizations, surveyBookings, surveyHours, surveySettings } from "./schema";
@@ -67,7 +68,9 @@ async function liveBookings(tx: Tx, orgId: string, from: Date, to: Date): Promis
 
 /** What a client can book right now. `except` leaves out the lead's own booking (they're moving it). */
 export async function openSlots(tx: Tx, orgId: string, now: Date, except?: string): Promise<{ settings: SurveySettings; slots: Slot[] }> {
-  const settings = await getSurveySettings(tx, orgId);
+  const stored = await getSurveySettings(tx, orgId);
+  // Online booking is part of the pipeline (Pro): off when the plan doesn't have it.
+  const settings = stored.enabled && (await planAllows(tx, orgId, "pipeline")) ? stored : { ...stored, enabled: false };
   if (!settings.enabled) return { settings, slots: [] };
   const windows = await listSurveyHours(tx, orgId);
   const to = new Date(now.getTime() + (settings.maxDaysAhead + 2) * 86_400_000);

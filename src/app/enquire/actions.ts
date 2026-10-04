@@ -10,6 +10,7 @@ import { postcodeCovered } from "@/core/surveys";
 import { createLead, enquiryAlertContext, recentWebEnquiries } from "@/db/pipeline";
 import { leads } from "@/db/schema";
 import { getSurveySettings, openSlots } from "@/db/surveys";
+import { planAllows } from "@/db/billing";
 import { runCompanyAutomations } from "@/server/automations";
 import { emailConfigured, sendEmail } from "@/server/email";
 import { appOrigin } from "@/server/origin";
@@ -36,6 +37,8 @@ export async function submitEnquiry(token: string, input: unknown): Promise<Enqu
   const orgId = typeof token === "string" ? await findEnquiryForm(token) : null;
   if (!orgId) return { ok: false, message: "This form isn't taking enquiries at the moment." };
   const created = await withTenant(orgId, async (tx) => {
+    // The web form feeds the pipeline (Pro).
+    if (!(await planAllows(tx, orgId, "pipeline"))) return "closed" as const;
     if ((await recentWebEnquiries(tx, orgId, 10)) >= FLOOD_LIMIT) return null;
     const leadId = await createLead(
       tx,
@@ -62,6 +65,7 @@ export async function submitEnquiry(token: string, input: unknown): Promise<Enqu
     }
     return { leadId, booking };
   });
+  if (created === "closed") return { ok: false, message: "This form isn't taking enquiries at the moment." };
   if (!created) return { ok: false, message: "We've had a lot of enquiries in the last few minutes. Please try again shortly, or give us a call." };
   after(async () => {
     await alertTeam(orgId, created.leadId, d).catch(() => undefined);

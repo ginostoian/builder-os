@@ -1,5 +1,8 @@
 "use server";
 
+import { FREE_LIBRARY_ITEMS } from "@/core/plans";
+import { activeServiceCount } from "@/db/billing";
+import { hasFeature, planBlock } from "@/server/plan";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { can } from "@/core/roles";
@@ -50,6 +53,9 @@ export async function saveService(serviceId: string | null, form: FormData): Pro
   if (!parsed.ok) return { status: "error", errors: parsed.errors, message: "Check the highlighted fields." };
 
   if (serviceId === null) {
+    if (!(await hasFeature("unlimited_quotes")) && (await withSession(session, (tx) => activeServiceCount(tx, session.orgId))) >= FREE_LIBRARY_ITEMS) {
+      return { status: "error", message: `The Free plan holds up to ${FREE_LIBRARY_ITEMS} services. Archive some, or upgrade to Essentials for an unlimited library.` };
+    }
     const created = await withSession(session, (tx) => createService(tx, session.orgId, parsed.value));
     revalidate();
     redirect(`/app/library/${created}`);
@@ -69,6 +75,8 @@ export async function saveBundle(bundleId: string | null, form: FormData): Promi
   if (bundleId !== null && !id.safeParse(bundleId).success) return { status: "error", message: NOT_FOUND };
   const parsed = parseBundleForm(form);
   if (!parsed.ok) return { status: "error", errors: parsed.errors, message: "Check the highlighted fields." };
+  const blocked = await planBlock("bundles");
+  if (blocked) return { status: "error", message: blocked };
 
   let created: string | undefined;
   const result = await bundleSafe(async () => {
@@ -129,10 +137,14 @@ export async function importLibrary(text: string): Promise<ImportResult> {
   const session = await manager();
   if (!session) return { ok: false, message: NOT_ALLOWED };
   if (typeof text !== "string") return { ok: false, message: "That file couldn't be read." };
+  const unlimited = await hasFeature("unlimited_quotes");
   const result = await withSession(session, async (tx) => {
     const plan = planImport(text, await libraryKeys(tx, session.orgId));
     if (!plan.ok) return { ok: false as const, message: plan.error };
-    const added = await importServices(tx, session.orgId, plan.rows.flatMap((r) => (r.status === "new" ? [r.value] : [])));
+    const rows = plan.rows.flatMap((r) => (r.status === "new" ? [r.value] : []));
+    const room = unlimited ? rows.length : Math.max(0, FREE_LIBRARY_ITEMS - (await activeServiceCount(tx, session.orgId)));
+    if (rows.length > room) return { ok: false as const, message: `The Free plan holds up to ${FREE_LIBRARY_ITEMS} services, so there's room for ${room} more. Upgrade to Essentials to import them all.` };
+    const added = await importServices(tx, session.orgId, rows);
     return { ok: true as const, added, skipped: plan.counts.duplicate, failed: plan.counts.error };
   });
   if (result.ok) revalidatePath("/app/library", "layout");

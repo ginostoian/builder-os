@@ -7,6 +7,7 @@ import { can } from "@/core/roles";
 import { id, sendVariationInput, variationSaveInput } from "@/core/schemas";
 import { memberEmail, ensurePortalToken } from "@/db/sending";
 import { VariationError, addVariationPhoto, createVariation, deleteVariation, removeVariationPhoto, reviseVariation, saveVariation, sendVariation, withdrawVariation, type VariationErrorReason } from "@/db/variations";
+import { hasFeature, planBlock } from "@/server/plan";
 import { getSession, withSession, type Session } from "@/auth/session";
 import { emailConfigured, sendEmail } from "@/server/email";
 import { appOrigin, portalVariationUrl } from "@/server/origin";
@@ -31,8 +32,11 @@ const MESSAGES: Record<VariationErrorReason, string> = {
 
 async function editor(): Promise<Session | null> {
   const session = await getSession();
-  return can(session.role, "quotes.edit") ? session : null;
+  return can(session.role, "quotes.edit") && (await hasFeature("variations")) ? session : null;
 }
+
+/** Why editor() said no: the plan, or the role. */
+const refused = async () => (await planBlock("variations")) ?? NOT_ALLOWED;
 
 function fail(error: unknown): VariationActionResult {
   if (error instanceof VariationError) return { ok: false, message: MESSAGES[error.reason] };
@@ -42,7 +46,7 @@ function fail(error: unknown): VariationActionResult {
 /** Start a variation on an accepted quote and open it. */
 export async function newVariation(quoteId: string): Promise<VariationActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   if (!id.safeParse(quoteId).success) return { ok: false, message: MESSAGES.not_accepted };
   let variationId: string;
   try {
@@ -56,7 +60,7 @@ export async function newVariation(quoteId: string): Promise<VariationActionResu
 
 export async function saveVariationDraft(input: unknown): Promise<VariationActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   const parsed = variationSaveInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: "Check the title and each line: every line needs a name, quantity, unit and rate." };
   try {
@@ -70,7 +74,7 @@ export async function saveVariationDraft(input: unknown): Promise<VariationActio
 
 export async function removeVariationDraft(variationId: string): Promise<VariationActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   if (!id.safeParse(variationId).success) return { ok: false, message: MESSAGES.not_found };
   let removed: Awaited<ReturnType<typeof deleteVariation>>;
   try {
@@ -86,7 +90,7 @@ export async function removeVariationDraft(variationId: string): Promise<Variati
 /** Freeze and send a draft. Gives the client's link, and emails it when asked and possible. */
 export async function sendVariationToClient(input: unknown): Promise<SendVariationResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   const parsed = sendVariationInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: MESSAGES.not_found };
   let sent: Awaited<ReturnType<typeof sendVariation>>;
@@ -134,7 +138,7 @@ export async function sendVariationToClient(input: unknown): Promise<SendVariati
 
 export async function withdrawVariationAction(variationId: string): Promise<VariationActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   if (!id.safeParse(variationId).success) return { ok: false, message: MESSAGES.not_found };
   try {
     const quoteId = await withSession(session, (tx) => withdrawVariation(tx, session.orgId, variationId));
@@ -149,7 +153,7 @@ export async function withdrawVariationAction(variationId: string): Promise<Vari
 /** Copy a sent, rejected or withdrawn variation into a new draft (withdrawing a sent one) and open it. */
 export async function reviseVariationAction(variationId: string): Promise<VariationActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   if (!id.safeParse(variationId).success) return { ok: false, message: MESSAGES.not_found };
   let next: string;
   try {
@@ -169,7 +173,7 @@ export type PhotoResult = { ok: true; key: string; url: string } | { ok: false; 
  */
 export async function uploadVariationPhoto(form: FormData): Promise<PhotoResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   if (!storageConfigured()) return { ok: false, message: "File storage isn't set up yet, so photos can't be added." };
   const variationId = form.get("variationId");
   const file = form.get("photo");
@@ -194,7 +198,7 @@ export async function uploadVariationPhoto(form: FormData): Promise<PhotoResult>
 
 export async function removeVariationPhotoAction(variationId: string, key: string): Promise<VariationActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   if (!id.safeParse(variationId).success) return { ok: false, message: MESSAGES.not_found };
   // Only this company's photo keys: never a logo, never another company's file.
   if (typeof key !== "string" || !new RegExp(`^orgs/${session.orgId}/photos/[A-Za-z0-9_-]{16,64}\\.(jpg|png|webp)$`).test(key)) return { ok: false, message: "That photo isn't on this variation." };

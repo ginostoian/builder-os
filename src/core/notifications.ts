@@ -16,6 +16,7 @@ export const NOTIFICATION_KINDS = [
   "certificate_expiring",
   "survey_booked",
   "survey_cancelled",
+  "invoice_paid",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 

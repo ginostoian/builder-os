@@ -50,6 +50,13 @@ export const appRole = pgRole("builderos_app").existing();
  */
 export const lookupRole = pgRole("builderos_lookup").existing();
 
+/**
+ * Owner of the billing functions (migration 0018). NOLOGIN, no BYPASSRLS. The only role that can change a
+ * company's plan, Stripe ids, trial and complimentary flag; the app can only ask it to, through functions
+ * that check what they're told.
+ */
+export const billingRole = pgRole("builderos_billing").existing();
+
 /** Read-only, all rows, for the lookup role only. Column grants (migration 0004) limit what it can see. */
 const lookupPolicy = () => pgPolicy("clerk_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` });
 
@@ -103,8 +110,9 @@ export const organizations = pgTable(
     enquiryToken: text("enquiry_token").unique("organizations_enquiry_token_key"),
     brandColour: text("brand_colour"),
     plan: plan("plan").notNull().default("free"),
-    stripeCustomerId: text("stripe_customer_id"),
-    connectAccountId: text("connect_account_id"),
+    stripeCustomerId: text("stripe_customer_id").unique("organizations_stripe_customer_key"),
+    /** The company's own Stripe account (Connect, Express): client payments go straight to it. */
+    connectAccountId: text("connect_account_id").unique("organizations_connect_account_key"),
     defaultMarkupBps: integer("default_markup_bps").notNull().default(0),
     defaultVatRateBps: integer("default_vat_rate_bps").notNull().default(2000),
     quoteTerms: text("quote_terms"),
@@ -118,6 +126,19 @@ export const organizations = pgTable(
     remindersEnabled: boolean("reminders_enabled").notNull().default(true),
     /** Ask clients for a code sent to their email the first time they open the portal on a device. */
     portalSignIn: boolean("portal_sign_in").notNull().default(true),
+    // ── Billing (migration 0018). Only the billing functions change these. ──
+    /** Pro for free until then. New companies get 14 days; existing ones were made complimentary. */
+    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }).default(sql`now() + interval '14 days'`),
+    /** Pro for free, set by the platform team (beta firms, partners). */
+    comped: boolean("comped").notNull().default(false),
+    stripeSubscriptionId: text("stripe_subscription_id").unique("organizations_stripe_subscription_key"),
+    /** Stripe's subscription status: active, trialing, past_due, canceled, unpaid, incomplete… */
+    subscriptionStatus: text("subscription_status"),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+    /** The company's Stripe account for client payments can take charges / has finished onboarding. */
+    connectChargesEnabled: boolean("connect_charges_enabled").notNull().default(false),
+    connectDetailsSubmitted: boolean("connect_details_submitted").notNull().default(false),
     /** Clerk event time of the last sync. Webhooks older than this are ignored (Svix can deliver out of order). */
     clerkSyncedAt: timestamp("clerk_synced_at", { withTimezone: true }),
     /** Set when the Clerk organization is deleted. Data is kept for a grace period, then purged (plan §7). */
@@ -133,6 +154,9 @@ export const organizations = pgTable(
       withCheck: sql`${t.id} = ${currentOrg}`,
     }),
     lookupPolicy(),
+    pgPolicy("billing_access", { as: "permissive", for: "all", to: billingRole, using: sql`true`, withCheck: sql`true` }),
+    check("organizations_subscription_status", sql`${t.subscriptionStatus} is null or ${t.subscriptionStatus} ~ '^[a-z_]{1,30}$'`),
+    check("organizations_stripe_ids", sql`(${t.stripeCustomerId} is null or ${t.stripeCustomerId} ~ '^cus_[A-Za-z0-9]+$') and (${t.stripeSubscriptionId} is null or ${t.stripeSubscriptionId} ~ '^sub_[A-Za-z0-9]+$') and (${t.connectAccountId} is null or ${t.connectAccountId} ~ '^acct_[A-Za-z0-9]+$')`),
     len("organizations_name_len", t.name, TEXT.name),
     len("organizations_trading_name_len", t.tradingName, TEXT.name),
     check("organizations_logo_https", sql`${t.logoUrl} is null or ${t.logoUrl} like 'https://%'`),
@@ -534,6 +558,8 @@ export const invoices = pgTable(
     snapshot: jsonb("snapshot").notNull(),
     paidOn: date("paid_on"),
     paidReference: text("paid_reference"),
+    /** The Stripe payment that paid it online (on the company's own account), if it was paid that way. */
+    stripePaymentId: text("stripe_payment_id").unique("invoices_stripe_payment_key"),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     createdByMemberId: uuid("created_by_member_id"),
     ...timestamps,

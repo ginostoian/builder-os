@@ -17,6 +17,8 @@ import { id as uuid } from "@/core/schemas";
 import { myReceipts } from "@/db/costs";
 import { myJob, openVisit, workerForMember } from "@/db/site";
 import { requirePermission, withSession } from "@/auth/session";
+import { hasFeature } from "@/server/plan";
+import { SiteLocked } from "@/components/site/site-locked";
 import { publicUrl, storageConfigured } from "@/server/storage";
 
 export const metadata: Metadata = { title: "Job" };
@@ -24,6 +26,7 @@ export const metadata: Metadata = { title: "Job" };
 /** One of my jobs: how to get there, who the client is, my tasks there, check in, and post an update. */
 export default async function SiteJobPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requirePermission("site.app");
+  if (!(await hasFeature("site_app"))) return <SiteLocked office={can(session.role, "app.office")} />;
   const projectId = (await params).id;
   if (!uuid.safeParse(projectId).success) notFound();
   const today = ukToday();

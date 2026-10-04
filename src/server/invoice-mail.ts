@@ -6,6 +6,8 @@ import type { InvoiceSnapshot } from "@/db/invoices";
 import { sendEmail, type EmailResult } from "./email";
 import { portalInvoiceUrl } from "./origin";
 import { withSignIn } from "./portal-auth";
+import { withTenant } from "@/db";
+import { onlinePaymentsReady } from "./payments";
 
 export async function emailInvoice(opts: {
   kind: "new" | ReminderKind;
@@ -30,6 +32,7 @@ export async function emailInvoice(opts: {
       dueDate: inv.dueDate,
       bank: s.bank,
       link: await withSignIn(opts.orgId, opts.token, portalInvoiceUrl(opts.origin, opts.token, inv.number)),
+      payOnline: Boolean(await withTenant(opts.orgId, (tx) => onlinePaymentsReady(tx, opts.orgId)).catch(() => null)),
     },
     opts.signOff,
   );

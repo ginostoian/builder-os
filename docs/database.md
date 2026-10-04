@@ -39,7 +39,7 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
    - The app role may insert only `id, clerk_org_id, name, clerk_synced_at, deleted_at`.
    - It may update only the settings columns and sync columns.
    - It may never update `plan`, `stripe_customer_id`, `connect_account_id` or `clerk_org_id`, and may never delete a company (Clerk deletions are soft).
-   - Billing webhooks will get their own role in Phase 2.
+   - Billing columns change only through the `builderos_billing` functions (see Billing, migration 0018).
 9. **Client portal (migration 0007).** Clients have no login: each client has one private link, `/portal/{token}`, with 32 random bytes in the token. Every quote sent to them appears there.
    - Public pages call `app_portal_lookup(token)` first. It's a `SECURITY DEFINER` function owned by `builderos_lookup`, like the Clerk lookups, and returns only the company and client of an *active* token. Everything else then runs inside `withTenant` for that company, scoped to that client.
    - Tokens are stored as-is, so the office can copy a link again later. "Reset link" revokes the old row and issues a new token.
@@ -192,7 +192,19 @@ TEST_DATABASE_URL_ADMIN=postgres://postgres:<password>@localhost:5432/builderos_
 
 The test roles (`builderos_owner_test`, `builderos_app_test`) get fresh random passwords on every run.
 
+## Billing (migration 0018)
+
+- `organizations` gains `trial_ends_at` (new companies: 14 days from creation), `comped` (complimentary Pro), `stripe_subscription_id`, `subscription_status`, `current_period_end`, `cancel_at_period_end`, `connect_charges_enabled` and `connect_details_submitted`. Stripe ids are unique and CHECKed for their `cus_`, `sub_` and `acct_` prefixes.
+- The app role can't update any of them. They change only through `SECURITY DEFINER` functions owned by `builderos_billing`, a NOLOGIN role with no BYPASSRLS that can read `organizations` and update just those columns (through its `billing_access` policy). The app role can call the functions but can't become the role.
+  - `app_billing_set_customer(org, customer)`: only when the company has no customer yet, or the same one.
+  - `app_billing_apply_subscription(…)`: only for the company's own customer. The plan falls back to Free unless the status is `active`, `trialing` or `past_due`, and an ended subscription can't overwrite a newer one.
+  - `app_billing_set_connect(org, account, charges, details)`: only for the company's own connected account (or its first one).
+  - `app_billing_set_comped(org, comped)` and `app_platform_companies()`: for the platform admin page, which checks the signed-in member's email against `PLATFORM_ADMIN_EMAILS` first.
+- The values written always come from Stripe's API (re-fetched by id), never from a webhook body.
+- What a company gets (`src/core/plans.ts`): complimentary → Pro; a live subscription → its plan; in trial → Pro; otherwise Free. Every company that existed before this migration was set to complimentary Pro, with no trial.
+- `invoices.stripe_payment_id` (unique) records an online payment; the app role may set it along with the paid status. An invoice is marked paid online only if the payment is on the company's own connected account and the amount equals the invoice total.
+- The migration creates `builderos_billing` if it's missing and grants it to the migrating role `WITH INHERIT FALSE, SET TRUE` (Postgres 16 needs SET to hand a function to a role).
+
 ## Still to do
 
-- Phase 2: a separate database role for the Stripe billing webhooks, the only role allowed to update `plan`, `stripe_customer_id` and `connect_account_id`.
 - A purge job for soft-deleted companies after the grace period, built with the per-company GDPR export (plan §7).

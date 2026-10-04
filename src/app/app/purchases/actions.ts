@@ -23,6 +23,7 @@ import {
   type CostErrorReason,
 } from "@/db/costs";
 import { memberEmail } from "@/db/sending";
+import { hasFeature, planBlock } from "@/server/plan";
 import { getSession, withSession, type Session } from "@/auth/session";
 import { emailConfigured, sendEmail } from "@/server/email";
 import { storeReceipt } from "@/server/receipts";
@@ -42,8 +43,11 @@ const MESSAGES: Record<CostErrorReason, string> = {
 
 async function editor(): Promise<Session | null> {
   const session = await getSession();
-  return can(session.role, "costs.edit") ? session : null;
+  return can(session.role, "costs.edit") && (await hasFeature("costs")) ? session : null;
 }
+
+/** Why editor() said no: the plan, or the role. */
+const refused = async () => (await planBlock("costs")) ?? NOT_ALLOWED;
 
 function refresh(projectId?: string) {
   revalidatePath("/app/purchases");
@@ -53,7 +57,7 @@ function refresh(projectId?: string) {
 
 async function run(fn: (s: Session) => Promise<string | void>, projectId?: string): Promise<CostActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   let result: string | void;
   try {
     result = await fn(session);
@@ -115,7 +119,7 @@ export async function uploadReceiptAction(form: FormData): Promise<CostActionRes
   const expenseId = form.get("expenseId");
   if (typeof expenseId !== "string" || !id.safeParse(expenseId).success) return { ok: false, message: MESSAGES.not_found };
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   const stored = await storeReceipt(session.orgId, form.get("file"));
   if (!stored.ok) return stored;
   try {
@@ -182,7 +186,7 @@ export async function deletePurchaseOrderAction(poId: string): Promise<CostActio
 export async function emailPurchaseOrderAction(poId: string): Promise<CostActionResult> {
   if (!id.safeParse(poId).success) return { ok: false, message: MESSAGES.not_found };
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   if (!emailConfigured()) return { ok: false, message: "Email isn't set up yet. Print the order or copy it into an email yourself." };
   const ctx = await withSession(session, async (tx) => ({ found: await getPurchaseOrder(tx, session.orgId, poId), replyTo: await memberEmail(tx, session.orgId, session.memberId) }));
   if (!ctx.found) return { ok: false, message: MESSAGES.not_found };
