@@ -63,4 +63,13 @@ How files are handled:
 - Uploads are checked by their actual bytes (PNG, JPEG or WebP) and size. SVG is refused because it can carry scripts.
 - Replacing or removing a logo deletes the old file.
 
+If an upload fails with "The file couldn't be stored", the message ends with a code:
+- **storage error 401**: Bunny refused the password, or the region is wrong.
+  - `BUNNY_STORAGE_KEY` must be the zone's **Password** (FTP & API Access). It isn't the read-only password or the account API key.
+  - `BUNNY_STORAGE_HOST` must match the zone's main region, e.g. `uk.storage.bunnycdn.com` for London, `storage.bunnycdn.com` for Falkenstein.
+- **storage error 404**: the zone name is wrong. `BUNNY_STORAGE_ZONE` is the zone's name exactly as Bunny shows it.
+- **storage unreachable**: the host name doesn't exist. It should look like `uk.storage.bunnycdn.com`.
+
+Vercel's logs (Logs, filter "Bunny") show the same explanation. Settings pasted with spaces, a trailing slash or an `https://` prefix are tidied automatically. After changing a setting, redeploy.
+
 Code: `src/server/storage.ts`, `src/core/files.ts`.

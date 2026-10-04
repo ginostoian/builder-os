@@ -16,11 +16,22 @@ import { createHash, randomBytes } from "node:crypto";
 
 /** Set up, and the CDN is https (logo URLs must be: the database checks it). */
 export const storageConfigured = () =>
-  Boolean(process.env.BUNNY_STORAGE_ZONE && process.env.BUNNY_STORAGE_KEY && process.env.BUNNY_CDN_URL?.startsWith("https://"));
+  Boolean(process.env.BUNNY_STORAGE_ZONE?.trim() && process.env.BUNNY_STORAGE_KEY?.trim() && process.env.BUNNY_CDN_URL?.trim().startsWith("https://"));
 
-const host = () => process.env.BUNNY_STORAGE_HOST || "storage.bunnycdn.com";
-const cdnBase = () => (process.env.BUNNY_CDN_URL ?? "").replace(/\/+$/, "");
-const objectUrl = (key: string) => `https://${host()}/${encodeURIComponent(process.env.BUNNY_STORAGE_ZONE!)}/${key.split("/").map(encodeURIComponent).join("/")}`;
+// Settings are tidied before use: pasted values often carry spaces, a trailing slash, or (for the host) an
+// "https://" prefix, any of which would make every upload fail.
+const host = () => (process.env.BUNNY_STORAGE_HOST ?? "").trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "") || "storage.bunnycdn.com";
+const zone = () => (process.env.BUNNY_STORAGE_ZONE ?? "").trim().replace(/^\/+|\/+$/g, "");
+const accessKey = () => (process.env.BUNNY_STORAGE_KEY ?? "").trim();
+const cdnBase = () => (process.env.BUNNY_CDN_URL ?? "").trim().replace(/\/+$/, "");
+const objectUrl = (key: string) => `https://${host()}/${encodeURIComponent(zone())}/${key.split("/").map(encodeURIComponent).join("/")}`;
+
+/** What a refused upload most likely means, for the server log (the person sees a short code). */
+const REFUSED: Record<number, string> = {
+  401: "Bunny refused the storage password. BUNNY_STORAGE_KEY must be the storage zone's Password (FTP & API Access), not the read-only one or the account API key, and BUNNY_STORAGE_HOST must be the zone's region (e.g. uk.storage.bunnycdn.com).",
+  404: "Bunny couldn't find the storage zone. Check BUNNY_STORAGE_ZONE is the zone's name and BUNNY_STORAGE_HOST its region.",
+  400: "Bunny rejected the upload request (often a checksum or path problem).",
+};
 
 /** Unguessable file name part for storage keys. */
 export const randomName = () => randomBytes(18).toString("base64url");
@@ -32,22 +43,25 @@ export async function putObject(key: string, body: Uint8Array, contentType: stri
   try {
     const res = await fetch(objectUrl(key), {
       method: "PUT",
-      headers: { AccessKey: process.env.BUNNY_STORAGE_KEY!, "Content-Type": contentType, Checksum: createHash("sha256").update(body).digest("hex").toUpperCase() },
+      headers: { AccessKey: accessKey(), "Content-Type": contentType, Checksum: createHash("sha256").update(body).digest("hex").toUpperCase() },
       body: Buffer.from(body),
       signal: AbortSignal.timeout(20_000),
     });
     if (res.ok) return { ok: true };
-    console.error("Bunny upload refused", res.status);
-    return { ok: false, message: "The file couldn't be stored. Try again in a moment." };
-  } catch {
-    return { ok: false, message: "The file couldn't be stored. Try again in a moment." };
+    console.error("Bunny upload refused", res.status, REFUSED[res.status] ?? "");
+    return { ok: false, message: `The file couldn't be stored (storage error ${res.status}). Try again in a moment.` };
+  } catch (error) {
+    // Usually a wrong BUNNY_STORAGE_HOST (a name that doesn't resolve) or a timeout.
+    const cause = error instanceof Error ? `${error.message}${error.cause instanceof Error ? `: ${error.cause.message}` : ""}` : "unknown";
+    console.error("Bunny upload failed", host(), cause);
+    return { ok: false, message: "The file couldn't be stored (storage unreachable). Try again in a moment." };
   }
 }
 
 export async function deleteObject(key: string): Promise<void> {
   if (!storageConfigured()) return;
   try {
-    const res = await fetch(objectUrl(key), { method: "DELETE", headers: { AccessKey: process.env.BUNNY_STORAGE_KEY! }, signal: AbortSignal.timeout(10_000) });
+    const res = await fetch(objectUrl(key), { method: "DELETE", headers: { AccessKey: accessKey() }, signal: AbortSignal.timeout(10_000) });
     if (!res.ok && res.status !== 404) console.error("Bunny delete refused", res.status);
   } catch {
     // An orphaned file costs pennies; never fail the user's action over it.
