@@ -1,12 +1,11 @@
 /**
- * Everything on the platform team's dashboard (/app/admin), worked out from the metrics functions' counts.
- * Platform admins only: the page checks `isPlatformAdmin()` before calling this.
+ * Everything on the platform team's dashboard (/admin), worked out from the metrics functions' counts.
+ * The website owner's admins only: pages call `requirePlatformAdmin()` before this.
  */
 import "server-only";
 import { addDays, ukToday } from "@/core/payment-plan";
 import { average, bucketOf, lastMonths, mrrByMonth, stickiness, trialConversion, type CompanyBucket, type MrrMonth } from "@/core/metrics";
-import type { Session } from "@/auth/session";
-import { withSession } from "@/auth/session";
+import { withPlatform } from "@/db";
 import { companyStats, dailyActivity, subscriptionEventsSince, userSignups, type CompanyStats, type DailyActivity } from "@/db/platform";
 
 export type CompanyRow = CompanyStats & { bucket: CompanyBucket };
@@ -38,10 +37,10 @@ export type PlatformDashboard = {
 
 const monthKey = (iso: string) => iso.slice(0, 7);
 
-export async function loadPlatformDashboard(session: Session, now = new Date()): Promise<PlatformDashboard> {
+export async function loadPlatformDashboard(now = new Date()): Promise<PlatformDashboard> {
   const today = ukToday(now);
   const months = lastMonths(now, 12);
-  const [stats, days, events, signups] = await withSession(session, async (tx) => [
+  const [stats, days, events, signups] = await withPlatform(async (tx) => [
     await companyStats(tx, today),
     await dailyActivity(tx, addDays(today, -89), today),
     await subscriptionEventsSince(tx, new Date(`${months[0]}T00:00:00Z`)),

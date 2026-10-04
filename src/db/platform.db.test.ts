@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { appUrl } from "@/test/db-urls";
 import { applySubscription, setStripeCustomer } from "./billing";
-import { closeDb, withTenant } from "./index";
+import { closeDb, withPlatform, withTenant } from "./index";
 import { companyStats, dailyActivity, recordActivity, subscriptionEventsSince, userSignups } from "./platform";
 
 const clerkId = (uuid: string) => `org_${uuid.replaceAll("-", "")}`;
@@ -83,5 +83,14 @@ describe("platform metrics", () => {
     expect((await withTenant(orgId, (tx) => companyStats(tx, "2026-10-04"))).find((s) => s.id === orgId)?.mrrPence).toBe(0);
     expect(await code(withTenant(orgId, (tx) => tx.execute(sql`select * from subscription_events`)))).toBe("42501");
     expect(await code(withTenant(orgId, (tx) => tx.execute(sql`update organizations set mrr_pence = 1 where id = ${orgId}`)))).toBe("42501");
+  });
+
+  it("gives the owner admin area totals but no tenant rows", async () => {
+    const { orgId } = await newOrg("Metrics platform");
+    await withPlatform(async (tx) => {
+      expect(await tx.execute(sql`select 1 from members`)).toHaveLength(0);
+      expect(await tx.execute(sql`select 1 from organizations`)).toHaveLength(0);
+      expect((await companyStats(tx, "2026-10-04")).find((c) => c.id === orgId)).toMatchObject({ name: "Metrics platform", users: 2 });
+    });
   });
 });

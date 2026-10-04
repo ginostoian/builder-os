@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PLAN_LABEL, planHas, type Feature } from "@/core/plans";
 import { ROLE_LABELS, can } from "@/core/roles";
 import { getEntitlement } from "@/server/plan";
-import { isPlatformAdmin } from "@/server/platform-admin";
+import { isPlatformAdmin } from "@/auth/platform-admin";
 import { getGuide } from "@/server/onboarding";
 import { Onboarding } from "./onboarding/onboarding";
 import { SCREEN_FEATURE } from "./shell/screen-features";

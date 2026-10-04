@@ -4,7 +4,7 @@
  */
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-const isSignedInOnly = createRouteMatcher(["/app(.*)", "/m(.*)"]);
+const isSignedInOnly = createRouteMatcher(["/app(.*)", "/m(.*)", "/admin(.*)"]);
 
 export default clerkMiddleware(
   async (auth, request) => {
@@ -15,5 +15,5 @@ export default clerkMiddleware(
 );
 
 export const config = {
-  matcher: ["/app/:path*", "/m/:path*", "/sign-in/:path*", "/sign-up/:path*", "/select-company/:path*", "/api/:path*"],
+  matcher: ["/app/:path*", "/m/:path*", "/admin/:path*", "/admin", "/sign-in/:path*", "/sign-up/:path*", "/select-company/:path*", "/api/:path*"],
 };

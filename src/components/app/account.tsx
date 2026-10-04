@@ -36,7 +36,7 @@ export function UserMenu({ name, roleLabel, canOpenSettings, platformAdmin = fal
         <div className="text-[11.5px] text-subtle">{roleLabel}</div>
       </div>
       {platformAdmin && (
-        <Link href="/app/admin" aria-label="Platform dashboard" title="Platform dashboard" className="rounded-md p-1 text-subtle hover:bg-accent hover:text-ink">
+        <Link href="/admin" aria-label="Owner admin" title="Owner admin" className="rounded-md p-1 text-subtle hover:bg-accent hover:text-ink">
           <Gauge className="size-[15px]" />
         </Link>
       )}
