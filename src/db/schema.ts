@@ -33,6 +33,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { MAX_MARKUP_BPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, TEXT } from "../core/limits";
+import { MAX_DIARY_PHOTOS, PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "../core/projects";
 import { MAX_VARIATION_PHOTOS, VARIATION_STATUSES, type VariationLine, type VariationPhoto } from "../core/variation";
 import { LINE_KINDS, QUOTE_STATUSES, ROLES, SERVICE_KINDS, type Address, type PaymentPlanInput } from "../core/schemas";
 
@@ -636,5 +637,156 @@ export const variations = pgTable(
     len("variations_decision_reason_len", t.decisionReason, TEXT.note, 0),
     len("variations_decision_ip_len", t.decisionIp, 64, 0),
     len("variations_decision_user_agent_len", t.decisionUserAgent, 500, 0),
+  ],
+).enableRLS();
+
+// ── Projects ──────────────────────────────────────────────────────────────────
+
+export const projectStatus = pgEnum("project_status", PROJECT_STATUSES);
+export const taskStatus = pgEnum("task_status", TASK_STATUSES);
+
+/** A job being run: usually started from an accepted quote (at most one project per quote). */
+export const projects = pgTable(
+  "projects",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id").notNull(),
+    quoteId: uuid("quote_id"),
+    name: text("name").notNull(),
+    siteAddress: jsonb("site_address").$type<Address>(),
+    status: projectStatus("status").notNull().default("booked"),
+    startDate: date("start_date"),
+    endDate: date("end_date"),
+    /** Who runs the job (usually a site lead). */
+    managerMemberId: uuid("manager_member_id"),
+    /** Show progress, shared diary entries and shared files in the client's portal. */
+    shareProgress: boolean("share_progress").notNull().default(true),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdByMemberId: uuid("created_by_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    unique("projects_org_id_id_key").on(t.orgId, t.id),
+    uniqueIndex("projects_one_per_quote").on(t.orgId, t.quoteId).where(sql`${t.quoteId} is not null`),
+    foreignKey({ name: "projects_client_fk", columns: [t.orgId, t.clientId], foreignColumns: [clients.orgId, clients.id] }),
+    foreignKey({ name: "projects_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
+    foreignKey({ name: "projects_manager_fk", columns: [t.orgId, t.managerMemberId], foreignColumns: [members.orgId, members.id] }),
+    foreignKey({ name: "projects_created_by_fk", columns: [t.orgId, t.createdByMemberId], foreignColumns: [members.orgId, members.id] }),
+    index("projects_org_status_idx").on(t.orgId, t.status),
+    len("projects_name_len", t.name, TEXT.name),
+    check("projects_dates_order", sql`${t.endDate} is null or ${t.startDate} is null or ${t.endDate} >= ${t.startDate}`),
+    check("projects_site_address_object", sql`${t.siteAddress} is null or jsonb_typeof(${t.siteAddress}) = 'object'`),
+  ],
+).enableRLS();
+
+/** A stage of the job (e.g. "Strip out", "First fix"), in order. Usually the quote's sections. */
+export const projectPhases = pgTable(
+  "project_phases",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").notNull(),
+    name: text("name").notNull(),
+    position: integer("position").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    unique("project_phases_org_id_id_key").on(t.orgId, t.id),
+    unique("project_phases_project_id_key").on(t.orgId, t.projectId, t.id),
+    foreignKey({ name: "project_phases_project_fk", columns: [t.orgId, t.projectId], foreignColumns: [projects.orgId, projects.id] }).onDelete("cascade"),
+    len("project_phases_name_len", t.name, TEXT.name),
+  ],
+).enableRLS();
+
+/** One thing to get done on site. Board columns are statuses; `position` orders a column. */
+export const projectTasks = pgTable(
+  "project_tasks",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").notNull(),
+    phaseId: uuid("phase_id"),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    status: taskStatus("status").notNull().default("todo"),
+    position: integer("position").notNull().default(0),
+    assigneeMemberId: uuid("assignee_member_id"),
+    /** Who does it when it isn't one of the team, e.g. "Electrician" or a subcontractor's name. */
+    trade: text("trade"),
+    startDate: date("start_date"),
+    dueDate: date("due_date"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdByMemberId: uuid("created_by_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    unique("project_tasks_org_id_id_key").on(t.orgId, t.id),
+    foreignKey({ name: "project_tasks_project_fk", columns: [t.orgId, t.projectId], foreignColumns: [projects.orgId, projects.id] }).onDelete("cascade"),
+    // The stage must belong to the same project.
+    foreignKey({ name: "project_tasks_phase_fk", columns: [t.orgId, t.projectId, t.phaseId], foreignColumns: [projectPhases.orgId, projectPhases.projectId, projectPhases.id] }),
+    foreignKey({ name: "project_tasks_assignee_fk", columns: [t.orgId, t.assigneeMemberId], foreignColumns: [members.orgId, members.id] }),
+    foreignKey({ name: "project_tasks_created_by_fk", columns: [t.orgId, t.createdByMemberId], foreignColumns: [members.orgId, members.id] }),
+    index("project_tasks_project_idx").on(t.orgId, t.projectId, t.status, t.position),
+    len("project_tasks_title_len", t.title, TEXT.line),
+    len("project_tasks_notes_len", t.notes, TEXT.note, 0),
+    len("project_tasks_trade_len", t.trade, TEXT.short),
+    check("project_tasks_dates_order", sql`${t.dueDate} is null or ${t.startDate} is null or ${t.dueDate} >= ${t.startDate}`),
+    check("project_tasks_done_has_time", sql`(${t.status} = 'done') = (${t.completedAt} is not null)`),
+  ],
+).enableRLS();
+
+/** The site diary: what happened each day, with photos. Entries can be shared with the client. */
+export const projectDiary = pgTable(
+  "project_diary",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").notNull(),
+    entryDate: date("entry_date").notNull(),
+    body: text("body").notNull(),
+    weather: text("weather"),
+    photos: jsonb("photos").$type<{ key: string }[]>().notNull().default(sql`'[]'::jsonb`),
+    shareWithClient: boolean("share_with_client").notNull().default(false),
+    authorMemberId: uuid("author_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    foreignKey({ name: "project_diary_project_fk", columns: [t.orgId, t.projectId], foreignColumns: [projects.orgId, projects.id] }).onDelete("cascade"),
+    foreignKey({ name: "project_diary_author_fk", columns: [t.orgId, t.authorMemberId], foreignColumns: [members.orgId, members.id] }),
+    index("project_diary_project_idx").on(t.orgId, t.projectId, t.entryDate),
+    len("project_diary_body_len", t.body, TEXT.note),
+    check("project_diary_weather", sql`${t.weather} is null or ${t.weather} in (${sql.raw(WEATHER.map((w) => `'${w}'`).join(", "))})`),
+    check("project_diary_photos_array", sql`jsonb_typeof(${t.photos}) = 'array' and jsonb_array_length(${t.photos}) <= ${n(MAX_DIARY_PHOTOS)}`),
+  ],
+).enableRLS();
+
+/** Documents for the job: drawings, certificates, specs. Stored on Bunny; optionally shared with the client. */
+export const projectFiles = pgTable(
+  "project_files",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").notNull(),
+    name: text("name").notNull(),
+    storageKey: text("storage_key").notNull(),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    shareWithClient: boolean("share_with_client").notNull().default(false),
+    uploadedByMemberId: uuid("uploaded_by_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    unique("project_files_key").on(t.orgId, t.storageKey),
+    foreignKey({ name: "project_files_project_fk", columns: [t.orgId, t.projectId], foreignColumns: [projects.orgId, projects.id] }).onDelete("cascade"),
+    foreignKey({ name: "project_files_uploaded_by_fk", columns: [t.orgId, t.uploadedByMemberId], foreignColumns: [members.orgId, members.id] }),
+    index("project_files_project_idx").on(t.orgId, t.projectId),
+    len("project_files_name_len", t.name, TEXT.name),
+    check("project_files_size", sql`${t.sizeBytes} > 0`),
   ],
 ).enableRLS();

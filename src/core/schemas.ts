@@ -9,6 +9,7 @@
  */
 import { z } from "zod";
 import { MAX_VARIATION_LINES } from "./variation";
+import { PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "./projects";
 import { MAX_PAYMENT_STAGES, PAYMENT_AMOUNT_KINDS, PAYMENT_DUE_KINDS } from "./payment-plan";
 import { MAX_BUNDLE_ITEMS, MAX_LINES_PER_QUOTE, MAX_MARKUP_BPS, MAX_PATCH_OPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, QTY_DECIMALS, TEXT } from "./limits";
 
@@ -331,3 +332,55 @@ export const variationSaveInput = z.strictObject({
 export type VariationSaveInput = z.infer<typeof variationSaveInput>;
 
 export const sendVariationInput = z.strictObject({ variationId: id, email: z.boolean() });
+
+// ── Projects ─────────────────────────────────────────────────────────────────
+
+const optionalDate = isoDate.optional();
+
+/** A new project without a quote (or the details of one being edited). */
+export const projectInput = z
+  .strictObject({
+    name: singleLine(TEXT.name),
+    clientId: id,
+    siteAddress: address.optional(),
+    status: z.enum(PROJECT_STATUSES).default("booked"),
+    startDate: optionalDate,
+    endDate: optionalDate,
+    managerMemberId: id.optional(),
+    shareProgress: z.boolean().default(true),
+  })
+  .refine((p) => !p.startDate || !p.endDate || p.endDate >= p.startDate, { message: "The finish date is before the start", path: ["endDate"] });
+export type ProjectInput = z.infer<typeof projectInput>;
+
+/** Start a project from an accepted quote: stages from its sections, optionally a task per line. */
+export const projectFromQuoteInput = z.strictObject({ quoteId: id, tasksFromLines: z.boolean(), startDate: optionalDate });
+
+export const phaseInput = z.strictObject({ projectId: id, name: singleLine(TEXT.name) });
+
+/** A task as edited in the task dialog. Omitted optional fields are cleared. */
+export const taskInput = z
+  .strictObject({
+    projectId: id,
+    phaseId: id.optional(),
+    title: singleLine(TEXT.line),
+    notes: multiLine(TEXT.note).optional(),
+    status: z.enum(TASK_STATUSES),
+    assigneeMemberId: id.optional(),
+    trade: singleLine(TEXT.short).optional(),
+    startDate: optionalDate,
+    dueDate: optionalDate,
+  })
+  .refine((t) => !t.startDate || !t.dueDate || t.dueDate >= t.startDate, { message: "The due date is before the start", path: ["dueDate"] });
+export type TaskInput = z.infer<typeof taskInput>;
+
+/** Drag on the board: a task's new column, and that column's order afterwards. */
+export const moveTaskInput = z.strictObject({ projectId: id, taskId: id, status: z.enum(TASK_STATUSES), order: z.array(id).max(1_000) });
+
+export const diaryInput = z.strictObject({
+  projectId: id,
+  entryDate: isoDate,
+  body: multiLine(TEXT.note).pipe(z.string().min(1, "Write what happened")),
+  weather: z.enum(WEATHER).optional(),
+  shareWithClient: z.boolean(),
+});
+export type DiaryInput = z.infer<typeof diaryInput>;

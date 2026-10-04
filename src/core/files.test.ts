@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { keyFromCdnUrl, orgFileKey, sniffImage } from "./files";
+import { keyFromCdnUrl, orgFileKey, sniffDocument, sniffImage } from "./files";
 
 const org = "6f1c2b1e-8a4e-4b4b-9a51-1b2c3d4e5f60";
 
@@ -31,5 +31,14 @@ describe("storage keys", () => {
     expect(keyFromCdnUrl("https://example.com/logo.png", cdn, org)).toBeNull();
     expect(keyFromCdnUrl(`${cdn}/orgs/${org}/../x`, cdn, org)).toBeNull();
     expect(keyFromCdnUrl(null, cdn, org)).toBeNull();
+  });
+});
+
+describe("sniffDocument", () => {
+  it("accepts PDFs and images by their bytes, nothing else", () => {
+    expect(sniffDocument(new TextEncoder().encode("%PDF-1.7\n…"))?.mime).toBe("application/pdf");
+    expect(sniffDocument(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))?.ext).toBe("jpg");
+    expect(sniffDocument(new TextEncoder().encode("<svg onload=alert(1)>"))).toBeNull();
+    expect(sniffDocument(new TextEncoder().encode("PK\u0003\u0004"))).toBeNull();
   });
 });

@@ -301,3 +301,44 @@ export async function decideVariation(
 }
 
 export type { VariationLine };
+
+export type VariationFilter = "open" | "awaiting" | "to_invoice" | "all";
+
+/**
+ * Every variation in the company, for the Variations page. "open" is drafts and ones awaiting the client;
+ * "to_invoice" is approved ones not on a live invoice yet.
+ */
+export async function listAllVariations(tx: Tx, orgId: string, filter: VariationFilter = "open") {
+  const rows = await tx
+    .select({
+      id: variations.id,
+      number: variations.number,
+      title: variations.title,
+      status: variations.status,
+      totalPence: variations.totalPence,
+      sentAt: variations.sentAt,
+      decidedAt: variations.decidedAt,
+      updatedAt: variations.updatedAt,
+      invoiceId: variations.invoiceId,
+      invoiceStatus: invoices.status,
+      quoteId: quotes.id,
+      quoteNumber: quotes.number,
+      quoteTitle: quotes.title,
+      clientName: clients.name,
+    })
+    .from(variations)
+    .innerJoin(quotes, and(eq(quotes.orgId, variations.orgId), eq(quotes.id, variations.quoteId)))
+    .innerJoin(clients, and(eq(clients.orgId, variations.orgId), eq(clients.id, variations.clientId)))
+    .leftJoin(invoices, and(eq(invoices.orgId, variations.orgId), eq(invoices.id, variations.invoiceId)))
+    .where(
+      and(
+        eq(variations.orgId, orgId),
+        filter === "open" ? inArray(variations.status, ["draft", "sent"]) : undefined,
+        filter === "awaiting" ? eq(variations.status, "sent") : undefined,
+        filter === "to_invoice" ? and(eq(variations.status, "approved"), or(isNull(variations.invoiceId), eq(invoices.status, "void"))) : undefined,
+      ),
+    )
+    .orderBy(desc(variations.updatedAt))
+    .limit(500);
+  return rows.map((r) => ({ ...r, billed: r.invoiceId !== null && r.invoiceStatus !== "void" }));
+}

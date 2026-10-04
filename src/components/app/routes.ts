@@ -3,7 +3,10 @@ export const appRoutes = {
   dashboard: "/app",
   quote: "/app/quotes",
   library: "/app/library",
+  /** The demo project in marketing screenshots. The app's own list is `projects`. */
   project: "/app/projects/elm-road",
+  projects: "/app/projects",
+  variations: "/app/variations",
   payments: "/app/payments",
   clients: "/app/clients",
   settings: "/app/settings",
@@ -13,5 +16,5 @@ export const appRoutes = {
   employee: "/m",
 } as const;
 
-export type AdminScreen = "dashboard" | "quote" | "templates" | "board" | "invoices" | "crm" | "settings";
-export type ScreenId = Exclude<AdminScreen, "settings"> | "client" | "mobile";
+export type AdminScreen = "dashboard" | "quote" | "templates" | "variations" | "board" | "invoices" | "crm" | "settings";
+export type ScreenId = Exclude<AdminScreen, "settings" | "variations"> | "client" | "mobile";

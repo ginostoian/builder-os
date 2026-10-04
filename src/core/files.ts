@@ -4,6 +4,13 @@
  */
 
 export type ImageType = { mime: "image/png" | "image/jpeg" | "image/webp"; ext: "png" | "jpg" | "webp" };
+export type DocumentType = ImageType | { mime: "application/pdf"; ext: "pdf" };
+
+/**
+ * Largest project file (drawings, certificates). Vercel caps a request at 4.5 MB, so this is the most a
+ * single upload can carry; bigger PDFs need compressing first.
+ */
+export const MAX_FILE_BYTES = 4_000_000;
 
 /** Largest logo we take. Logos are shown small; this is plenty for a sharp one. */
 export const MAX_LOGO_BYTES = 1_000_000;
@@ -23,6 +30,12 @@ export function sniffImage(bytes: Uint8Array): ImageType | null {
   if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return { mime: "image/jpeg", ext: "jpg" };
   if (b.length >= 12 && String.fromCharCode(...b.slice(0, 4)) === "RIFF" && String.fromCharCode(...b.slice(8, 12)) === "WEBP") return { mime: "image/webp", ext: "webp" };
   return null;
+}
+
+/** A project document: a PDF or one of the image types, judged by its bytes. */
+export function sniffDocument(bytes: Uint8Array): DocumentType | null {
+  if (bytes.length >= 5 && String.fromCharCode(...bytes.slice(0, 5)) === "%PDF-") return { mime: "application/pdf", ext: "pdf" };
+  return sniffImage(bytes);
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

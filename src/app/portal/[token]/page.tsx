@@ -10,6 +10,8 @@ import { findPortalAccess, withTenant } from "@/db";
 import { portalHeader, portalQuotes } from "@/db/portal";
 import { portalInvoices } from "@/db/invoices";
 import { portalVariations } from "@/db/variations";
+import { portalProjects } from "@/db/projects";
+import { PROJECT_STATUS_LABEL } from "@/core/projects";
 import { variationRef } from "@/core/variation";
 import { invoiceRef, invoiceState, ukToday } from "@/core/payment-plan";
 
@@ -46,7 +48,7 @@ export default async function PortalHome({ params }: { params: Promise<{ token: 
   if (!access) notFound();
   const data = await withTenant(access.orgId, async (tx) => {
     const header = await portalHeader(tx, access.orgId, access.clientId);
-    return header && { ...header, quotes: await portalQuotes(tx, access.orgId, access.clientId), invoices: await portalInvoices(tx, access.orgId, access.clientId), variations: await portalVariations(tx, access.orgId, access.clientId) };
+    return header && { ...header, quotes: await portalQuotes(tx, access.orgId, access.clientId), invoices: await portalInvoices(tx, access.orgId, access.clientId), variations: await portalVariations(tx, access.orgId, access.clientId), projects: await portalProjects(tx, access.orgId, access.clientId) };
   });
   if (!data) notFound();
   const company = data.company.tradingName ?? data.company.name;
@@ -65,6 +67,34 @@ export default async function PortalHome({ params }: { params: Promise<{ token: 
           <h1 className="text-2xl font-semibold tracking-[-0.025em]">Hello {data.clientName}</h1>
           <p className="mt-1 text-ink-2">Your quotes{data.invoices.length > 0 ? " and invoices" : ""} from {company}. Open a quote to read it, ask questions or accept it.</p>
         </div>
+        {data.projects.length > 0 && (
+          <section className="flex flex-col gap-2">
+            <h2 className="px-1 font-semibold">Your {data.projects.length === 1 ? "project" : "projects"}</h2>
+            <ul className="overflow-hidden rounded-[14px] bg-white shadow-ring">
+              {data.projects.map((p) => {
+                const percent = p.total === 0 ? 0 : Math.round((p.done / p.total) * 100);
+                return (
+                  <li key={p.id} className="border-b border-line last:border-0">
+                    <Link href={`/portal/${token}/projects/${p.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-surface">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-semibold">{p.name}</div>
+                        <div className="mt-1.5 flex items-center gap-2.5">
+                          <div className="h-1.5 w-40 overflow-hidden rounded-full bg-muted" aria-hidden>
+                            <div className="h-full rounded-full bg-success" style={{ width: `${percent}%` }} />
+                          </div>
+                          <span className="text-[12.5px] text-subtle">
+                            {percent}% · {PROJECT_STATUS_LABEL[p.status]}
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronRight className="size-4 text-subtle" />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
         {data.variations.length > 0 && (
           <section className="flex flex-col gap-2">
             <h2 className="flex items-baseline justify-between px-1 font-semibold">
@@ -124,7 +154,7 @@ export default async function PortalHome({ params }: { params: Promise<{ token: 
             </ul>
           </section>
         )}
-        {(data.invoices.length > 0 || data.variations.length > 0) && <h2 className="mt-3 px-1 font-semibold">Quotes</h2>}
+        {(data.invoices.length > 0 || data.variations.length > 0 || data.projects.length > 0) && <h2 className="mt-3 px-1 font-semibold">Quotes</h2>}
         {data.quotes.length === 0 ? (
           <div className="rounded-[14px] bg-white px-6 py-10 text-center text-ink-2 shadow-ring">Nothing here yet. Quotes from {company} will appear here as soon as they&apos;re sent.</div>
         ) : (

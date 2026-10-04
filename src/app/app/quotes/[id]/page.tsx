@@ -10,6 +10,7 @@ import { getQuote, libraryForQuotes } from "@/db/quotes";
 import { currentPortalToken, latestVersion, quoteActivity } from "@/db/sending";
 import { paymentSettings, quoteSchedule } from "@/db/invoices";
 import { billableVariations, quoteVariations } from "@/db/variations";
+import { projectForQuote } from "@/db/projects";
 import { can } from "@/core/roles";
 import { requirePermission, withSession } from "@/auth/session";
 import { emailConfigured } from "@/server/email";
@@ -45,6 +46,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
       bankReady: Boolean((await paymentSettings(tx, session.orgId))?.bankSortCode),
       variations: loaded.quote.status === "accepted" ? await quoteVariations(tx, session.orgId, id) : null,
       billable: loaded.quote.status === "accepted" ? await billableVariations(tx, session.orgId, id) : [],
+      projectId: loaded.quote.status === "accepted" ? await projectForQuote(tx, session.orgId, id) : null,
     };
   });
   if (!data) notFound();
@@ -106,6 +108,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         variations={data.variations}
         billable={data.billable.map((v) => ({ id: v.id, number: v.number, title: v.title, totalPence: v.totalPence }))}
         canEdit
+        project={{ id: data.projectId, canStart: can(session.role, "projects.edit") }}
       />
     </LiveAppShell>
   );

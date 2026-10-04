@@ -17,6 +17,7 @@ import { control } from "../form-fields";
 import { DuplicateButton } from "./duplicate-button";
 import { PaymentSchedule, type BillableVariation, type ScheduleRow } from "./payment-schedule";
 import { VariationsPanel, type VariationRow } from "@/components/app/variations/variations-panel";
+import { StartProject } from "@/components/app/projects/start-project";
 import { CopyButton } from "./send-dialog";
 import { QUOTE_STATUS } from "./status";
 
@@ -59,6 +60,7 @@ export function SentQuote({
   variations,
   billable,
   canEdit,
+  project,
 }: {
   quoteId: string;
   status: string;
@@ -81,6 +83,8 @@ export function SentQuote({
   variations: VariationRow[] | null;
   billable: BillableVariation[];
   canEdit: boolean;
+  /** For accepted quotes: the project, if started, and whether this person can start one. */
+  project?: { id: string | null; canStart: boolean };
 }) {
   const router = useRouter();
   const [revising, startRevise] = React.useTransition();
@@ -116,6 +120,9 @@ export function SentQuote({
           </div>
           <div className="flex flex-wrap justify-end gap-2">
             {link && <CopyButton text={link} label="Copy client link" />}
+            {status === "accepted" && project && (project.id || project.canStart) && (
+              <StartProject quoteId={quoteId} projectId={project.id} sections={snapshot.sections.length} lines={snapshot.sections.reduce((a, s) => a + s.lines.length, 0)} />
+            )}
             <DuplicateButton quoteId={quoteId} />
             <Button variant="secondary" asChild>
               <Link href={`/app/quotes/${quoteId}/preview`} target="_blank">

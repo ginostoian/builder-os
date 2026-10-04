@@ -64,7 +64,17 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
    - "Revise" withdraws a sent variation and copies it into a new draft. The client never has two versions of the same change to approve.
    - Photos (migration 0010): up to 12 per draft, stored in Bunny under `orgs/{companyId}/photos/` with random names. The browser shrinks each photo to at most 2,000 px and re-encodes it as JPEG, which also removes the location data. When the variation is sent, the photos go into the snapshot as URLs and are then frozen like everything else. A photo file is deleted from storage only when no variation uses it any more, because revisions share photos with the original.
    - Approved variations are billed on their own, or added to a payment's invoice; an invoice's `snapshot.lines` lists each part. A variation is billed while its `invoice_id` points at a live invoice, so voiding that invoice frees it again. Credits can reduce an invoice but never take it below zero.
-12. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
+12. **Projects (migration 0011).** Running a job: `projects` (at most one per quote), `project_phases` (stages), `project_tasks`, `project_diary` and `project_files`.
+   - All five have forced RLS and composite foreign keys. A task's stage must belong to the same project: the key is `(org_id, project_id, phase_id)`.
+   - Starting from an accepted quote copies the sections the client accepted (the version snapshot, not the live draft) as stages, and optionally each line as a task.
+   - The client's portal shows a project only if `share_progress` is on. Even then it shows:
+     - per-stage counts;
+     - diary entries marked shared;
+     - files marked shared.
+
+     It never shows task titles or notes.
+   - Diary photos and files are stored on Bunny under `orgs/{companyId}/photos/` and `orgs/{companyId}/files/` with random names. Files are PDFs or images, checked by their bytes, up to 4 MB, which is Vercel's request limit. Deleting an entry, a file or a project also deletes its files from storage.
+13. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
 
 **Adding a table:**
 - Give it `org_id`, `tenantPolicy(t.orgId)`, `.enableRLS()`, and a `unique(org_id, id)` if anything references it.

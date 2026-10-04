@@ -78,6 +78,13 @@
       "when": 1791070750649,
       "tag": "0010_variation_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791072676991,
+      "tag": "0011_projects",
+      "breakpoints": true
     }
   ]
 }
