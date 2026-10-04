@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LiveAppShell } from "@/components/app/live-app-shell";
 import { ProjectFiles } from "@/components/app/projects/project-files";
-import { PROJECT_VIEWS, ProjectHeader, type ProjectView } from "@/components/app/projects/project-header";
+import { ProjectHeader } from "@/components/app/projects/project-header";
+import { PROJECT_VIEWS, type ProjectView } from "@/components/app/projects/types";
 import { ProjectOverview } from "@/components/app/projects/project-overview";
 import { SiteDiary } from "@/components/app/projects/site-diary";
 import { TasksWorkspace } from "@/components/app/projects/tasks-workspace";
@@ -12,7 +13,7 @@ import { quoteRef } from "@/core/quote";
 import { can } from "@/core/roles";
 import { id as uuid } from "@/core/schemas";
 import { clientOptions } from "@/db/clients";
-import { assignableMembers, getProject, listDiary, listFiles, projectMoney } from "@/db/projects";
+import { assignableMembers, assignableWorkers, getProject, listDiary, listFiles, projectMoney } from "@/db/projects";
 import { requirePermission, withSession } from "@/auth/session";
 import { publicUrl, storageConfigured } from "@/server/storage";
 
@@ -35,6 +36,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
     return {
       found,
       members: await assignableMembers(tx, session.orgId),
+      workers: await assignableWorkers(tx, session.orgId),
       clients: canEdit ? await clientOptions(tx, session.orgId, found.project.clientId) : [],
       diary: await listDiary(tx, session.orgId, id),
       files: await listFiles(tx, session.orgId, id),
@@ -74,7 +76,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
         />
       )}
       {(view === "board" || view === "list" || view === "timeline") && (
-        <TasksWorkspace view={view} projectId={p.id} tasks={tasks} phases={found.phases} members={data.members} today={today} canEdit={canEdit} projectStart={p.startDate} projectEnd={p.endDate} />
+        <TasksWorkspace view={view} projectId={p.id} tasks={tasks} phases={found.phases} workers={data.workers} today={today} canEdit={canEdit} projectStart={p.startDate} projectEnd={p.endDate} />
       )}
       {view === "diary" && (
         <SiteDiary

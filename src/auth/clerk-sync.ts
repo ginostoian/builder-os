@@ -14,6 +14,7 @@ import { companyName } from "@/core/clerk";
 import type { Role } from "@/core/roles";
 import { findOrgByClerkId, findOrgsForClerkUser, withTenant } from "@/db";
 import { members, organizations } from "@/db/schema";
+import { ensureWorkerForMember } from "@/db/team";
 
 /** Time for writes that should only fill gaps, never overwrite synced data. */
 export const FILL_ONLY = new Date(0);
@@ -115,9 +116,11 @@ export async function syncMember(member: MemberSnapshot): Promise<string | null>
         setWhere: newerThanSynced(members.clerkSyncedAt, member.at),
       });
     const [row] = await tx
-      .select({ id: members.id })
+      .select({ id: members.id, name: members.name, email: members.email, active: members.active })
       .from(members)
       .where(and(eq(members.orgId, orgId), eq(members.clerkUserId, member.clerkUserId)));
+    // Everyone with a login is on the team (Team page, task assignment, site app).
+    if (row?.active) await ensureWorkerForMember(tx, orgId, row);
     return row?.id ?? null;
   });
 }

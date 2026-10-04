@@ -9,9 +9,9 @@ import { MAX_DIARY_PHOTOS, MAX_PHASES_PER_PROJECT, MAX_TASKS_PER_PROJECT, type T
 import type { QuoteSnapshot } from "@/core/quote-snapshot";
 import type { DiaryInput, ProjectInput, TaskInput } from "@/core/schemas";
 import type { Tx } from "./index";
-import { clients, invoices, members, projectDiary, projectFiles, projectPhases, projectTasks, projects, quoteDecisions, quoteVersions, quotes, variations } from "./schema";
+import { clients, invoices, members, workers, projectDiary, projectFiles, projectPhases, projectTasks, projects, quoteDecisions, quoteVersions, quotes, variations } from "./schema";
 
-export type ProjectErrorReason = "not_found" | "not_accepted" | "exists" | "unknown_client" | "unknown_member" | "unknown_phase" | "too_many" | "too_many_photos";
+export type ProjectErrorReason = "not_found" | "not_accepted" | "exists" | "unknown_client" | "unknown_member" | "unknown_worker" | "unknown_phase" | "too_many" | "too_many_photos";
 
 export class ProjectError extends Error {
   constructor(
@@ -37,9 +37,24 @@ async function assertMember(tx: Tx, orgId: string, memberId: string | undefined)
   if (!m) throw new ProjectError("unknown_member");
 }
 
-/** The team members a task or project can be given to. */
+/** People with a login, who can run a project. */
 export async function assignableMembers(tx: Tx, orgId: string) {
   return tx.select({ id: members.id, name: members.name, role: members.role }).from(members).where(and(eq(members.orgId, orgId), eq(members.active, true))).orderBy(asc(members.name));
+}
+
+/** Everyone a task can be given to: the current team, with or without a login. */
+export async function assignableWorkers(tx: Tx, orgId: string) {
+  return tx
+    .select({ id: workers.id, name: workers.name, trade: workers.trade, kind: workers.kind })
+    .from(workers)
+    .where(and(eq(workers.orgId, orgId), isNull(workers.archivedAt)))
+    .orderBy(asc(workers.name));
+}
+
+async function assertWorker(tx: Tx, orgId: string, workerId: string | undefined) {
+  if (!workerId) return;
+  const [w] = await tx.select({ id: workers.id }).from(workers).where(and(eq(workers.orgId, orgId), eq(workers.id, workerId), isNull(workers.archivedAt)));
+  if (!w) throw new ProjectError("unknown_worker");
 }
 
 export async function createProject(tx: Tx, orgId: string, input: ProjectInput, memberId: string): Promise<string> {
@@ -211,15 +226,15 @@ export async function getProject(tx: Tx, orgId: string, projectId: string) {
       notes: projectTasks.notes,
       status: projectTasks.status,
       position: projectTasks.position,
-      assigneeMemberId: projectTasks.assigneeMemberId,
-      assigneeName: members.name,
+      workerId: projectTasks.workerId,
+      workerName: workers.name,
       trade: projectTasks.trade,
       startDate: projectTasks.startDate,
       dueDate: projectTasks.dueDate,
       completedAt: projectTasks.completedAt,
     })
     .from(projectTasks)
-    .leftJoin(members, and(eq(members.orgId, projectTasks.orgId), eq(members.id, projectTasks.assigneeMemberId)))
+    .leftJoin(workers, and(eq(workers.orgId, projectTasks.orgId), eq(workers.id, projectTasks.workerId)))
     .where(and(eq(projectTasks.orgId, orgId), eq(projectTasks.projectId, projectId)))
     .orderBy(asc(projectTasks.position), asc(projectTasks.createdAt));
   return { ...row, phases, tasks };
@@ -324,7 +339,7 @@ const doneAt = (status: TaskStatus) => (status === "done" ? sql`coalesce(${proje
 export async function addTask(tx: Tx, orgId: string, input: TaskInput, memberId: string): Promise<string> {
   await assertProject(tx, orgId, input.projectId);
   await assertPhase(tx, orgId, input.projectId, input.phaseId);
-  await assertMember(tx, orgId, input.assigneeMemberId);
+  await assertWorker(tx, orgId, input.workerId);
   const [{ n, next }] = await tx
     .select({ n: count(), next: sql<number>`coalesce(max(${projectTasks.position}), -1) + 1`.mapWith(Number) })
     .from(projectTasks)
@@ -340,7 +355,7 @@ export async function addTask(tx: Tx, orgId: string, input: TaskInput, memberId:
       notes: input.notes || null,
       status: input.status,
       position: next,
-      assigneeMemberId: input.assigneeMemberId ?? null,
+      workerId: input.workerId ?? null,
       trade: input.trade ?? null,
       startDate: input.startDate ?? null,
       dueDate: input.dueDate ?? null,
@@ -353,7 +368,7 @@ export async function addTask(tx: Tx, orgId: string, input: TaskInput, memberId:
 
 export async function updateTask(tx: Tx, orgId: string, taskId: string, input: TaskInput) {
   await assertPhase(tx, orgId, input.projectId, input.phaseId);
-  await assertMember(tx, orgId, input.assigneeMemberId);
+  await assertWorker(tx, orgId, input.workerId);
   const rows = await tx
     .update(projectTasks)
     .set({
@@ -361,7 +376,7 @@ export async function updateTask(tx: Tx, orgId: string, taskId: string, input: T
       title: input.title,
       notes: input.notes || null,
       status: input.status,
-      assigneeMemberId: input.assigneeMemberId ?? null,
+      workerId: input.workerId ?? null,
       trade: input.trade ?? null,
       startDate: input.startDate ?? null,
       dueDate: input.dueDate ?? null,

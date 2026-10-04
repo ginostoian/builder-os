@@ -34,6 +34,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { MAX_MARKUP_BPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, TEXT } from "../core/limits";
 import { MAX_DIARY_PHOTOS, PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "../core/projects";
+import { WORKER_KINDS } from "../core/team";
 import { MAX_VARIATION_PHOTOS, VARIATION_STATUSES, type VariationLine, type VariationPhoto } from "../core/variation";
 import { LINE_KINDS, QUOTE_STATUSES, ROLES, SERVICE_KINDS, type Address, type PaymentPlanInput } from "../core/schemas";
 
@@ -640,6 +641,76 @@ export const variations = pgTable(
   ],
 ).enableRLS();
 
+// ── Team ──────────────────────────────────────────────────────────────────────
+
+export const workerKind = pgEnum("worker_kind", WORKER_KINDS);
+
+/**
+ * Everyone who works for the company, with or without a login. A worker linked to a member (`member_id`)
+ * can use the site app; others are listed and assigned work by the office. Logins get a worker
+ * automatically when they join (src/auth/clerk-sync.ts).
+ */
+export const workers = pgTable(
+  "workers",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    memberId: uuid("member_id"),
+    name: text("name").notNull(),
+    kind: workerKind("kind").notNull().default("employee"),
+    trade: text("trade"),
+    phone: text("phone"),
+    email: text("email"),
+    /** Cost per day, for job costing. Only roles that see costs see it. */
+    dayRatePence: integer("day_rate_pence"),
+    startedOn: date("started_on"),
+    emergencyName: text("emergency_name"),
+    emergencyPhone: text("emergency_phone"),
+    notes: text("notes"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    pgPolicy("cert_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
+    unique("workers_org_id_id_key").on(t.orgId, t.id),
+    uniqueIndex("workers_one_per_member").on(t.orgId, t.memberId).where(sql`${t.memberId} is not null`),
+    foreignKey({ name: "workers_member_fk", columns: [t.orgId, t.memberId], foreignColumns: [members.orgId, members.id] }),
+    len("workers_name_len", t.name, TEXT.name),
+    len("workers_trade_len", t.trade, TEXT.short),
+    len("workers_phone_len", t.phone, TEXT.phone),
+    len("workers_email_len", t.email, TEXT.email),
+    len("workers_emergency_name_len", t.emergencyName, TEXT.name),
+    len("workers_emergency_phone_len", t.emergencyPhone, TEXT.phone),
+    len("workers_notes_len", t.notes, TEXT.note, 0),
+    between("workers_day_rate_range", t.dayRatePence, 0, MAX_RATE_PENCE),
+  ],
+).enableRLS();
+
+/** A card, ticket or registration with an expiry date (CSCS, Gas Safe…). Office is reminded before expiry. */
+export const workerCertificates = pgTable(
+  "worker_certificates",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    workerId: uuid("worker_id").notNull(),
+    name: text("name").notNull(),
+    reference: text("reference"),
+    expiresOn: date("expires_on"),
+    /** When the "expiring soon" email went out (once per certificate; cleared when the date changes). */
+    remindedAt: timestamp("reminded_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    pgPolicy("cert_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
+    foreignKey({ name: "worker_certificates_worker_fk", columns: [t.orgId, t.workerId], foreignColumns: [workers.orgId, workers.id] }).onDelete("cascade"),
+    index("worker_certificates_expiry_idx").on(t.orgId, t.expiresOn),
+    len("worker_certificates_name_len", t.name, TEXT.name),
+    len("worker_certificates_reference_len", t.reference, TEXT.short),
+  ],
+).enableRLS();
+
 // ── Projects ──────────────────────────────────────────────────────────────────
 
 export const projectStatus = pgEnum("project_status", PROJECT_STATUSES);
@@ -713,7 +784,8 @@ export const projectTasks = pgTable(
     notes: text("notes"),
     status: taskStatus("status").notNull().default("todo"),
     position: integer("position").notNull().default(0),
-    assigneeMemberId: uuid("assignee_member_id"),
+    /** Who does it: anyone on the team, with or without a login. */
+    workerId: uuid("worker_id"),
     /** Who does it when it isn't one of the team, e.g. "Electrician" or a subcontractor's name. */
     trade: text("trade"),
     startDate: date("start_date"),
@@ -728,7 +800,8 @@ export const projectTasks = pgTable(
     foreignKey({ name: "project_tasks_project_fk", columns: [t.orgId, t.projectId], foreignColumns: [projects.orgId, projects.id] }).onDelete("cascade"),
     // The stage must belong to the same project.
     foreignKey({ name: "project_tasks_phase_fk", columns: [t.orgId, t.projectId, t.phaseId], foreignColumns: [projectPhases.orgId, projectPhases.projectId, projectPhases.id] }),
-    foreignKey({ name: "project_tasks_assignee_fk", columns: [t.orgId, t.assigneeMemberId], foreignColumns: [members.orgId, members.id] }),
+    foreignKey({ name: "project_tasks_worker_fk", columns: [t.orgId, t.workerId], foreignColumns: [workers.orgId, workers.id] }),
+    index("project_tasks_worker_idx").on(t.orgId, t.workerId),
     foreignKey({ name: "project_tasks_created_by_fk", columns: [t.orgId, t.createdByMemberId], foreignColumns: [members.orgId, members.id] }),
     index("project_tasks_project_idx").on(t.orgId, t.projectId, t.status, t.position),
     len("project_tasks_title_len", t.title, TEXT.line),
@@ -788,5 +861,36 @@ export const projectFiles = pgTable(
     index("project_files_project_idx").on(t.orgId, t.projectId),
     len("project_files_name_len", t.name, TEXT.name),
     check("project_files_size", sql`${t.sizeBytes} > 0`),
+  ],
+).enableRLS();
+
+/**
+ * A worker on site: checked in (time and, if the phone allows, location) and checked out. One open visit
+ * per worker at a time. These make the timesheets.
+ */
+export const siteVisits = pgTable(
+  "site_visits",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    workerId: uuid("worker_id").notNull(),
+    projectId: uuid("project_id").notNull(),
+    checkedInAt: timestamp("checked_in_at", { withTimezone: true }).notNull().defaultNow(),
+    checkedOutAt: timestamp("checked_out_at", { withTimezone: true }),
+    inLat: numeric("in_lat", { precision: 9, scale: 6 }),
+    inLng: numeric("in_lng", { precision: 9, scale: 6 }),
+    outLat: numeric("out_lat", { precision: 9, scale: 6 }),
+    outLng: numeric("out_lng", { precision: 9, scale: 6 }),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    uniqueIndex("site_visits_one_open").on(t.orgId, t.workerId).where(sql`${t.checkedOutAt} is null`),
+    foreignKey({ name: "site_visits_worker_fk", columns: [t.orgId, t.workerId], foreignColumns: [workers.orgId, workers.id] }).onDelete("cascade"),
+    foreignKey({ name: "site_visits_project_fk", columns: [t.orgId, t.projectId], foreignColumns: [projects.orgId, projects.id] }).onDelete("cascade"),
+    index("site_visits_worker_idx").on(t.orgId, t.workerId, t.checkedInAt),
+    check("site_visits_out_after_in", sql`${t.checkedOutAt} is null or ${t.checkedOutAt} >= ${t.checkedInAt}`),
+    check("site_visits_lat", sql`${t.inLat} is null or ${t.inLat} between -90 and 90`),
+    check("site_visits_lng", sql`${t.inLng} is null or ${t.inLng} between -180 and 180`),
   ],
 ).enableRLS();

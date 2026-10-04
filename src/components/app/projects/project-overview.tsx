@@ -206,7 +206,7 @@ function TaskLine({ task, today, href }: { task: Task; today: string; href: stri
       <Link href={href} className="flex items-center gap-3 border-b border-muted py-2 last:border-0 hover:bg-surface-2">
         <span className="min-w-0 flex-1">
           <span className="block truncate">{task.title}</span>
-          {(task.assigneeName || task.trade) && <span className="block truncate text-[11.5px] text-subtle">{[task.assigneeName, task.trade].filter(Boolean).join(" · ")}</span>}
+          {(task.workerName || task.trade) && <span className="block truncate text-[11.5px] text-subtle">{[task.workerName, task.trade].filter(Boolean).join(" · ")}</span>}
         </span>
         {late ? (
           <span className="flex items-center gap-1 text-[12px] font-medium text-danger">

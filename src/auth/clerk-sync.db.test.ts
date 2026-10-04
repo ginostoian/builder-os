@@ -9,6 +9,7 @@ import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDb, findOrgByClerkId, findOrgsForClerkUser, withTenant } from "@/db";
 import { members, organizations } from "@/db/schema";
+import { listWorkers } from "@/db/team";
 import { appUrl } from "@/test/db-urls";
 import { FILL_ONLY, deactivateUser, deleteOrganization, syncMember, syncOrganization, syncUserProfile, type MemberSnapshot } from "./clerk-sync";
 import { handleClerkEvent } from "./clerk-webhook";
@@ -66,11 +67,12 @@ describe("lookups", () => {
     const fns = await raw<{ name: string; owner: string; definer: boolean }[]>`
       select p.proname as name, r.rolname as owner, p.prosecdef as definer
       from pg_proc p join pg_roles r on r.oid = p.proowner
-      where p.proname in ('app_org_for_clerk', 'app_orgs_for_clerk_user', 'app_orgs_with_due_invoices', 'app_portal_lookup') order by 1`;
+      where p.proname in ('app_org_for_clerk', 'app_orgs_for_clerk_user', 'app_orgs_with_due_invoices', 'app_orgs_with_expiring_certificates', 'app_portal_lookup') order by 1`;
     expect(fns).toEqual([
       { name: "app_org_for_clerk", owner: "builderos_lookup", definer: true },
       { name: "app_orgs_for_clerk_user", owner: "builderos_lookup", definer: true },
       { name: "app_orgs_with_due_invoices", owner: "builderos_lookup", definer: true },
+      { name: "app_orgs_with_expiring_certificates", owner: "builderos_lookup", definer: true },
       { name: "app_portal_lookup", owner: "builderos_lookup", definer: true },
     ]);
     const visible = await raw<{ table: string; column: string }[]>`
@@ -94,6 +96,13 @@ describe("lookups", () => {
       { table: "portal_access", column: "org_id" },
       { table: "portal_access", column: "revoked_at" },
       { table: "portal_access", column: "token" },
+      { table: "worker_certificates", column: "expires_on" },
+      { table: "worker_certificates", column: "org_id" },
+      { table: "worker_certificates", column: "reminded_at" },
+      { table: "worker_certificates", column: "worker_id" },
+      { table: "workers", column: "archived_at" },
+      { table: "workers", column: "id" },
+      { table: "workers", column: "org_id" },
     ]);
   });
 });
@@ -148,6 +157,10 @@ describe("members", () => {
     const memberId = await syncMember(memberSnapshot(clerkOrgId, clerkUserId));
     const orgId = (await findOrgByClerkId(clerkOrgId))!.id;
     expect(await member(orgId, clerkUserId)).toMatchObject({ id: memberId, role: "estimator", name: "Dan Hale", active: true });
+    // Everyone with a login is on the team, once, however many times the membership is synced.
+    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { at: new Date(Date.now() + 1_000) }));
+    const team = await withTenant(orgId, (tx) => listWorkers(tx, orgId, { today: "2026-10-05" }));
+    expect(team.map((w) => [w.name, w.memberId])).toEqual([["Dan Hale", memberId]]);
   });
 
   it("orders role changes and removal by Clerk time", async () => {

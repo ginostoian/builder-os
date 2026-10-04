@@ -10,11 +10,13 @@ export const appRoutes = {
   payments: "/app/payments",
   clients: "/app/clients",
   settings: "/app/settings",
+  /** Logins and roles (Clerk). The people list is `people`. */
   team: "/app/settings/team",
+  people: "/app/team",
   paymentSettings: "/app/settings/payments",
   clientQuote: "/q/hale-sons/1042",
   employee: "/m",
 } as const;
 
-export type AdminScreen = "dashboard" | "quote" | "templates" | "variations" | "board" | "invoices" | "crm" | "settings";
-export type ScreenId = Exclude<AdminScreen, "settings" | "variations"> | "client" | "mobile";
+export type AdminScreen = "dashboard" | "quote" | "templates" | "variations" | "board" | "invoices" | "crm" | "people" | "settings";
+export type ScreenId = Exclude<AdminScreen, "settings" | "variations" | "people"> | "client" | "mobile";

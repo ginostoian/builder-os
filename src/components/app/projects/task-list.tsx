@@ -179,7 +179,7 @@ function PhaseGroup({
               </button>
               <button type="button" onClick={() => onOpen(t)} className="min-w-0 flex-1 text-left">
                 <span className={cn("block truncate", t.status === "done" && "text-subtle line-through decoration-faint-2")}>{t.title}</span>
-                {(t.assigneeName || t.trade) && <span className="block truncate text-[11.5px] text-subtle">{[t.assigneeName, t.trade].filter(Boolean).join(" · ")}</span>}
+                {(t.workerName || t.trade) && <span className="block truncate text-[11.5px] text-subtle">{[t.workerName, t.trade].filter(Boolean).join(" · ")}</span>}
               </button>
               <span className={cn("w-[120px] flex-none text-right text-[12px] tabular", late ? "font-medium text-danger" : "text-subtle")}>
                 {t.startDate && t.dueDate && t.startDate !== t.dueDate ? `${shortDay(t.startDate)} – ${shortDay(t.dueDate)}` : t.dueDate ? shortDay(t.dueDate) : t.startDate ? `from ${shortDay(t.startDate)}` : ""}

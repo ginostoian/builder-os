@@ -104,7 +104,7 @@ export function TaskTimeline({
                       <div key={t.id} className="relative flex h-9 items-center border-b border-muted">
                         <button type="button" onClick={() => onOpen(t)} className="sticky left-0 z-10 flex h-full flex-none flex-col justify-center truncate border-r border-hairline bg-white px-4 pl-6 text-left hover:bg-surface-2" style={{ width: LABEL }}>
                           <span className={cn("truncate text-[12.5px]", t.status === "done" && "text-subtle line-through decoration-faint-2")}>{t.title}</span>
-                          {(t.assigneeName || t.trade) && <span className="truncate text-[11px] text-subtle">{[t.assigneeName, t.trade].filter(Boolean).join(" · ")}</span>}
+                          {(t.workerName || t.trade) && <span className="truncate text-[11px] text-subtle">{[t.workerName, t.trade].filter(Boolean).join(" · ")}</span>}
                         </button>
                         <button
                           type="button"

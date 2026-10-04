@@ -25,6 +25,8 @@ Code: `src/server/email.ts` (sending), `src/server/notify.ts` (team alerts), `sr
 
 Clients get an email about an unpaid invoice 3 days before it's due, on the day, then 3 and 7 days late. Each reminder goes out once at most. Reminders stop when the invoice is marked paid or cancelled, and a company can switch them off in Settings → Payments.
 
+The same daily job also emails admins and office about team certificates (CSCS, Gas Safe, insurance) that expire within 30 days or have already expired. Each certificate is mentioned once, until its date changes.
+
 1. Generate a long random secret: `openssl rand -hex 32`.
 2. In Vercel (Production only), set `CRON_SECRET` to it. Vercel Cron sends it as `Authorization: Bearer …`.
 3. Email must be set up as above. Without `CRON_SECRET`, `/api/cron/reminders` answers 503.

@@ -12,17 +12,8 @@ import { PROJECT_STATUSES, PROJECT_STATUS_LABEL, type ProjectStatus } from "@/co
 import type { Address } from "@/core/schemas";
 import { cn } from "@/lib/utils";
 import { ProjectForm, type ProjectFormValues } from "./project-form";
-import { PROJECT_TONE, shortDay, type Member } from "./types";
+import { PROJECT_TONE, PROJECT_VIEWS, shortDay, type Member, type ProjectView } from "./types";
 
-export const PROJECT_VIEWS = [
-  { key: "overview", label: "Overview" },
-  { key: "board", label: "Board" },
-  { key: "list", label: "List" },
-  { key: "timeline", label: "Timeline" },
-  { key: "diary", label: "Site diary" },
-  { key: "files", label: "Files" },
-] as const;
-export type ProjectView = (typeof PROJECT_VIEWS)[number]["key"];
 
 const STATUS_STYLE: Record<string, string> = {
   blue: "bg-info-soft text-info",

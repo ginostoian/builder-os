@@ -10,7 +10,7 @@ import { TaskBoard } from "./task-board";
 import { TaskDialog, type TaskDraft } from "./task-dialog";
 import { TaskList } from "./task-list";
 import { TaskTimeline } from "./task-timeline";
-import type { Member, Phase, Task } from "./types";
+import type { Phase, Task, Worker } from "./types";
 
 type Change = { kind: "status"; id: string; status: TaskStatus; order?: string[] };
 
@@ -23,7 +23,7 @@ export function TasksWorkspace({
   projectId,
   tasks,
   phases,
-  members,
+  workers,
   today,
   canEdit,
   projectStart,
@@ -33,7 +33,7 @@ export function TasksWorkspace({
   projectId: string;
   tasks: Task[];
   phases: Phase[];
-  members: Member[];
+  workers: Worker[];
   today: string;
   canEdit: boolean;
   projectStart: string | null;
@@ -125,7 +125,7 @@ export function TasksWorkspace({
         />
       )}
       {view === "timeline" && <TaskTimeline tasks={shown} phases={phases} today={today} projectStart={projectStart} projectEnd={projectEnd} onOpen={setEditing} />}
-      <TaskDialog projectId={projectId} phases={phases} members={members} task={canEdit ? editing : null} onClose={() => setEditing(null)} onSaved={() => router.refresh()} />
+      <TaskDialog projectId={projectId} phases={phases} workers={workers} task={canEdit ? editing : null} onClose={() => setEditing(null)} onSaved={() => router.refresh()} />
     </div>
   );
 }
