@@ -6,6 +6,8 @@ import { LiveAppShell } from "@/components/app/live-app-shell";
 import { Panel } from "@/components/app/app-shell";
 import { ArchivePanel } from "@/components/app/archive-panel";
 import { PortalLinkPanel } from "@/components/app/clients/portal-link";
+import { getPortalSignIn, portalDevices } from "@/db/portal-auth";
+import { emailConfigured } from "@/server/email";
 import { ClientForm } from "@/components/app/clients/client-form";
 import { SectionHeading } from "@/components/app/form-fields";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +38,8 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
         quoteCount: await countClientQuotes(tx, session.orgId, id),
         // Quote totals are prices, so only roles that work on quotes see them.
         clientQuotes: can(session.role, "quotes.edit") ? (await listQuotes(tx, session.orgId, { clientId: id })).quotes : [],
+        portalSignIn: await getPortalSignIn(tx, session.orgId),
+        portalDevices: (await portalDevices(tx, session.orgId, id)).length,
       }
     );
   });
@@ -112,7 +116,14 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
               )}
               <p className="text-[12px] text-subtle">Added {dateFormat.format(client.createdAt)}</p>
             </Panel>
-            {canQuote && <PortalLinkPanel clientId={client.id} clientName={client.name} canReset={canManage} />}
+            {canQuote && (
+              <PortalLinkPanel
+                clientId={client.id}
+                clientName={client.name}
+                canReset={canManage}
+                security={{ on: found.portalSignIn && emailConfigured(), hasEmail: Boolean(client.email), devices: found.portalDevices }}
+              />
+            )}
             {canManage && (
               <ArchivePanel
                 noun="client"

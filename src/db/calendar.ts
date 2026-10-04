@@ -6,7 +6,7 @@ import "server-only";
 import { and, asc, eq, gte, isNotNull, lte, ne, or, sql } from "drizzle-orm";
 import type { TaskStatus } from "@/core/projects";
 import type { Tx } from "./index";
-import { leads, projectTasks, projects, workers } from "./schema";
+import { leads, members, projectTasks, projects, surveyBookings, workers } from "./schema";
 
 export type CalendarKind = "visit" | "task" | "job_start" | "job_end";
 export type CalendarItem = {
@@ -32,12 +32,14 @@ export async function calendarItems(tx: Tx, orgId: string, from: string, to: str
   if (opts.leads && !opts.workerId) {
     const day = sql<string>`to_char(${leads.visitAt} at time zone 'Europe/London', 'YYYY-MM-DD')`;
     const rows = await tx
-      .select({ id: leads.id, name: leads.name, postcode: leads.postcode, projectType: leads.projectType, day, time: sql<string>`to_char(${leads.visitAt} at time zone 'Europe/London', 'HH24:MI')` })
+      .select({ id: leads.id, name: leads.name, postcode: leads.postcode, projectType: leads.projectType, day, time: sql<string>`to_char(${leads.visitAt} at time zone 'Europe/London', 'HH24:MI')`, surveyor: members.name })
       .from(leads)
+      .leftJoin(surveyBookings, and(eq(surveyBookings.orgId, leads.orgId), eq(surveyBookings.leadId, leads.id), eq(surveyBookings.status, "booked")))
+      .leftJoin(members, and(eq(members.orgId, surveyBookings.orgId), eq(members.id, surveyBookings.memberId)))
       .where(and(eq(leads.orgId, orgId), isNotNull(leads.visitAt), gte(day, from), lte(day, to), ne(leads.stage, "lost")))
       .orderBy(asc(leads.visitAt));
     for (const r of rows)
-      items.push({ key: `v:${r.id}`, kind: "visit", day: r.day, time: r.time, title: `Survey: ${r.name}`, detail: [r.projectType, r.postcode].filter(Boolean).join(" · ") || null, href: `/app/pipeline/${r.id}`, workerId: null, worker: null, status: null, end: null });
+      items.push({ key: `v:${r.id}`, kind: "visit", day: r.day, time: r.time, title: `Survey: ${r.name}`, detail: [r.projectType, r.postcode].filter(Boolean).join(" · ") || null, href: `/app/pipeline/${r.id}`, workerId: null, worker: r.surveyor, status: null, end: null });
   }
 
   const inRange = (col: typeof projectTasks.startDate | typeof projectTasks.dueDate) => and(gte(col, from), lte(col, to));

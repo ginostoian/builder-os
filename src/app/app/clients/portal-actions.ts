@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { can } from "@/core/roles";
 import { id } from "@/core/schemas";
+import { signOutEverywhere } from "@/db/portal-auth";
 import { ensurePortalToken, rotatePortalToken } from "@/db/sending";
 import { getSession, withSession } from "@/auth/session";
 import { appOrigin, portalUrl } from "@/server/origin";
@@ -26,4 +27,14 @@ export async function resetPortalLink(clientId: string): Promise<PortalLinkResul
   const token = await withSession(session, (tx) => rotatePortalToken(tx, session.orgId, clientId));
   revalidatePath(`/app/clients/${clientId}`);
   return { ok: true, link: portalUrl(await appOrigin(), token) };
+}
+
+/** Sign the client out of the portal on every device (a shared computer, a forwarded email). */
+export async function signOutEverywhereAction(clientId: string): Promise<{ ok: true; count: number } | { ok: false; message: string }> {
+  const session = await getSession();
+  if (!can(session.role, "clients.manage")) return { ok: false, message: "Your role can't sign clients out." };
+  if (!id.safeParse(clientId).success) return { ok: false, message: "This client no longer exists." };
+  const count = await withSession(session, (tx) => signOutEverywhere(tx, session.orgId, clientId));
+  revalidatePath(`/app/clients/${clientId}`);
+  return { ok: true, count };
 }

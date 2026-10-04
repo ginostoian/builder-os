@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Globe, Phone, Search, Workflow } from "lucide-react";
+import { CalendarCheck2, Globe, Phone, Search, Workflow } from "lucide-react";
 import { LiveAppShell } from "@/components/app/live-app-shell";
 import { Panel, ScreenTitle } from "@/components/app/app-shell";
 import { AddLeadButton } from "@/components/app/pipeline/add-lead-button";
@@ -97,6 +97,12 @@ export default async function PipelinePage({ searchParams }: { searchParams: Pro
                   <Link href="/app/pipeline/form">
                     <Globe />
                     Web form
+                  </Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href="/app/pipeline/surveys">
+                    <CalendarCheck2 />
+                    Online booking
                   </Link>
                 </Button>
                 <Button asChild variant="secondary">

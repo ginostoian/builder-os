@@ -516,3 +516,43 @@ export const enquiryInput = z.strictObject({
 
 /** A one-off email to a lead from their page. */
 export const leadEmailInput = z.strictObject({ subject: singleLine(TEXT.line), body: multiLine(4_000).pipe(z.string().min(1, "Write the email")) });
+
+// ── Survey booking ───────────────────────────────────────────────────────────
+
+export const surveySettingsInput = z.strictObject({
+  enabled: z.boolean(),
+  visitMinutes: z.int().min(15).max(480),
+  bufferMinutes: z.int().min(0).max(240),
+  minNoticeHours: z.int().min(0).max(336),
+  maxDaysAhead: z.int().min(1).max(90),
+  postcodes: z.array(z.string().regex(/^[A-Z]{1,2}(\d[A-Z\d]?)?$/)).max(100),
+});
+
+/** One person's week: windows in minutes past midnight, UK time. No overlaps within a day. */
+export const surveyHoursInput = z.strictObject({
+  memberId: id,
+  windows: z
+    .array(z.strictObject({ weekday: z.int().min(1).max(7), startMinute: z.int().min(0).max(1439), endMinute: z.int().min(1).max(1440) }))
+    .max(28)
+    .refine((ws) => ws.every((w) => w.startMinute < w.endMinute), "Each window must end after it starts")
+    .refine(
+      (ws) => ws.every((a, i) => ws.every((b, j) => i === j || a.weekday !== b.weekday || a.endMinute <= b.startMinute || b.endMinute <= a.startMinute)),
+      "Two windows on the same day overlap",
+    ),
+});
+
+/** The office books or moves a visit. */
+export const bookSurveyInput = z.strictObject({
+  startsAt: z.iso.datetime({ offset: true }),
+  memberId: id.nullable(),
+  minutes: z.int().min(15).max(480).optional(),
+  emailClient: z.boolean(),
+});
+
+/** The client books online. */
+export const clientBookingInput = z.strictObject({
+  startsAt: z.iso.datetime({ offset: true }),
+  phone: phone.optional(),
+  addressLine: singleLine(TEXT.line).optional(),
+  postcode: singleLine(12).optional(),
+});

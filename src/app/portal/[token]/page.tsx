@@ -6,7 +6,10 @@ import { CompanyMark } from "@/components/portal/quote-document";
 import { longDate } from "@/core/quote-snapshot";
 import { formatGBP } from "@/core/money";
 import { quoteRef } from "@/core/quote";
-import { findPortalAccess, withTenant } from "@/db";
+import { withTenant } from "@/db";
+import { PortalBlocked } from "@/components/portal/portal-gate";
+import { portalGate } from "@/server/portal-auth";
+import { PortalSignOut } from "@/components/portal/sign-out-button";
 import { portalHeader, portalQuotes } from "@/db/portal";
 import { portalInvoices } from "@/db/invoices";
 import { portalVariations } from "@/db/variations";
@@ -44,8 +47,9 @@ const VARIATION_BADGE: Record<string, { label: string; className: string }> = {
 /** The client's portal home: every quote they've been sent by this company. */
 export default async function PortalHome({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const access = await findPortalAccess(token);
-  if (!access) notFound();
+  const gate = await portalGate(token);
+  if (gate?.state !== "open") return <PortalBlocked token={token} />;
+  const access = gate.access;
   const data = await withTenant(access.orgId, async (tx) => {
     const header = await portalHeader(tx, access.orgId, access.clientId);
     return header && { ...header, quotes: await portalQuotes(tx, access.orgId, access.clientId), invoices: await portalInvoices(tx, access.orgId, access.clientId), variations: await portalVariations(tx, access.orgId, access.clientId), projects: await portalProjects(tx, access.orgId, access.clientId) };
@@ -60,7 +64,8 @@ export default async function PortalHome({ params }: { params: Promise<{ token: 
     <div className="min-h-screen bg-muted font-sans text-[13.5px] text-ink antialiased">
       <header className="flex h-[60px] items-center gap-3 border-b border-hairline bg-white px-4 sm:px-10">
         <CompanyMark company={data.company} />
-        <div className="font-semibold">{company}</div>
+        <div className="flex-1 font-semibold">{company}</div>
+        {gate.signedIn && <PortalSignOut token={token} />}
       </header>
       <main className="mx-auto flex max-w-[720px] flex-col gap-4 px-4 py-8">
         <div>

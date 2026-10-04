@@ -32,6 +32,7 @@ import {
   type PipelineErrorReason,
 } from "@/db/pipeline";
 import { memberEmail } from "@/db/sending";
+import { SurveyError } from "@/db/surveys";
 import { getSession, withSession, type Session } from "@/auth/session";
 import { leadMergeValues, runCompanyAutomations, toParagraphs } from "@/server/automations";
 import { emailConfigured, sendEmail } from "@/server/email";
@@ -60,6 +61,7 @@ async function run(permission: Permission, fn: (s: Session) => Promise<string | 
     result = await fn(session);
   } catch (error) {
     if (error instanceof PipelineError) return { ok: false, message: MESSAGES[error.reason] };
+    if (error instanceof SurveyError) return { ok: false, message: error.reason === "taken" ? "They already have a visit that overlaps this time." : "That visit couldn't be booked." };
     throw error;
   }
   after(() => runCompanyAutomations(session.orgId).catch(() => undefined));
@@ -134,6 +136,7 @@ export async function startQuoteAction(leadId: string): Promise<PipelineActionRe
     quoteId = await withSession(session, (tx) => startQuoteForLead(tx, session.orgId, leadId, session.memberId));
   } catch (error) {
     if (error instanceof PipelineError) return { ok: false, message: MESSAGES[error.reason] };
+    if (error instanceof SurveyError) return { ok: false, message: error.reason === "taken" ? "They already have a visit that overlaps this time." : "That visit couldn't be booked." };
     throw error;
   }
   after(() => runCompanyAutomations(session.orgId).catch(() => undefined));

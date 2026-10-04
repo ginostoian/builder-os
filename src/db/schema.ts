@@ -116,6 +116,8 @@ export const organizations = pgTable(
     paymentTermsDays: integer("payment_terms_days").notNull().default(14),
     /** Email clients about invoices before and after they're due. */
     remindersEnabled: boolean("reminders_enabled").notNull().default(true),
+    /** Ask clients for a code sent to their email the first time they open the portal on a device. */
+    portalSignIn: boolean("portal_sign_in").notNull().default(true),
     /** Clerk event time of the last sync. Webhooks older than this are ignored (Svix can deliver out of order). */
     clerkSyncedAt: timestamp("clerk_synced_at", { withTimezone: true }),
     /** Set when the Clerk organization is deleted. Data is kept for a grace period, then purged (plan §7). */
@@ -197,6 +199,9 @@ export const clients = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    /** "Find my portal" by email (migration 0017); column grants limit it to id, org_id, email, archived_at. */
+    pgPolicy("portal_email_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
+    index("clients_email_lower_idx").on(sql`lower(${t.email})`),
     unique("clients_org_id_id_key").on(t.orgId, t.id),
     foreignKey({ name: "clients_owner_member_fk", columns: [t.orgId, t.ownerMemberId], foreignColumns: [members.orgId, members.id] }),
     index("clients_org_name_idx").on(t.orgId, t.name),
@@ -1177,5 +1182,146 @@ export const notifications = pgTable(
     len("notifications_title_len", t.title, TEXT.line),
     len("notifications_body_len", t.body, 600),
     check("notifications_href_local", sql`${t.href} like '/%' and ${t.href} not like '//%'`),
+  ],
+).enableRLS();
+
+// ── Survey booking (migration 0017) ──────────────────────────────────────────
+
+/** How a company takes survey bookings. One row per company, made when it first saves the settings. */
+export const surveySettings = pgTable(
+  "survey_settings",
+  {
+    orgId: uuid("org_id")
+      .primaryKey()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    /** Clients can book online (web form, booking links in emails). */
+    enabled: boolean("enabled").notNull().default(false),
+    visitMinutes: integer("visit_minutes").notNull().default(60),
+    /** Travel time kept free before and after each visit. */
+    bufferMinutes: integer("buffer_minutes").notNull().default(30),
+    minNoticeHours: integer("min_notice_hours").notNull().default(24),
+    maxDaysAhead: integer("max_days_ahead").notNull().default(21),
+    /** Postcode areas covered (outward-code prefixes such as "LS" or "BD1"). Empty: anywhere. */
+    postcodes: text("postcodes").array().notNull().default(sql`'{}'::text[]`),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    between("survey_settings_visit_range", t.visitMinutes, 15, 480),
+    between("survey_settings_buffer_range", t.bufferMinutes, 0, 240),
+    between("survey_settings_notice_range", t.minNoticeHours, 0, 336),
+    between("survey_settings_ahead_range", t.maxDaysAhead, 1, 90),
+    check("survey_settings_postcodes_max", sql`cardinality(${t.postcodes}) <= 100`),
+  ],
+).enableRLS();
+
+/** When each person does surveys: a weekly window, UK time (weekday 1 = Monday). */
+export const surveyHours = pgTable(
+  "survey_hours",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    memberId: uuid("member_id").notNull(),
+    weekday: integer("weekday").notNull(),
+    startMinute: integer("start_minute").notNull(),
+    endMinute: integer("end_minute").notNull(),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    foreignKey({ name: "survey_hours_member_fk", columns: [t.orgId, t.memberId], foreignColumns: [members.orgId, members.id] }).onDelete("cascade"),
+    index("survey_hours_member_idx").on(t.orgId, t.memberId),
+    between("survey_hours_weekday_range", t.weekday, 1, 7),
+    check("survey_hours_window", sql`${t.startMinute} >= 0 and ${t.endMinute} <= 1440 and ${t.startMinute} < ${t.endMinute}`),
+  ],
+).enableRLS();
+
+export const surveyBookingStatus = pgEnum("survey_booking_status", ["booked", "cancelled"]);
+export const surveyBookedBy = pgEnum("survey_booked_by", ["client", "office"]);
+
+/**
+ * A survey visit to a lead. The lead's `visit_at` mirrors the live booking. An exclusion constraint (custom
+ * SQL in migration 0017) stops one person having two live bookings that overlap.
+ */
+export const surveyBookings = pgTable(
+  "survey_bookings",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    leadId: uuid("lead_id").notNull(),
+    memberId: uuid("member_id"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    status: surveyBookingStatus("status").notNull().default("booked"),
+    bookedBy: surveyBookedBy("booked_by").notNull(),
+    reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    pgPolicy("survey_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
+    foreignKey({ name: "survey_bookings_lead_fk", columns: [t.orgId, t.leadId], foreignColumns: [leads.orgId, leads.id] }).onDelete("cascade"),
+    foreignKey({ name: "survey_bookings_member_fk", columns: [t.orgId, t.memberId], foreignColumns: [members.orgId, members.id] }),
+    uniqueIndex("survey_bookings_one_live_per_lead").on(t.orgId, t.leadId).where(sql`${t.status} = 'booked'`),
+    index("survey_bookings_member_time_idx").on(t.orgId, t.memberId, t.startsAt),
+    index("survey_bookings_reminder_idx").on(t.startsAt).where(sql`${t.status} = 'booked' and ${t.reminderSentAt} is null`),
+    check("survey_bookings_times", sql`${t.endsAt} > ${t.startsAt} and ${t.endsAt} <= ${t.startsAt} + interval '8 hours'`),
+    check("survey_bookings_cancelled", sql`(${t.status} = 'cancelled') = (${t.cancelledAt} is not null)`),
+  ],
+).enableRLS();
+
+// ── Client portal sign-in (migration 0017) ───────────────────────────────────
+
+/**
+ * A device a client has signed in on: a random secret in an httpOnly cookie, stored here as its SHA-256.
+ * Tied to one portal link, so resetting the link signs everyone out.
+ */
+export const portalSessions = pgTable(
+  "portal_sessions",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    accessId: uuid("access_id").notNull(),
+    secretHash: text("secret_hash").notNull().unique(),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    foreignKey({ name: "portal_sessions_access_fk", columns: [t.orgId, t.accessId], foreignColumns: [portalAccess.orgId, portalAccess.id] }).onDelete("cascade"),
+    index("portal_sessions_access_idx").on(t.orgId, t.accessId),
+    check("portal_sessions_hash_format", sql`${t.secretHash} ~ '^[0-9a-f]{64}$'`),
+    len("portal_sessions_user_agent_len", t.userAgent, 300, 0),
+  ],
+).enableRLS();
+
+export const portalCodeKind = pgEnum("portal_code_kind", ["code", "link"]);
+
+/**
+ * One-time proofs that someone can read the client's email: a 6-digit code typed in, or a sign-in link.
+ * Stored as SHA-256 (with the access id mixed in for codes, so equal codes don't collide).
+ */
+export const portalCodes = pgTable(
+  "portal_codes",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    accessId: uuid("access_id").notNull(),
+    kind: portalCodeKind("kind").notNull(),
+    secretHash: text("secret_hash").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    foreignKey({ name: "portal_codes_access_fk", columns: [t.orgId, t.accessId], foreignColumns: [portalAccess.orgId, portalAccess.id] }).onDelete("cascade"),
+    index("portal_codes_access_idx").on(t.orgId, t.accessId, t.createdAt),
+    uniqueIndex("portal_codes_link_hash").on(t.secretHash).where(sql`${t.kind} = 'link'`),
+    check("portal_codes_hash_format", sql`${t.secretHash} ~ '^[0-9a-f]{64}$'`),
+    between("portal_codes_attempts_range", t.attempts, 0, 10),
   ],
 ).enableRLS();

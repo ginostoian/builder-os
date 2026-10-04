@@ -58,7 +58,7 @@ export async function runReminders(origin: string, today = ukToday()): Promise<R
     }
     // Emails go out after the claims are committed.
     for (const c of claimed) {
-      const result = await emailInvoice({ kind: c.kind, origin, token: c.token, to: c.to, replyTo: c.replyTo, invoice: { ...c.invoice, clientName: c.clientName } });
+      const result = await emailInvoice({ kind: c.kind, orgId, origin, token: c.token, to: c.to, replyTo: c.replyTo, invoice: { ...c.invoice, clientName: c.clientName } });
       if (result.ok) run.sent++;
       else run.failed++;
     }

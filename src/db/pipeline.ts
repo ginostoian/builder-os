@@ -22,7 +22,8 @@ import type { Tx } from "./index";
 import { createClient } from "./clients";
 import { membersWithRoles, notify } from "./notifications";
 import { createQuote } from "./quotes";
-import { automationRuns, automations, clients, leadActivities, leads, members, organizations, quotes } from "./schema";
+import { getSurveySettings, placeBooking } from "./surveys";
+import { automationRuns, automations, clients, leadActivities, leads, members, organizations, quotes, surveyBookings } from "./schema";
 
 export type PipelineErrorReason = "not_found" | "unknown_member" | "unknown_template" | "no_email";
 
@@ -186,7 +187,7 @@ export async function deleteLead(tx: Tx, orgId: string, leadId: string) {
  * stage's. Booking a site visit records when; losing a lead records why.
  */
 export async function setStage(tx: Tx, orgId: string, leadId: string, change: StageChangeInput, memberId: string | null, now = new Date()) {
-  const [lead] = await tx.select({ stage: leads.stage, visitAt: leads.visitAt }).from(leads).where(and(eq(leads.orgId, orgId), eq(leads.id, leadId)));
+  const [lead] = await tx.select({ stage: leads.stage, visitAt: leads.visitAt, ownerMemberId: leads.ownerMemberId }).from(leads).where(and(eq(leads.orgId, orgId), eq(leads.id, leadId)));
   if (!lead) throw new PipelineError("not_found");
   const visitAt = change.visitAt ? new Date(change.visitAt) : null;
   const sameStage = lead.stage === change.stage;
@@ -197,12 +198,24 @@ export async function setStage(tx: Tx, orgId: string, leadId: string, change: St
       ...(sameStage ? {} : { stageChangedAt: now }),
       lostReason: change.stage === "lost" ? (change.lostReason as LostReason) : null,
       lostNote: change.stage === "lost" ? (change.lostNote ?? null) : null,
-      ...(visitAt ? { visitAt } : {}),
       // Won or lost: nothing left to chase.
       ...(change.stage === "won" || change.stage === "lost" ? { nextActionOn: null, nextAction: null } : {}),
     })
     .where(and(eq(leads.orgId, orgId), eq(leads.id, leadId)));
-  if (visitAt && (!lead.visitAt || lead.visitAt.getTime() !== visitAt.getTime())) await log(tx, orgId, leadId, "visit", `Site visit booked for ${visitAt.toISOString()}`, memberId);
+  // A visit date goes in the survey diary (with the lead's owner going), which also sets it on the lead.
+  if (visitAt && (!lead.visitAt || lead.visitAt.getTime() !== visitAt.getTime())) {
+    const settings = await getSurveySettings(tx, orgId);
+    await placeBooking(tx, orgId, leadId, { startsAt: visitAt, minutes: settings.visitMinutes, memberId: lead.ownerMemberId ?? memberId, by: "office", actor: memberId });
+  }
+  // A lost lead's upcoming visit comes out of the surveyor's diary.
+  if (change.stage === "lost") {
+    const freed = await tx
+      .update(surveyBookings)
+      .set({ status: "cancelled", cancelledAt: now })
+      .where(and(eq(surveyBookings.orgId, orgId), eq(surveyBookings.leadId, leadId), eq(surveyBookings.status, "booked"), gte(surveyBookings.startsAt, now)))
+      .returning({ id: surveyBookings.id });
+    if (freed.length) await tx.update(leads).set({ visitAt: null }).where(and(eq(leads.orgId, orgId), eq(leads.id, leadId)));
+  }
   if (sameStage) return;
   await log(tx, orgId, leadId, "stage", change.stage === "lost" && change.lostNote ? `${change.stage}: ${change.lostNote}` : change.stage, memberId);
   await stopRuns(tx, orgId, leadId, "Moved to another stage", change.stage);
@@ -220,6 +233,8 @@ export async function addNote(tx: Tx, orgId: string, leadId: string, kind: "note
   if (!l) throw new PipelineError("not_found");
   await log(tx, orgId, leadId, kind, body, memberId);
 }
+
+export const logLeadActivity = (tx: Tx, orgId: string, leadId: string, kind: "visit" | "note", body: string, memberId: string | null) => log(tx, orgId, leadId, kind, body, memberId);
 
 export const logLeadEmail = (tx: Tx, orgId: string, leadId: string, kind: "email" | "automation_email", body: string, memberId: string | null) => log(tx, orgId, leadId, kind, body, memberId);
 

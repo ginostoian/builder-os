@@ -8,7 +8,9 @@ import { formatAddress } from "@/core/clients";
 import { PROJECT_STATUS_LABEL } from "@/core/projects";
 import { longDate } from "@/core/quote-snapshot";
 import { id as uuid } from "@/core/schemas";
-import { findPortalAccess, withTenant } from "@/db";
+import { withTenant } from "@/db";
+import { PortalBlocked } from "@/components/portal/portal-gate";
+import { requirePortal } from "@/server/portal-auth";
 import { portalHeader } from "@/db/portal";
 import { portalProject } from "@/db/projects";
 import { publicUrl } from "@/server/storage";
@@ -18,7 +20,7 @@ type Params = Promise<{ token: string; id: string }>;
 async function load(params: Params) {
   const { token, id } = await params;
   if (!uuid.safeParse(id).success) return null;
-  const access = await findPortalAccess(token);
+  const access = await requirePortal(token);
   if (!access) return null;
   const data = await withTenant(access.orgId, async (tx) => {
     const header = await portalHeader(tx, access.orgId, access.clientId);
@@ -39,7 +41,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
  */
 export default async function PortalProjectPage({ params }: { params: Params }) {
   const data = await load(params);
-  if (!data) notFound();
+  if (!data) return <PortalBlocked token={(await params).token} />;
   const { project: p, header } = data;
   const company = header.company.tradingName ?? header.company.name;
   const stages = [...p.phases, ...(p.loose.total > 0 ? [{ id: "other", name: "Other work", total: p.loose.total, done: p.loose.done, started: p.loose.started }] : [])].filter((s) => s.total > 0);

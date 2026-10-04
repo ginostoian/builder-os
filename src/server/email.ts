@@ -14,7 +14,18 @@ export const emailConfigured = () => Boolean(process.env.RESEND_API_KEY && proce
 
 export type EmailResult = { ok: true } | { ok: false; message: string };
 
-export async function sendEmail(mail: { to: string | string[]; replyTo?: string | null; subject: string; content: EmailContent; fromName?: string; headers?: Record<string, string> }): Promise<EmailResult> {
+export type EmailAttachment = { filename: string; content: string; contentType: string };
+
+export async function sendEmail(mail: {
+  to: string | string[];
+  replyTo?: string | null;
+  subject: string;
+  content: EmailContent;
+  fromName?: string;
+  headers?: Record<string, string>;
+  /** Small text files only (e.g. a calendar invite); sent base64-encoded. */
+  attachments?: EmailAttachment[];
+}): Promise<EmailResult> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
   if (!key || !from) return { ok: false, message: "Email isn't set up yet." };
@@ -31,6 +42,7 @@ export async function sendEmail(mail: { to: string | string[]; replyTo?: string 
         text,
         html,
         headers: mail.headers,
+        attachments: mail.attachments?.map((a) => ({ filename: a.filename, content: Buffer.from(a.content).toString("base64"), content_type: a.contentType })),
       }),
       signal: AbortSignal.timeout(10_000),
     });

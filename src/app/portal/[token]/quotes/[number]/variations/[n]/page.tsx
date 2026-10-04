@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PortalVariation } from "@/components/portal/portal-variation";
-import { findPortalAccess, withTenant } from "@/db";
+import { withTenant } from "@/db";
+import { PortalBlocked } from "@/components/portal/portal-gate";
+import { requirePortal } from "@/server/portal-auth";
 import { portalVariation } from "@/db/variations";
 
 type Params = Promise<{ token: string; number: string; n: string }>;
@@ -11,7 +13,7 @@ async function load(params: Params) {
   const { token, number, n } = await params;
   const q = num(number);
   const v = num(n);
-  const access = q && v ? await findPortalAccess(token) : null;
+  const access = q && v ? await requirePortal(token) : null;
   if (!access || !q || !v) return null;
   const variation = await withTenant(access.orgId, (tx) => portalVariation(tx, access.orgId, access.clientId, q, v));
   return variation ? { token, variation } : null;
@@ -27,7 +29,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 /** A variation in the client's portal, rendered from what they were sent. */
 export default async function PortalVariationPage({ params }: { params: Params }) {
   const data = await load(params);
-  if (!data) notFound();
+  if (!data) return <PortalBlocked token={(await params).token} />;
   const v = data.variation;
   return (
     <PortalVariation
