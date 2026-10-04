@@ -11,7 +11,7 @@ export default async function NewWorkerPage() {
   const session = await requirePermission("team.edit");
   return (
     <LiveAppShell active="people" crumbs={["Team", "Add person"]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <ScreenTitle title="Add person" subtitle="Anyone who works for you, with or without a login. Only the name is needed; fill in the rest when you have it." />
         <Panel className="max-w-[720px] p-5">
           <WorkerForm canSeeCosts={can(session.role, "costs.view")} />

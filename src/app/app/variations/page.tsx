@@ -30,7 +30,7 @@ export default async function VariationsPage({ searchParams }: { searchParams: P
 
   return (
     <LiveAppShell active="variations" crumbs={["Variations", FILTERS.find((f) => f.key === filter)!.label]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <ScreenTitle title="Variations" subtitle="Changes to accepted quotes, approved by your clients. Start one from the accepted quote." />
         <nav className="flex flex-wrap gap-1.5" aria-label="Filter variations">
           {FILTERS.map((f) => (

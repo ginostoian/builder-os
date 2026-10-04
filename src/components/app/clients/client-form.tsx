@@ -70,7 +70,7 @@ export function ClientForm({ clientId, initial, canEdit }: { clientId?: string; 
       <fieldset disabled={!canEdit || pending} className="contents">
         <Panel className="flex flex-col gap-4 p-5">
           <SectionHeading title="Contact" />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Name" hint="A person or a company." error={error("name")} required className="col-span-2">
               <input name="name" value={values.name} onChange={set("name")} maxLength={TEXT.name} autoFocus={isNew} autoComplete="off" className={control} />
             </Field>
@@ -85,7 +85,7 @@ export function ClientForm({ clientId, initial, canEdit }: { clientId?: string; 
 
         <Panel className="flex flex-col gap-4 p-5">
           <SectionHeading title="Address" hint="Where they live. Each quote can have its own site address." />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Address line 1" error={error("line1")}>
               <input name="line1" value={values.line1} onChange={set("line1")} maxLength={TEXT.name} autoComplete="off" className={control} />
             </Field>

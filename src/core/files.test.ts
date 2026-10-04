@@ -31,6 +31,7 @@ describe("storage keys", () => {
     expect(keyFromCdnUrl("https://example.com/logo.png", cdn, org)).toBeNull();
     expect(keyFromCdnUrl(`${cdn}/orgs/${org}/../x`, cdn, org)).toBeNull();
     expect(keyFromCdnUrl(null, cdn, org)).toBeNull();
+    expect(keyFromCdnUrl(`${cdn}/orgs/${org}/receipts/a.jpg`, cdn, org)).toBeNull();
   });
 });
 

@@ -67,7 +67,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             </div>
             <InvoiceActions invoiceId={invoice.id} status={invoice.status} link={link} canEmail={emailConfigured() && Boolean(client?.email)} sent={invoice.sentAt !== null} />
           </div>
-          <div className="mx-auto w-full max-w-[760px] px-6 py-5">
+          <div className="mx-auto w-full max-w-[760px] px-4 py-5 lg:px-6">
             <p className="mb-3 text-[12.5px] text-subtle print:hidden">This is what {client?.name ?? "the client"} sees in their portal.</p>
             <InvoiceDocument invoice={invoice} />
           </div>

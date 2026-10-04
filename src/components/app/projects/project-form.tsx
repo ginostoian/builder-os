@@ -76,7 +76,7 @@ export function ProjectForm({
         submit();
       }}
     >
-      <div className="grid grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <Field label="Project name" className="col-span-2" hint="e.g. Kitchen extension, 14 Elm Road">
           <input value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} maxLength={TEXT.name} required className={control} />
         </Field>
@@ -132,7 +132,7 @@ export function ProjectForm({
             </button>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {(["line1", "line2", "town", "postcode"] as const).map((f) => (
             <input
               key={f}

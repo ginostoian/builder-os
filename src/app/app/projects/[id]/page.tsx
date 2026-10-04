@@ -18,7 +18,7 @@ import { clientOptions } from "@/db/clients";
 import { assignableMembers, assignableWorkers, getProject, listDiary, listFiles, projectMoney } from "@/db/projects";
 import { costProjects, jobCosting } from "@/db/costs";
 import { requirePermission, withSession } from "@/auth/session";
-import { publicUrl, storageConfigured } from "@/server/storage";
+import { privateUrl, storageConfigured } from "@/server/storage";
 
 export const metadata: Metadata = { title: "Project" };
 
@@ -89,7 +89,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       {view === "diary" && (
         <SiteDiary
           projectId={p.id}
-          entries={data.diary.map((d) => ({ ...d, photos: d.photos.map((ph) => ({ url: publicUrl(ph.key) })) }))}
+          entries={data.diary.map((d) => ({ ...d, photos: d.photos.map((ph) => ({ url: privateUrl(ph.key) })) }))}
           today={today}
           canEdit={canEdit}
           storageEnabled={storageConfigured()}
@@ -99,7 +99,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       {view === "files" && (
         <ProjectFiles
           projectId={p.id}
-          files={data.files.map((f) => ({ id: f.id, name: f.name, url: publicUrl(f.storageKey), contentType: f.contentType, sizeBytes: f.sizeBytes, shareWithClient: f.shareWithClient, uploadedByName: f.uploadedByName, createdAt: f.createdAt }))}
+          files={data.files.map((f) => ({ id: f.id, name: f.name, url: privateUrl(f.storageKey), contentType: f.contentType, sizeBytes: f.sizeBytes, shareWithClient: f.shareWithClient, uploadedByName: f.uploadedByName, createdAt: f.createdAt }))}
           canEdit={canEdit}
           storageEnabled={storageConfigured()}
           shareProgress={p.shareProgress}

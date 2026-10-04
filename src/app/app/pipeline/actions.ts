@@ -146,7 +146,7 @@ export async function startQuoteAction(leadId: string): Promise<PipelineActionRe
 }
 
 export async function stopRunAction(leadId: string, runId: string): Promise<PipelineActionResult> {
-  if (!id.safeParse(runId).success) return { ok: false, message: MESSAGES.not_found };
+  if (!id.safeParse(runId).success || !id.safeParse(leadId).success) return { ok: false, message: MESSAGES.not_found };
   return run("leads.edit", (s) => withSession(s, (tx) => stopRun(tx, s.orgId, runId)), leadId);
 }
 

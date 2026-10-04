@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Mail, Phone, Plus } from "lucide-react";
+import { ArrowLeft, Download, Mail, Phone, Plus } from "lucide-react";
 import { LiveAppShell } from "@/components/app/live-app-shell";
 import { Panel } from "@/components/app/app-shell";
 import { ArchivePanel } from "@/components/app/archive-panel";
@@ -50,7 +50,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
   return (
     <LiveAppShell active="crm" crumbs={["Clients", client.name]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <div className="flex flex-col gap-2">
           <Link href={client.archivedAt ? "/app/clients?view=archived" : "/app/clients"} className="flex w-fit items-center gap-1 text-ink-2 hover:text-ink">
             <ArrowLeft className="size-3.5" />
@@ -76,7 +76,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
 
-        <div className="grid grid-cols-[minmax(0,720px)_300px] items-start gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,720px)_300px] items-start gap-4">
           <ClientForm
             clientId={client.id}
             initial={{ name: client.name, email: client.email, phone: client.phone, address: client.address, source: client.source, notes: client.notes }}
@@ -114,7 +114,15 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                   {quoteCount} {quoteCount === 1 ? "quote" : "quotes"}.
                 </p>
               )}
-              <p className="text-[12px] text-subtle">Added {dateFormat.format(client.createdAt)}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[12px] text-subtle">Added {dateFormat.format(client.createdAt)}</p>
+                {canManage && (
+                  <a href={`/app/clients/${client.id}/export`} download className="flex items-center gap-1 text-[12px] text-ink-2 hover:text-ink" title="Everything held about this client, for a data request (UK GDPR)">
+                    <Download className="size-3.5" />
+                    Export data
+                  </a>
+                )}
+              </div>
             </Panel>
             {canQuote && (
               <PortalLinkPanel

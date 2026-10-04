@@ -12,7 +12,7 @@ export default async function ImportPage() {
   await requirePermission("library.manage");
   return (
     <LiveAppShell active="templates" crumbs={["Service library", "Import"]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <div className="flex flex-col gap-2">
           <Link href="/app/library" className="flex w-fit items-center gap-1 text-ink-2 hover:text-ink">
             <ArrowLeft className="size-3.5" />

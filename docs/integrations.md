@@ -62,7 +62,7 @@ Used for company logos, site and variation photos, project files and receipts.
 
 1. In Bunny: create a **Storage Zone**. The region should be London (`uk`) to keep data in the UK.
 2. Connect a **Pull Zone** to it. Its hostname (`https://….b-cdn.net`, or a custom one) is the CDN URL.
-3. Leave the pull zone's **Security** settings open: **Token Authentication off**, no "Allowed referrers", and "Block no referrer" unticked. The app links to files directly (their names are long and random, so they can't be guessed), and any of those settings makes photos show as broken even though they uploaded.
+3. Leave this pull zone's **Security** settings open (for private files, add a second zone: see Private files below): **Token Authentication off**, no "Allowed referrers", and "Block no referrer" unticked. The app links to files directly (their names are long and random, so they can't be guessed), and any of those settings makes photos show as broken even though they uploaded.
 4. In Vercel:
    - `BUNNY_STORAGE_ZONE`: the zone name.
    - `BUNNY_STORAGE_KEY`: Storage Zone → FTP & API Access → Password.
@@ -147,3 +147,43 @@ How it works:
 - A client payment is accepted only if the connected account is the company's own and the amount equals the invoice. The same payment twice changes nothing.
 
 Code: `src/core/plans.ts` (plans and features), `src/server/stripe.ts`, `src/server/stripe-events.ts`, `src/app/api/webhooks/stripe/route.ts`, `src/db/billing.ts`, `scripts/stripe-setup.ts`.
+
+## Private files: expiring links (recommended)
+
+By default, photos, project files and receipts are served from the same CDN links as logos. Those links are long and random, so they can't be guessed, but anyone who has one can open it for good. To make private files open only through links that expire (after 12 hours; pages hand out fresh ones each time they load):
+
+1. In Bunny, add a **second pull zone** on the same storage zone, e.g. `builderos-private`. Under Security, turn on **Token Authentication** and copy its key.
+2. On the **first** (public) pull zone, add an Edge Rule that blocks every request whose path doesn't match `/orgs/*/logo/*`. Logos stay public, because they go out in emails and on quotes; nothing else can be fetched through that zone.
+3. In Vercel, set `BUNNY_PRIVATE_CDN_URL` to the private zone's URL and `BUNNY_TOKEN_KEY` to its key, then redeploy.
+
+Photos frozen into variations that were already sent are re-signed when the page is shown, so they keep working.
+
+## Error monitoring: Sentry
+
+Crashes in pages, server actions, API routes and the browser are reported to Sentry, along with our own logged failures (an email that couldn't be sent, a sync that failed). Sentry emails you about each new problem, usually before a customer notices.
+
+1. Create a Sentry project (platform: Next.js). If you want, choose its EU data region.
+2. In Vercel, set `NEXT_PUBLIC_SENTRY_DSN` (and `SENTRY_DSN`, the same value) to the project's DSN.
+3. Optional, for readable stack traces: `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` let builds upload source maps.
+4. In Sentry, check Alerts → "Send a notification for new issues" goes to you.
+
+No personal data is sent: no user details, cookies, headers, request bodies or query strings, and portal, booking and unsubscribe tokens in page addresses are masked (`src/lib/monitoring.ts`). Browser reports go through our own `/monitoring` route, so ad blockers don't drop them. Without a DSN, nothing is sent.
+
+## Uptime
+
+- `GET /api/health` answers 200 with `{ ok: true }` when the app is up and can reach its database, and 503 when it can't. Point an uptime monitor at it (Better Stack, UptimeRobot or similar; every minute, alert by email or SMS).
+- **Daily job heartbeat.** Create a heartbeat check in the same monitor (expect one ping a day, with a few hours' grace) and set `CRON_HEARTBEAT_URL` to its URL. The daily job pings it when it finishes, so you hear if reminders stop going out.
+- **Free backstop.** The GitHub workflow `.github/workflows/uptime.yml` checks `/api/health` and the home page every 10 minutes. Set the repository variable `PRODUCTION_URL` (Settings → Secrets and variables → Actions → Variables). A failed run emails whoever last changed the workflow.
+
+## Security settings
+
+- `APP_SECRET`: a long random value (`openssl rand -hex 32`) that signs public form tokens and keys the rate-limit counters. Without it, one is derived from `CLERK_SECRET_KEY`. If you set it later, open forms need a reload.
+- **Rate limits and bots.** Public forms and actions are rate-limited per visitor (IP address) and per target (email address): enquiries, "find my portal", sign-in codes and links, bookings, portal comments and decisions, paying online, and reading receipts. Counters live in Postgres (`rate_limits`) and only hold hashes. The enquiry form and "find my portal" also carry a signed token from when the page was served. Instant or forged submissions, the hidden honeypot field, and messages full of links are dropped quietly, without telling the bot.
+- **Headers.** Every response sends HSTS, `X-Content-Type-Options: nosniff`, a strict referrer policy and a permissions policy. Pages can't be framed by other sites, except the web enquiry form, which is meant to be embedded.
+- In production, links in emails always use `APP_URL` (or Vercel's production domain), never the request's host.
+
+## Privacy (UK GDPR)
+
+- `/privacy` and `/cookies` are linked from the site footer. Builder OS sets only strictly necessary cookies; a one-time notice says so.
+- **Before launch**, check the company details in `src/lib/content/legal.ts`: company number, registered office and ICO registration number. Also check the sub-processor list matches the services you've switched on.
+- Admins can download everything their company holds from Settings → Company → **Export all data** (a ZIP of JSON and CSV files). Any client's data, for answering their request, comes from **Export data** on that client's page. Exports leave out sign-in codes and sessions, and blank any token or secret. Spreadsheet cells can't run as formulas.

@@ -34,7 +34,7 @@ import {
 } from "@/db/projects";
 import { hasFeature, planBlock } from "@/server/plan";
 import { getSession, withSession, type Session } from "@/auth/session";
-import { deleteObject, publicUrl, putObject, randomName, storageConfigured } from "@/server/storage";
+import { deleteObject, privateUrl, putObject, randomName, storageConfigured } from "@/server/storage";
 
 export type ProjectActionResult = { ok: true; id?: string } | { ok: false; message: string };
 
@@ -123,6 +123,8 @@ export async function updateProjectAction(projectId: string, input: unknown): Pr
 }
 
 export async function deleteProjectAction(projectId: string): Promise<ProjectActionResult> {
+  // Deleting a project deletes its costs, receipts, purchase orders and timesheets too: Admins and the office only.
+  if (!can((await getSession()).role, "costs.edit")) return { ok: false, message: "Only Admins and the office can delete a project. Mark it complete instead." };
   let keys: string[] = [];
   const r = await change(projectId, async (s, pid) => {
     keys = await withSession(s, (tx) => deleteProject(tx, s.orgId, pid));
@@ -274,7 +276,7 @@ export async function uploadProjectFile(form: FormData): Promise<FileUploadResul
     if (error instanceof StoreError) return { ok: false as const, message: error.message };
     throw error;
   });
-  return r.ok ? { ok: true, id: r.id!, url: publicUrl(key) } : r;
+  return r.ok ? { ok: true, id: r.id!, url: privateUrl(key) } : r;
 }
 
 export async function setFileSharedAction(projectId: string, fileId: string, shared: boolean): Promise<ProjectActionResult> {

@@ -14,6 +14,7 @@ import { planAllows } from "@/db/billing";
 import { runCompanyAutomations } from "@/server/automations";
 import { emailConfigured, sendEmail } from "@/server/email";
 import { appOrigin } from "@/server/origin";
+import { allow, checkFormToken, looksLikeSpam, perIp } from "@/server/rate-limit";
 
 /** `booking`: the page where they can book a survey straight away, when the company takes bookings online. */
 export type EnquiryResult = { ok: true; booking?: string } | { ok: false; message: string };
@@ -22,8 +23,10 @@ export type EnquiryResult = { ok: true; booking?: string } | { ok: false; messag
 const FLOOD_LIMIT = 20;
 
 /**
- * A website enquiry. Bots are turned away quietly (a hidden field people never fill in, and a form sent
- * within 3 seconds of loading), so they can't tell what tripped them.
+ * A website enquiry. Bots are turned away quietly, so they can't tell what tripped them: the form must
+ * carry the signed time it was served and take a person's time to fill in, a hidden field must stay empty,
+ * and the text mustn't be a list of links. People get rate limits per IP and per email address on top of
+ * the company-wide flood limit.
  */
 export async function submitEnquiry(token: string, input: unknown): Promise<EnquiryResult> {
   const parsed = enquiryInput.safeParse(input);
@@ -33,8 +36,14 @@ export async function submitEnquiry(token: string, input: unknown): Promise<Enqu
     return { ok: false, message: labels[field] ?? "Please check what you've entered." };
   }
   const d = parsed.data;
-  if (d.website || (d.startedAt && Date.now() - d.startedAt < 3_000)) return { ok: true };
-  const orgId = typeof token === "string" ? await findEnquiryForm(token) : null;
+  if (typeof token !== "string") return { ok: false, message: "This form isn't taking enquiries at the moment." };
+  const form = checkFormToken(`enquiry:${token}`, d.formToken);
+  if (form === "expired" || d.formToken === undefined) return { ok: false, message: "This page has been open a while. Please reload it and send your enquiry again." };
+  // Bots: a forged or instant submission, the hidden field, or a message full of links. Told it worked.
+  if (form !== "ok" || d.website || looksLikeSpam(d.name, d.description, d.projectType)) return { ok: true };
+  const limits = [await perIp("enquiry_ip", 5, 600), await perIp("enquiry_ip_day", 30, 86_400), { bucket: "enquiry_email", subject: d.email, max: 3, windowSeconds: 3_600 }];
+  if (!(await allow(...limits))) return { ok: false, message: "We've had several enquiries from you just now. Please try again later, or give us a call." };
+  const orgId = await findEnquiryForm(token);
   if (!orgId) return { ok: false, message: "This form isn't taking enquiries at the moment." };
   const created = await withTenant(orgId, async (tx) => {
     // The web form feeds the pipeline (Pro).

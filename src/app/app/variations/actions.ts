@@ -12,7 +12,7 @@ import { getSession, withSession, type Session } from "@/auth/session";
 import { emailConfigured, sendEmail } from "@/server/email";
 import { appOrigin, portalVariationUrl } from "@/server/origin";
 import { withSignIn } from "@/server/portal-auth";
-import { deleteObject, publicUrl, putObject, randomName, storageConfigured } from "@/server/storage";
+import { deleteObject, privateUrl, publicUrl, putObject, randomName, storageConfigured } from "@/server/storage";
 import { MAX_PHOTO_BYTES, orgFileKey, sniffImage } from "@/core/files";
 import { MAX_VARIATION_PHOTOS } from "@/core/variation";
 
@@ -193,7 +193,7 @@ export async function uploadVariationPhoto(form: FormData): Promise<PhotoResult>
     return fail(error) as PhotoResult;
   }
   revalidatePath(`/app/variations/${variationId}`);
-  return { ok: true, key, url: publicUrl(key) };
+  return { ok: true, key, url: privateUrl(key) };
 }
 
 export async function removeVariationPhotoAction(variationId: string, key: string): Promise<VariationActionResult> {

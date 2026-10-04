@@ -24,7 +24,7 @@ export default async function AutomationsPage() {
   const used = new Set(list.map((a) => a.templateKey).filter(Boolean));
   return (
     <LiveAppShell active="pipeline" crumbs={["Pipeline", "Automations"]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <Link href="/app/pipeline" className="flex items-center gap-1.5 self-start text-[12.5px] text-ink-2 hover:text-ink">
           <ArrowLeft className="size-3.5" />
           Pipeline

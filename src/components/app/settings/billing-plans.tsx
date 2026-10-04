@@ -59,7 +59,7 @@ export function BillingPlans({
       </Panel>
       {error && <p className="text-danger">{error}</p>}
       {!stripeReady && <p className="text-[12.5px] text-subtle">Online billing isn&apos;t switched on yet. Contact Builder OS to change plan.</p>}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {plans.map((p) => {
           const isCurrent = p.id === current && why !== "trial" && why !== "comped";
           return (

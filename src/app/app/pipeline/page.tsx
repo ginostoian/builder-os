@@ -246,13 +246,13 @@ function Insights({ i }: { i: Awaited<ReturnType<typeof pipelineInsights>> }) {
   return (
     <div className="min-h-0 flex-1 overflow-auto px-6 pb-6">
       <div className="mx-auto flex max-w-[1160px] flex-col gap-4">
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi label="Leads (12 months)" value={String(total)} />
           <Kpi label="Win rate" value={decided ? `${Math.round((won / decided) * 100)}%` : "–"} sub={`${won} won of ${decided} decided`} />
           <Kpi label="Won" value={formatGBP(wonValue, 0)} sub="Value of won leads" />
           <Kpi label="Enquiry to win" value={i.avgDaysToWin !== null ? `${i.avgDaysToWin} days` : "–"} sub="On average" />
         </div>
-        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start gap-4">
           <Panel className="overflow-hidden">
             <h2 className="border-b border-hairline px-4 py-2.5 font-semibold">Where your work comes from</h2>
             {i.bySource.length === 0 ? (

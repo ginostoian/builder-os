@@ -141,6 +141,13 @@
       "when": 1791154415403,
       "tag": "0019_platform_metrics",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791156401609,
+      "tag": "0020_rate_limits",
+      "breakpoints": true
     }
   ]
 }

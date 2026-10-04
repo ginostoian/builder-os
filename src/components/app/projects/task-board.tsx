@@ -44,7 +44,7 @@ export function TaskBoard({
   };
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-4 gap-3 overflow-auto bg-surface-2 px-6 py-4">
+    <div className="grid min-h-0 flex-1 grid-cols-4 gap-3 overflow-auto bg-surface-2 px-4 py-4 lg:px-6">
       {columns.map((col) => (
         <section
           key={col.status}

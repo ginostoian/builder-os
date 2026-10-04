@@ -25,7 +25,7 @@ export function SiteDiary({ projectId, entries, today, canEdit, storageEnabled, 
   const byDate = new Map<string, DiaryEntry[]>();
   for (const e of entries) byDate.set(e.entryDate, [...(byDate.get(e.entryDate) ?? []), e]);
   return (
-    <div className="min-h-0 flex-1 overflow-auto bg-surface-2 px-6 py-4">
+    <div className="min-h-0 flex-1 overflow-auto bg-surface-2 px-4 py-4 lg:px-6">
       <div className="mx-auto flex max-w-[760px] flex-col gap-4">
         {canEdit && <Composer projectId={projectId} today={today} storageEnabled={storageEnabled} shareProgress={shareProgress} />}
         {entries.length === 0 ? (

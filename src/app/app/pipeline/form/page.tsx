@@ -18,13 +18,13 @@ export default async function FormPage() {
   const url = token ? `${await appOrigin()}/enquire/${token}` : null;
   return (
     <LiveAppShell active="pipeline" crumbs={["Pipeline", "Web enquiry form"]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <Link href="/app/pipeline" className="flex items-center gap-1.5 self-start text-[12.5px] text-ink-2 hover:text-ink">
           <ArrowLeft className="size-3.5" />
           Pipeline
         </Link>
         <ScreenTitle title="Web enquiry form" subtitle="A form for your website. Every enquiry lands in your pipeline as a new lead, with its details." />
-        <div className="grid max-w-[1000px] grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start gap-4">
+        <div className="grid max-w-[1000px] grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start gap-4">
           <Panel className="p-5">
             <FormSettings url={url} />
           </Panel>

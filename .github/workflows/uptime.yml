@@ -1,0 +1,32 @@
+name: Uptime
+
+# A free backstop to an uptime monitor: every 10 minutes, check production answers /api/health (app up,
+# database reachable) and that the home page loads. A failed run emails whoever last changed this file
+# (GitHub's own notifications). Set the repository variable PRODUCTION_URL (Settings → Secrets and
+# variables → Actions → Variables), e.g. https://builderos.co.uk; without it the check is skipped.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: vars.PRODUCTION_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Health
+        run: |
+          for attempt in 1 2 3; do
+            code=$(curl -s -o /tmp/health.json -w '%{http_code}' --max-time 20 "${{ vars.PRODUCTION_URL }}/api/health" || true)
+            if [ "$code" = "200" ]; then cat /tmp/health.json; echo; exit 0; fi
+            echo "Attempt $attempt: HTTP $code"; sleep 20
+          done
+          echo "::error::${{ vars.PRODUCTION_URL }}/api/health is failing"; exit 1
+      - name: Home page
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "${{ vars.PRODUCTION_URL }}/")
+          echo "HTTP $code"; [ "$code" = "200" ] || { echo "::error::Home page answered $code"; exit 1; }

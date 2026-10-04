@@ -228,9 +228,9 @@ export function QuoteBuilder({
   };
 
   return (
-    <div className="relative flex min-h-0 flex-1">
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-start gap-4 px-6 pt-[18px] pb-3.5">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-visible">
+      <div className="flex min-h-[80dvh] min-w-0 flex-1 flex-col lg:min-h-0">
+        <div className="flex flex-wrap items-start gap-4 px-4 pt-[18px] pb-3.5 lg:px-6">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5">
               <span className="font-mono text-[12px] text-subtle">{quoteRef(initial.number)}</span>
@@ -289,7 +289,7 @@ export function QuoteBuilder({
           </div>
         )}
 
-        <div className="flex items-center border-b border-hairline px-6">
+        <div className="flex items-center border-b border-hairline px-4 lg:px-6">
           <div className="flex gap-5" role="tablist">
             {(["items", "plan", "details"] as const).map((t) => (
               <button
@@ -305,15 +305,15 @@ export function QuoteBuilder({
             ))}
           </div>
           <div className="flex-1" />
-          <div className="flex gap-1.5 text-xs text-ink-2">
+          <div className="hidden gap-1.5 text-xs text-ink-2 sm:flex">
             <span className="rounded-md bg-muted px-2 py-[3px]">Default markup {formatBps(header.markupBps)}</span>
             <span className="rounded-md bg-muted px-2 py-[3px]">VAT {formatBps(header.vatRateBps)}</span>
           </div>
         </div>
 
         {tab === "items" ? (
-          <fieldset disabled={blocked} className="flex min-h-0 flex-1 flex-col">
-            <div className={cn(GRID, "h-8 flex-none items-center border-b border-hairline bg-surface-2 text-[11.5px] font-medium text-subtle")}>
+          <fieldset disabled={blocked} className="flex min-h-0 flex-1 flex-col overflow-x-auto">
+            <div className={cn(GRID, "h-8 min-w-[720px] flex-none items-center border-b border-hairline bg-surface-2 text-[11.5px] font-medium text-subtle")}>
               <span className="pl-3">#</span>
               <span>Item</span>
               <span className="pr-2.5 text-right">Qty</span>
@@ -323,7 +323,7 @@ export function QuoteBuilder({
               <span className="pr-3 text-right">Total</span>
               <span />
             </div>
-            <div className="min-h-0 flex-1 overflow-auto pb-24" data-grid>
+            <div className="min-h-0 min-w-[720px] flex-1 overflow-y-auto pb-24" data-grid>
               {sections.map((s, si) => (
                 <SectionBlock
                   key={s.id}
@@ -351,7 +351,7 @@ export function QuoteBuilder({
                   onRemoveLine={removeLine}
                 />
               ))}
-              <div className="px-6 py-4">
+              <div className="px-4 py-4 lg:px-6">
                 <Button variant="secondary" onClick={addSection}>
                   <Plus />
                   Add section
@@ -366,7 +366,7 @@ export function QuoteBuilder({
         )}
       </div>
 
-      <aside className="flex w-[296px] flex-none flex-col gap-4 overflow-auto border-l border-hairline bg-surface-2 p-[18px]">
+      <aside className="flex w-full flex-none flex-col gap-4 overflow-auto border-t border-hairline bg-surface-2 p-[18px] lg:w-[296px] lg:border-t-0 lg:border-l">
         <div>
           <div className="mb-2.5 text-xs font-medium text-subtle">Summary</div>
           <dl className="flex flex-col gap-2 tabular">
@@ -997,7 +997,7 @@ function DetailsTab({
   return (
     <fieldset disabled={disabled} className="min-h-0 flex-1 overflow-auto bg-surface-2 p-6">
       <div className="flex max-w-[640px] flex-col gap-5">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Title" error={errors.title} hint="What the client sees at the top, e.g. Kitchen extension." className="col-span-2">
             <input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={commitTitle} maxLength={TEXT.name} className={control} />
           </Field>
@@ -1051,7 +1051,7 @@ function DetailsTab({
               </button>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(["line1", "line2", "town", "postcode"] as const).map((f) => (
               <input
                 key={f}

@@ -56,5 +56,6 @@ export function keyFromCdnUrl(url: string | null, cdnBase: string | undefined, o
   const base = cdnBase.replace(/\/+$/, "") + "/";
   if (!url.startsWith(base)) return null;
   const key = url.slice(base.length);
-  return key.startsWith(`orgs/${orgId}/`) && !key.includes("..") ? key : null;
+  // Logos only: a logo link pointed at another of the company's files must never get that file deleted.
+  return key.startsWith(`orgs/${orgId}/logo/`) && !key.includes("..") ? key : null;
 }

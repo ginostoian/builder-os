@@ -44,7 +44,7 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
 
   return (
     <LiveAppShell active="templates" crumbs={["Service library", service.name]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <div className="flex flex-col gap-2">
           <Link href={service.archivedAt ? "/app/library?view=archived" : "/app/library"} className="flex w-fit items-center gap-1 text-ink-2 hover:text-ink">
             <ArrowLeft className="size-3.5" />
@@ -57,7 +57,7 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="grid grid-cols-[minmax(0,760px)_300px] items-start gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,760px)_300px] items-start gap-4">
           {isBundle ? (
             <BundleForm bundleId={service.id} initial={{ ...common, items }} canEdit={canManage} categories={categories} candidates={candidates} companyMarkupBps={markup} />
           ) : (

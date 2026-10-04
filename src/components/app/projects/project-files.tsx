@@ -42,7 +42,7 @@ export function ProjectFiles({ projectId, files, canEdit, storageEnabled, shareP
   };
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto bg-surface-2 px-6 py-4">
+    <div className="min-h-0 flex-1 overflow-auto bg-surface-2 px-4 py-4 lg:px-6">
       <div className="mx-auto flex max-w-[960px] flex-col gap-3">
         {canEdit && storageEnabled && (
           <div

@@ -153,10 +153,10 @@ export function PoEditor({
         )}
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] items-start gap-4">
         <div className="flex flex-col gap-4">
           <section className="rounded-[12px] bg-white p-5 shadow-ring">
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <Field label="Supplier" required>
                 <input value={v.supplierName} onChange={set("supplierName")} maxLength={TEXT.name} disabled={!editable} placeholder="e.g. Travis Perkins, Leyton" className={control} />
               </Field>

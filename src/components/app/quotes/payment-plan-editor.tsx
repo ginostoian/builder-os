@@ -86,8 +86,8 @@ export function PaymentPlanEditor({ plan, total, disabled, onChange }: { plan: P
             <p className="mt-1 text-subtle">Without one, the quote asks for the full {formatGBP(total)} on completion. Pick a preset above or add payments.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-[10px] bg-white shadow-ring">
-            <div className="grid grid-cols-[minmax(0,1fr)_150px_104px_244px_104px_76px] items-center gap-2 border-b border-hairline bg-surface-2 px-3 py-2 text-[11.5px] font-medium text-subtle">
+          <div className="overflow-x-auto rounded-[10px] bg-white shadow-ring">
+            <div className="grid min-w-[860px] grid-cols-[minmax(0,1fr)_150px_104px_244px_104px_76px] items-center gap-2 border-b border-hairline bg-surface-2 px-3 py-2 text-[11.5px] font-medium text-subtle">
               <span>Payment</span>
               <span>Amount as</span>
               <span>Value</span>
@@ -97,7 +97,7 @@ export function PaymentPlanEditor({ plan, total, disabled, onChange }: { plan: P
             </div>
             <ol>
               {plan.map((s, i) => (
-                <li key={s.id} className="grid grid-cols-[minmax(0,1fr)_150px_104px_244px_104px_76px] items-center gap-2 border-b border-hairline px-3 py-2 last:border-b-0">
+                <li key={s.id} className="grid min-w-[860px] grid-cols-[minmax(0,1fr)_150px_104px_244px_104px_76px] items-center gap-2 border-b border-hairline px-3 py-2 last:border-b-0">
                   <LabelInput value={s.label} onCommit={(label) => update(s.id, { label })} />
                   <select aria-label="Amount as" value={s.amountKind} onChange={(e) => changeKind(s, e.target.value as AmountKind)} className={control}>
                     <option value="percent">% of total</option>
@@ -257,7 +257,7 @@ function WeeklyDialog({ total, onApply }: { total: number; onApply: (plan: PlanS
       <DialogContent>
         <DialogTitle>Weekly instalments</DialogTitle>
         <DialogDescription>A deposit to book, then the rest split into equal weekly payments. This replaces the current plan; you can edit each payment after.</DialogDescription>
-        <div className="mt-4 grid grid-cols-3 gap-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Deposit" hint="0 for none">
             <div className="relative">
               <input value={deposit} onChange={(e) => setDeposit(e.target.value)} inputMode="decimal" className={cn(control, "pr-7 tabular")} />

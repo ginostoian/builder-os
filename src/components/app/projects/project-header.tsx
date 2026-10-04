@@ -60,7 +60,7 @@ export function ProjectHeader({
 
   return (
     <div className="flex-none border-b border-hairline bg-white">
-      <div className="flex items-start gap-4 px-6 pt-[18px]">
+      <div className="flex flex-wrap items-start gap-4 px-4 pt-[18px] lg:px-6">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2.5">
             <h1 className="truncate text-[19px] font-semibold tracking-[-0.02em]">{values.name}</h1>
@@ -173,13 +173,13 @@ export function ProjectHeader({
           </Dialog>
         )}
       </div>
-      <nav className="flex gap-5 px-6 pt-3" aria-label="Project views">
+      <nav className="flex gap-5 overflow-x-auto px-4 pt-3 lg:px-6" aria-label="Project views">
         {PROJECT_VIEWS.filter((v) => v.key !== "costs" || showCosts).map((v) => (
           <Link
             key={v.key}
             href={v.key === "overview" ? `/app/projects/${projectId}` : `/app/projects/${projectId}?view=${v.key}`}
             aria-current={view === v.key ? "page" : undefined}
-            className={cn("-mb-px flex items-center gap-1.5 border-b-2 pb-2.5 font-medium", view === v.key ? "border-ink text-ink" : "border-transparent text-subtle hover:text-ink-2")}
+            className={cn("-mb-px flex flex-none items-center gap-1.5 border-b-2 pb-2.5 font-medium whitespace-nowrap", view === v.key ? "border-ink text-ink" : "border-transparent text-subtle hover:text-ink-2")}
           >
             {v.label}
             {v.key === "diary" && counts.diary > 0 && <span className="text-[11px] text-subtle tabular">{counts.diary}</span>}

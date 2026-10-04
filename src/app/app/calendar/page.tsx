@@ -89,7 +89,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
 
   return (
     <LiveAppShell active="calendar" crumbs={["Calendar", heading]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-6 py-5">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-4 py-5 lg:px-6">
         <ScreenTitle title="Calendar" subtitle="Surveys, task dates and jobs starting or finishing.">
           <div className="flex items-center gap-2">
             <form action="/app/calendar" className="flex items-center">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EnquiryForm } from "@/components/public/enquiry-form";
+import { formToken } from "@/server/rate-limit";
 import { findEnquiryForm, withTenant } from "@/db";
 import { companyHeader } from "@/db/costs";
 import { cn } from "@/lib/utils";
@@ -33,7 +34,7 @@ export default async function EnquiryPage({ params, searchParams }: { params: Pr
             <p className="mt-1 text-ink-2">A few details and we&apos;ll be in touch, usually within one working day.</p>
           </header>
         )}
-        <EnquiryForm token={token} company={company} />
+        <EnquiryForm token={token} company={company} formToken={formToken(`enquiry:${token}`)} />
       </div>
       {!embed && <p className="mt-4 text-center text-[12px] text-subtle">Your details go to {company} only, to reply to your enquiry.</p>}
     </main>

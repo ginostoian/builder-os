@@ -19,13 +19,13 @@ export default async function SurveySettingsPage() {
   const data = await withSession(session, async (tx) => ({ settings: await getSurveySettings(tx, session.orgId), hours: await listSurveyHours(tx, session.orgId), people: await surveyors(tx, session.orgId) }));
   return (
     <LiveAppShell active="pipeline" crumbs={["Pipeline", "Online booking"]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <Link href="/app/pipeline" className="flex items-center gap-1.5 self-start text-[12.5px] text-ink-2 hover:text-ink">
           <ArrowLeft className="size-3.5" />
           Pipeline
         </Link>
         <ScreenTitle title="Online survey booking" subtitle="Let enquiries book a survey visit themselves, straight into your diary. You can still move or cancel any visit." />
-        <div className="grid max-w-[1100px] grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start gap-4">
+        <div className="grid max-w-[1100px] grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start gap-4">
           <div className="flex flex-col gap-4">
             <Panel className="p-5">
               <SurveySettingsForm settings={data.settings} />

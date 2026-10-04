@@ -1437,3 +1437,32 @@ export const subscriptionEvents = pgTable(
     check("subscription_events_mrr_range", sql`${t.mrrBeforePence} between 0 and 100000000 and ${t.mrrAfterPence} between 0 and 100000000`),
   ],
 ).enableRLS();
+
+// ── Rate limits (migration 0020) ─────────────────────────────────────────────
+
+/**
+ * Counters for public forms and actions (enquiries, portal sign-in, booking…), one row per key and fixed
+ * window. Keys are HMACs of the bucket and the caller (IP address, email), so no IP address or email is
+ * stored. Not tenant data: the app reaches it only outside a tenant (`app.org_id` unset), and old rows are
+ * swept daily.
+ */
+export const rateLimits = pgTable(
+  "rate_limits",
+  {
+    key: text("key").primaryKey(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
+    hits: integer("hits").notNull().default(1),
+  },
+  (t) => [
+    pgPolicy("no_tenant_only", {
+      as: "permissive",
+      for: "all",
+      to: appRole,
+      using: sql`current_setting('app.org_id', true) is null or current_setting('app.org_id', true) = ''`,
+      withCheck: sql`current_setting('app.org_id', true) is null or current_setting('app.org_id', true) = ''`,
+    }),
+    check("rate_limits_key_format", sql`${t.key} ~ '^[a-z_]{1,40}:[0-9a-f]{64}$'`),
+    between("rate_limits_hits_range", t.hits, 0, 1000000),
+    index("rate_limits_window_idx").on(t.windowStart),
+  ],
+).enableRLS();

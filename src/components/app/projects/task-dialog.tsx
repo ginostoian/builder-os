@@ -79,7 +79,7 @@ export function TaskDialog({
           <Field label="What needs doing">
             <input value={form.title} onChange={set("title")} maxLength={TEXT.line} required autoFocus={!editing} placeholder="e.g. First fix electrics, kitchen" className={control} />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Stage">
               <select value={form.phaseId} onChange={set("phaseId")} className={control}>
                 <option value="">No stage</option>

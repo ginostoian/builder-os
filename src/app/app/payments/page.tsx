@@ -39,7 +39,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
 
   return (
     <LiveAppShell active="invoices" crumbs={["Payments", FILTERS.find((f) => f.key === filter)!.label]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <ScreenTitle title="Payments" subtitle="Invoices raised from accepted quotes, paid by bank transfer." />
 
         {!settings?.bankSortCode && (
@@ -51,7 +51,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
           </Panel>
         )}
 
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {kpis.map((k) => (
             <Panel key={k.label} className="px-4 py-3.5">
               <div className="text-[12.5px] text-subtle">{k.label}</div>

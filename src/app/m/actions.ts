@@ -122,7 +122,7 @@ export async function uploadSitePhoto(form: FormData): Promise<SiteActionResult>
     const stored = await putObject(key, bytes, type.mime);
     if (!stored.ok) throw new StoreError(stored.message);
     try {
-      await withSession(m.session, (tx) => addDiaryPhoto(tx, m.session.orgId, projectId, entryId, key));
+      await withSession(m.session, (tx) => addDiaryPhoto(tx, m.session.orgId, projectId, entryId, key, { memberId: m.session.memberId }));
     } catch (error) {
       await deleteObject(key);
       throw error;

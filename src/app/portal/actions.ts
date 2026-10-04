@@ -5,6 +5,7 @@
  * checks this browser has signed in, when the company asks for that. Every action then works inside that
  * company's tenant only.
  */
+import { allow, perIp } from "@/server/rate-limit";
 import { revalidatePath } from "next/cache";
 import { runCompanyAutomations } from "@/server/automations";
 import { after } from "next/server";
@@ -34,6 +35,8 @@ const MESSAGES: Record<PortalErrorReason | "bad_link" | "invalid", string> = {
   invalid: "Check what you've typed and try again.",
 };
 
+const BUSY = "That's a lot of requests in a short time. Please wait a few minutes and try again.";
+
 const quoteNumber = (n: unknown) => (typeof n === "number" && Number.isInteger(n) && n > 0 && n < 1e9 ? n : null);
 
 /** Called by the quote page in the browser once it's on screen. Bots and link previews never get here. */
@@ -53,6 +56,7 @@ export async function markViewed(token: string, number: number): Promise<void> {
 export async function postComment(token: string, number: number, input: unknown): Promise<PortalActionResult> {
   const parsed = portalCommentInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: "Write your name and a comment (up to 2,000 characters)." };
+  if (!(await allow(await perIp("portal_comment_ip", 30, 3_600)))) return { ok: false, message: BUSY };
   return runIn(token, number, (tx, orgId, clientId, n) => addClientComment(tx, orgId, clientId, n, parsed.data), (orgId, quoteId) =>
     notifyTeam(orgId, quoteId, { kind: "commented", author: parsed.data.name, body: parsed.data.body }),
   );
@@ -61,6 +65,7 @@ export async function postComment(token: string, number: number, input: unknown)
 export async function decideQuote(token: string, number: number, input: unknown): Promise<PortalActionResult> {
   const parsed = portalDecisionInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: MESSAGES.invalid };
+  if (!(await allow(await perIp("portal_decide_ip", 20, 3_600)))) return { ok: false, message: BUSY };
   const evidence = await requestEvidence();
   const d = parsed.data;
   return runIn(token, number, (tx, orgId, clientId, n) => decide(tx, orgId, clientId, n, d, evidence), async (orgId, quoteId) => {
@@ -95,6 +100,7 @@ async function runIn(
 export async function decideVariationAction(token: string, quoteNumberArg: number, number: number, input: unknown): Promise<PortalActionResult> {
   const parsed = portalDecisionInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: MESSAGES.invalid };
+  if (!(await allow(await perIp("portal_decide_ip", 20, 3_600)))) return { ok: false, message: BUSY };
   const q = quoteNumber(quoteNumberArg);
   const n = quoteNumber(number);
   const access = typeof token === "string" ? await requirePortal(token) : null;
@@ -126,6 +132,7 @@ export async function decideVariationAction(token: string, quoteNumberArg: numbe
  * this client, when the company takes online payments.
  */
 export async function payInvoiceAction(token: string, number: number): Promise<{ ok: true; url: string } | { ok: false; message: string }> {
+  if (!(await allow(await perIp("portal_pay_ip", 20, 600)))) return { ok: false, message: BUSY };
   const n = quoteNumber(number);
   const access = typeof token === "string" ? await requirePortal(token) : null;
   if (!access || n === null) return { ok: false, message: MESSAGES.bad_link };

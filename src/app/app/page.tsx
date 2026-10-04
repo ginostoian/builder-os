@@ -85,7 +85,7 @@ export default async function DashboardPage() {
       : [];
     return (
       <LiveAppShell active="dashboard">
-        <div className="flex min-h-0 flex-1 flex-col gap-4 bg-surface-2 px-7 py-6">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 bg-surface-2 px-4 py-6 lg:px-7">
           <div>
             <h1 className="text-[22px] font-semibold tracking-[-0.02em]">
               {greeting}
@@ -152,7 +152,7 @@ export default async function DashboardPage() {
 
   return (
     <LiveAppShell active="dashboard">
-      <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-auto bg-surface-2 px-7 py-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-auto bg-surface-2 px-4 py-6 lg:px-7">
         <div className="flex items-end justify-between">
           <div>
             <h1 className="text-[22px] font-semibold tracking-[-0.02em]">
@@ -169,7 +169,7 @@ export default async function DashboardPage() {
         </div>
         {guideCard}
 
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {kpis.map((k) => (
             <div
               key={k.label}
@@ -237,7 +237,7 @@ export default async function DashboardPage() {
           </Link>
         )}
 
-        <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-start gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-start gap-3">
           <div className="flex flex-col gap-3">
             <Panel className="overflow-hidden">
               <div className="flex items-center justify-between px-[18px] pt-4 pb-2">

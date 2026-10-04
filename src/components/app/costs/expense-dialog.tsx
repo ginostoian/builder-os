@@ -170,7 +170,7 @@ export function ExpenseDialog({
               Billed to the client on {invoiceRef(expense.invoiceNumber)}. Cancel that invoice to change the amounts.
             </p>
           )}
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <Field label="What for" required className="col-span-2">
               <input value={v.description} onChange={set("description")} maxLength={TEXT.line} required placeholder="e.g. Plasterboard and screws" className={control} autoFocus={!expense} />
             </Field>

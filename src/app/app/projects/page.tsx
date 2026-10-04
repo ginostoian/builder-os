@@ -33,7 +33,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
 
   return (
     <LiveAppShell active="board" crumbs={["Projects", FILTERS.find((f) => f.key === filter)!.label]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <ScreenTitle title="Projects" subtitle="Jobs from booked in to handover: stages, tasks, the site diary and files.">
           {canEdit && (
             <Button asChild>

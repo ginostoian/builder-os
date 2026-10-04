@@ -40,7 +40,7 @@ export function TaskList({
   ].filter((g) => g.phase !== null || g.tasks.length > 0);
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto bg-surface-2 px-6 py-4">
+    <div className="min-h-0 flex-1 overflow-auto bg-surface-2 px-4 py-4 lg:px-6">
       <div className="mx-auto flex max-w-[1080px] flex-col gap-4">
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 text-ink-2">

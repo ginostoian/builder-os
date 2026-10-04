@@ -53,7 +53,7 @@ export function SurveySettingsForm({ settings }: { settings: SurveySettings }) {
           <span className="block text-[12.5px] text-ink-2">Off: booking links say you&apos;ll be in touch to arrange a time.</span>
         </span>
       </label>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="A visit takes">
           <select value={v.visitMinutes} onChange={num("visitMinutes")} className={control}>
             {LENGTHS.map((m) => (

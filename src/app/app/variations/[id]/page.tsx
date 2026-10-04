@@ -1,3 +1,4 @@
+import { withFreshPhotos } from "@/server/variation-photos";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LiveAppShell } from "@/components/app/live-app-shell";
@@ -11,7 +12,7 @@ import { paymentSettings } from "@/db/invoices";
 import { currentPortalToken } from "@/db/sending";
 import { getVariation } from "@/db/variations";
 import { libraryForQuotes } from "@/db/quotes";
-import { publicUrl, storageConfigured } from "@/server/storage";
+import { privateUrl, storageConfigured } from "@/server/storage";
 import { requirePermission, withSession } from "@/auth/session";
 import { emailConfigured } from "@/server/email";
 import { appOrigin, portalVariationUrl } from "@/server/origin";
@@ -49,7 +50,7 @@ export default async function VariationPage({ params }: { params: Promise<{ id: 
           clientEmail={found.clientEmail}
           emailEnabled={emailConfigured()}
           library={data.library}
-          photos={v.photos.map((p) => ({ key: p.key, url: publicUrl(p.key) }))}
+          photos={v.photos.map((p) => ({ key: p.key, url: privateUrl(p.key) }))}
           storageEnabled={storageConfigured()}
         />
       </LiveAppShell>
@@ -62,7 +63,7 @@ export default async function VariationPage({ params }: { params: Promise<{ id: 
         id={v.id}
         quoteId={v.quoteId}
         status={v.status}
-        snapshot={v.snapshot!}
+        snapshot={withFreshPhotos(v.snapshot!)}
         sentAt={v.sentAt!}
         link={data.token ? portalVariationUrl(await appOrigin(), data.token, found.quoteNumber, v.number) : null}
         decision={v.decidedAt ? { at: v.decidedAt, name: v.decisionName ?? "", signature: v.signature, reason: v.decisionReason, ip: v.decisionIp } : null}

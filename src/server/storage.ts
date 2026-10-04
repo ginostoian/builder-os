@@ -6,10 +6,11 @@
  *   BUNNY_STORAGE_KEY      the zone's password (FTP & API access), server-only
  *   BUNNY_STORAGE_HOST     region endpoint, e.g. uk.storage.bunnycdn.com (default storage.bunnycdn.com)
  *   BUNNY_CDN_URL          the pull zone in front of the storage zone, e.g. https://builderos.b-cdn.net
- *   BUNNY_TOKEN_KEY        optional: the pull zone's URL token authentication key, for private files
+ *   BUNNY_TOKEN_KEY        optional: URL token authentication key of the private pull zone
+ *   BUNNY_PRIVATE_CDN_URL  optional: a second pull zone on the same storage, with token authentication on
  *
- * Public files (logos) are served straight from the CDN. Private files (client documents, photos) need
- * token authentication enabled on a pull zone and are only handed out as short-lived signed URLs.
+ * Public files (logos) are served straight from the CDN. With the two optional settings, private files
+ * (photos, project files, receipts) are only handed out as signed links that expire (`privateUrl`).
  */
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
@@ -69,17 +70,45 @@ export async function deleteObject(key: string): Promise<void> {
 }
 
 export const publicUrl = (key: string) => `${cdnBase()}/${key}`;
+
+const privateBase = () => (process.env.BUNNY_PRIVATE_CDN_URL ?? "").trim().replace(/\/+$/, "") || cdnBase();
+
+/**
+ * The link for a private file (photos, project files, receipts). With BUNNY_TOKEN_KEY set, a signed link
+ * from the private pull zone (BUNNY_PRIVATE_CDN_URL, token authentication on) that stops working after
+ * `hours`; pages hand out fresh ones each time they render. Without it, the plain CDN link, as before.
+ * Logos stay public (`publicUrl`): they go out in emails and on quotes.
+ */
+export function privateUrl(key: string, hours = 12, now = Date.now()): string {
+  if (!process.env.BUNNY_TOKEN_KEY?.trim()) return publicUrl(key);
+  return signedUrl(key, hours * 3_600, now, privateBase());
+}
 export const cdnBaseUrl = () => cdnBase() || undefined;
 
 /**
  * A URL that works until `expiresInSeconds` from now, using Bunny's URL token authentication:
  * token = base64url(sha256(tokenKey + path + expires)). Requires BUNNY_TOKEN_KEY.
  */
-export function signedUrl(key: string, expiresInSeconds = 3_600, now = Date.now()): string {
-  const tokenKey = process.env.BUNNY_TOKEN_KEY;
+export function signedUrl(key: string, expiresInSeconds = 3_600, now = Date.now(), base = cdnBase()): string {
+  const tokenKey = process.env.BUNNY_TOKEN_KEY?.trim();
   if (!tokenKey) throw new Error("BUNNY_TOKEN_KEY is not set");
   const path = `/${key}`;
   const expires = Math.floor(now / 1000) + expiresInSeconds;
   const token = createHash("sha256").update(tokenKey + path + expires).digest("base64url");
-  return `${cdnBase()}${path}?token=${token}&expires=${expires}`;
+  return `${base}${path}?token=${token}&expires=${expires}`;
+}
+
+/**
+ * A link to one of our stored files, frozen into a sent document (a variation's photos), made current: a
+ * fresh signed link when files are private, unchanged otherwise or if it isn't one of ours.
+ */
+export function freshFileUrl(url: string, now = Date.now()): string {
+  if (!process.env.BUNNY_TOKEN_KEY?.trim()) return url;
+  for (const base of new Set([cdnBase(), privateBase()])) {
+    if (base && url.startsWith(`${base}/`)) {
+      const key = url.slice(base.length + 1).split("?")[0];
+      return key.startsWith("orgs/") && !key.includes("..") ? privateUrl(key, 12, now) : url;
+    }
+  }
+  return url;
 }
