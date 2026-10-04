@@ -11,6 +11,7 @@ import { z } from "zod";
 import { MAX_VARIATION_LINES } from "./variation";
 import { PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "./projects";
 import { WORKER_KINDS } from "./team";
+import { EXPENSE_CATEGORIES, MAX_PO_LINES } from "./costs";
 import { MAX_PAYMENT_STAGES, PAYMENT_AMOUNT_KINDS, PAYMENT_DUE_KINDS } from "./payment-plan";
 import { MAX_BUNDLE_ITEMS, MAX_LINES_PER_QUOTE, MAX_MARKUP_BPS, MAX_PATCH_OPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, QTY_DECIMALS, TEXT } from "./limits";
 
@@ -300,9 +301,10 @@ export type PaymentSettingsInput = z.infer<typeof paymentSettingsInput>;
  * variations added to it.
  */
 export const createInvoiceInput = z
-  .strictObject({ quoteId: id, stageId: id.optional(), variationIds: z.array(id).max(50).default([]), email: z.boolean() })
-  .refine((i) => i.stageId !== undefined || i.variationIds.length > 0, "Choose what to invoice")
-  .refine((i) => new Set(i.variationIds).size === i.variationIds.length, "Duplicate variation");
+  .strictObject({ quoteId: id, stageId: id.optional(), variationIds: z.array(id).max(50).default([]), expenseIds: z.array(id).max(200).default([]), email: z.boolean() })
+  .refine((i) => i.stageId !== undefined || i.variationIds.length > 0 || i.expenseIds.length > 0, "Choose what to invoice")
+  .refine((i) => new Set(i.variationIds).size === i.variationIds.length, "Duplicate variation")
+  .refine((i) => new Set(i.expenseIds).size === i.expenseIds.length, "Duplicate purchase");
 
 export const markPaidInput = z.strictObject({
   invoiceId: id,
@@ -412,3 +414,41 @@ export type CertificateInput = z.infer<typeof certificateInput>;
 
 /** A site check-in or check-out location, when the phone shares it. */
 export const geoInput = z.strictObject({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).optional();
+
+// ── Job costs ────────────────────────────────────────────────────────────────
+
+/** An expense: what it was, what it cost (total as on the receipt, VAT part if any), and whether it's billed back to the client. */
+export const expenseInput = z
+  .strictObject({
+    projectId: id,
+    purchaseOrderId: id.optional(),
+    category: z.enum(EXPENSE_CATEGORIES),
+    supplier: singleLine(TEXT.name).optional(),
+    description: singleLine(TEXT.line),
+    spentOn: isoDate,
+    totalPence: pence,
+    vatPence: pence,
+    rechargeable: z.boolean(),
+    rechargeMarkupBps: markupBps,
+  })
+  .refine((e) => e.vatPence <= e.totalPence, { message: "The VAT is more than the total", path: ["vatPence"] });
+export type ExpenseInput = z.infer<typeof expenseInput>;
+
+export const poLineInput = z.strictObject({
+  id,
+  description: singleLine(TEXT.line),
+  qty: qty.refine((n) => n > 0, "Enter a quantity"),
+  unit: singleLine(TEXT.short),
+  unitPricePence: pence,
+});
+
+export const purchaseOrderInput = z.strictObject({
+  projectId: id,
+  supplierName: singleLine(TEXT.name),
+  supplierEmail: email.optional(),
+  neededBy: isoDate.optional(),
+  deliveryNotes: multiLine(TEXT.note).optional(),
+  vatRateBps: vatBps,
+  lines: z.array(poLineInput).max(MAX_PO_LINES),
+});
+export type PurchaseOrderInput = z.infer<typeof purchaseOrderInput>;

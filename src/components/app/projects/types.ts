@@ -45,5 +45,6 @@ export const PROJECT_VIEWS = [
   { key: "timeline", label: "Timeline" },
   { key: "diary", label: "Site diary" },
   { key: "files", label: "Files" },
+  { key: "costs", label: "Costs" },
 ] as const;
 export type ProjectView = (typeof PROJECT_VIEWS)[number]["key"];

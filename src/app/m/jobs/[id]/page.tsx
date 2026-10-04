@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MapPin, Navigation, Phone } from "lucide-react";
+import { AddReceipt } from "@/components/site/add-receipt";
 import { CheckIn } from "@/components/site/check-in";
 import { MyTasks } from "@/components/site/my-tasks";
 import { PostUpdate } from "@/components/site/post-update";
 import { SiteFrame, SiteHeading } from "@/components/site/site-frame";
 import { toMyTask } from "@/components/site/to-my-task";
 import { formatAddress } from "@/core/clients";
+import { formatGBP } from "@/core/money";
 import { ukToday } from "@/core/payment-plan";
 import { longDate } from "@/core/quote-snapshot";
 import { can } from "@/core/roles";
 import { id as uuid } from "@/core/schemas";
+import { myReceipts } from "@/db/costs";
 import { myJob, openVisit, workerForMember } from "@/db/site";
 import { requirePermission, withSession } from "@/auth/session";
 import { publicUrl, storageConfigured } from "@/server/storage";
@@ -28,7 +31,7 @@ export default async function SiteJobPage({ params }: { params: Promise<{ id: st
     if (!worker) return null;
     const job = await myJob(tx, session.orgId, { workerId: worker.id, memberId: session.memberId }, projectId);
     if (!job) return null;
-    return { job, open: await openVisit(tx, session.orgId, worker.id) };
+    return { job, open: await openVisit(tx, session.orgId, worker.id), receipts: await myReceipts(tx, session.orgId, session.memberId, projectId) };
   });
   if (!data) notFound();
   const { job } = data;
@@ -73,6 +76,24 @@ export default async function SiteJobPage({ params }: { params: Promise<{ id: st
 
       <SiteHeading title="Post an update" />
       <PostUpdate projectId={job.id} photosEnabled={storageConfigured()} />
+
+      <SiteHeading title="Receipts" aside={data.receipts.length > 0 ? `${data.receipts.length} from you` : undefined} />
+      <AddReceipt projectId={job.id} photosEnabled={storageConfigured()} />
+      {data.receipts.length > 0 && (
+        <ul className="overflow-hidden rounded-2xl bg-white shadow-ring">
+          {data.receipts.slice(0, 5).map((r) => (
+            <li key={r.id} className="flex items-center gap-3 border-b border-line px-4 py-2.5 last:border-0">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{r.description}</span>
+                <span className="block text-xs text-subtle">
+                  {[r.supplier, r.spentOn === today ? "today" : longDate(r.spentOn), r.receipts.length ? "photo" : "no photo"].filter(Boolean).join(" · ")}
+                </span>
+              </span>
+              <span className="tabular">{formatGBP(r.totalPence)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {job.diary.length > 0 && (
         <>

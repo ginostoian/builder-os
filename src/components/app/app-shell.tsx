@@ -16,6 +16,7 @@ import {
   Receipt,
   Search,
   Settings,
+  ShoppingCart,
   Smartphone,
   SquareKanban,
   type LucideIcon,
@@ -35,9 +36,10 @@ const nav: NavItem[] = [
   { id: "variations", label: "Variations", icon: FileDiff, href: appRoutes.variations, badge: "2", screen: "variations" },
   { id: "board", label: "Projects", icon: SquareKanban, href: appRoutes.projects, badge: "7", screen: "board" },
   { id: "invoices", label: "Payments", icon: Receipt, href: appRoutes.payments, screen: "invoices" },
+  { id: "purchases", label: "Purchases", icon: ShoppingCart, href: appRoutes.purchases, screen: "purchases" },
   { id: "crm", label: "Clients", icon: Contact, href: appRoutes.clients, badge: "23", screen: "crm" },
   { id: "team", label: "Team", icon: HardHat, href: appRoutes.people, screen: "people" },
-  { id: "reports", label: "Reports", icon: ChartColumn, href: appRoutes.dashboard },
+  { id: "reports", label: "Reports", icon: ChartColumn, href: appRoutes.reports, screen: "reports" },
 ];
 
 const portals = [
@@ -54,6 +56,8 @@ const crumbs: Record<AdminScreen, [string, string]> = {
   invoices: ["Payments", "14 Elm Road"],
   crm: ["Clients", "Pipeline"],
   people: ["Team", "People"],
+  purchases: ["Purchases", "Expenses"],
+  reports: ["Reports", "Job costing"],
   settings: ["Settings", "Company"],
 };
 

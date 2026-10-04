@@ -15,7 +15,7 @@ import { longDate, type QuoteSnapshot } from "@/core/quote-snapshot";
 import { cn } from "@/lib/utils";
 import { control } from "../form-fields";
 import { DuplicateButton } from "./duplicate-button";
-import { PaymentSchedule, type BillableVariation, type ScheduleRow } from "./payment-schedule";
+import { PaymentSchedule, type BillableRecharge, type BillableVariation, type ScheduleRow } from "./payment-schedule";
 import { VariationsPanel, type VariationRow } from "@/components/app/variations/variations-panel";
 import { StartProject } from "@/components/app/projects/start-project";
 import { CopyButton } from "./send-dialog";
@@ -59,6 +59,7 @@ export function SentQuote({
   clientEmail,
   variations,
   billable,
+  recharges = [],
   canEdit,
   project,
 }: {
@@ -82,6 +83,7 @@ export function SentQuote({
   clientEmail: string | null;
   variations: VariationRow[] | null;
   billable: BillableVariation[];
+  recharges?: BillableRecharge[];
   canEdit: boolean;
   /** For accepted quotes: the project, if started, and whether this person can start one. */
   project?: { id: string | null; canStart: boolean };
@@ -179,7 +181,7 @@ export function SentQuote({
         </div>
         {decision && <DecisionCard decision={decision} />}
         {schedule && schedule.length > 0 && (
-          <PaymentSchedule quoteId={quoteId} rows={schedule} billable={billable} canInvoice={canInvoice} bankReady={bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />
+          <PaymentSchedule quoteId={quoteId} rows={schedule} billable={billable} recharges={recharges} canInvoice={canInvoice} bankReady={bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />
         )}
         {variations && <VariationsPanel quoteId={quoteId} rows={variations} canEdit={canEdit} />}
         <Conversation quoteId={quoteId} comments={comments} clientName={clientName} snapshot={snapshot} />

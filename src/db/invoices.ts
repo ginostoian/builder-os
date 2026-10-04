@@ -7,15 +7,17 @@
  */
 import "server-only";
 import { and, asc, desc, eq, inArray, lte, ne, sql } from "drizzle-orm";
+import { applyBps } from "@/core/money";
 import { addDays, invoiceRef, splitVat, ukToday, type ReminderKind } from "@/core/payment-plan";
 import type { QuoteSnapshot, SnapshotStage } from "@/core/quote-snapshot";
 import type { VariationSnapshot } from "@/core/variation";
 import type { PaymentSettingsInput } from "@/core/schemas";
 import type { Tx } from "./index";
-import { clients, invoiceReminders, invoices, organizations, quoteDecisions, quoteVersions, quotes, variations } from "./schema";
+import { expenses, clients, invoiceReminders, invoices, organizations, quoteDecisions, quoteVersions, quotes, variations } from "./schema";
+import { rechargesForQuote } from "./costs";
 import { billableVariations } from "./variations";
 
-export type InvoiceErrorReason = "not_found" | "not_accepted" | "unknown_stage" | "unknown_variation" | "credit_too_big" | "already_invoiced" | "no_bank_details" | "not_paid" | "not_open";
+export type InvoiceErrorReason = "not_found" | "not_accepted" | "unknown_stage" | "unknown_variation" | "credit_too_big" | "already_invoiced" | "no_bank_details" | "not_paid" | "not_open" | "unknown_recharge";
 
 export class InvoiceError extends Error {
   constructor(readonly reason: InvoiceErrorReason) {
@@ -105,9 +107,10 @@ export async function quoteSchedule(tx: Tx, orgId: string, quoteId: string): Pro
  * company's payment terms. Needs bank details (it's paid by bank transfer). Omissions (credits) can reduce
  * an invoice but not take it below zero.
  */
-export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: string; stageId?: string; variationIds?: string[]; memberId: string }, today = ukToday()) {
+export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: string; stageId?: string; variationIds?: string[]; expenseIds?: string[]; memberId: string }, today = ukToday()) {
   const variationIds = input.variationIds ?? [];
-  if (!input.stageId && variationIds.length === 0) throw new InvoiceError("unknown_stage");
+  const expenseIds = input.expenseIds ?? [];
+  if (!input.stageId && variationIds.length === 0 && expenseIds.length === 0) throw new InvoiceError("unknown_stage");
   const accepted = await acceptedVersion(tx, orgId, input.quoteId);
   if (!accepted) throw new InvoiceError("not_accepted");
   const stage = input.stageId ? accepted.snapshot.paymentPlan?.find((st) => st.id === input.stageId) : undefined;
@@ -122,6 +125,9 @@ export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: str
   const billable = variationIds.length ? await billableVariations(tx, orgId, input.quoteId) : [];
   const chosen = variationIds.map((id) => billable.find((v) => v.id === id));
   if (chosen.some((v) => !v)) throw new InvoiceError("unknown_variation");
+  const recharges = expenseIds.length ? await rechargesForQuote(tx, orgId, input.quoteId) : [];
+  const pickedRecharges = expenseIds.map((id) => recharges.find((r) => r.id === id));
+  if (pickedRecharges.some((r) => !r)) throw new InvoiceError("unknown_recharge");
 
   const s = accepted.snapshot;
   const lines: InvoiceLine[] = [];
@@ -133,6 +139,10 @@ export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: str
     const ref = (v.snapshot as VariationSnapshot).ref;
     lines.push({ description: `Variation ${ref.split("-").at(-1)}: ${v.title}`, net: v.netPence, vat: v.vatPence, total: v.totalPence });
   }
+  for (const r of pickedRecharges as NonNullable<(typeof pickedRecharges)[number]>[]) {
+    const vatLine = applyBps(r.amount, s.quote.vatRateBps);
+    lines.push({ description: `Purchased on your behalf: ${r.description}${r.supplier ? ` (${r.supplier})` : ""}`, net: r.amount, vat: vatLine, total: r.amount + vatLine });
+  }
   const net = lines.reduce((a, l) => a + l.net, 0);
   const vat = lines.reduce((a, l) => a + l.vat, 0);
   const total = net + vat;
@@ -143,7 +153,8 @@ export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: str
     .from(invoices)
     .where(eq(invoices.orgId, orgId));
   const dueDate = stage && stage.dueKind === "date" && stage.dueDate && stage.dueDate > today ? stage.dueDate : addDays(today, org.paymentTermsDays);
-  const headline = lines.length === 1 ? lines[0].description : stage ? `${stage.label} and ${lines.length - 1} variation${lines.length > 2 ? "s" : ""}` : `${lines.length} variations`;
+  const extras = [chosen.length ? `${chosen.length} variation${chosen.length > 1 ? "s" : ""}` : null, pickedRecharges.length ? `${pickedRecharges.length} purchase${pickedRecharges.length > 1 ? "s" : ""} on your behalf` : null].filter(Boolean).join(" and ");
+  const headline = lines.length === 1 ? lines[0].description : stage ? `${stage.label}${extras ? ` and ${extras}` : ""}` : extras;
   const snapshot: InvoiceSnapshot = {
     v: 1,
     ref: invoiceRef(next),
@@ -179,6 +190,12 @@ export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: str
       .update(variations)
       .set({ invoiceId: inserted[0].id })
       .where(and(eq(variations.orgId, orgId), inArray(variations.id, variationIds)));
+  }
+  if (expenseIds.length) {
+    await tx
+      .update(expenses)
+      .set({ invoiceId: inserted[0].id })
+      .where(and(eq(expenses.orgId, orgId), inArray(expenses.id, expenseIds)));
   }
   return { ...inserted[0], clientId: quote.clientId, clientEmail: client.email, snapshot, dueDate, totalPence: total };
 }

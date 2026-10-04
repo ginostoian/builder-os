@@ -14,6 +14,8 @@ import { invoiceRef, invoiceState, ukToday } from "@/core/payment-plan";
 import type { SnapshotStage } from "@/core/quote-snapshot";
 
 export type BillableVariation = { id: string; number: number; title: string; totalPence: number };
+/** Something bought on the client's behalf, ready to bill back (`totalPence` includes VAT at the quote's rate). */
+export type BillableRecharge = { id: string; description: string; supplier: string | null; totalPence: number };
 
 export type ScheduleRow = SnapshotStage & { invoice: { id: string; number: number; status: string; dueDate: string; paidOn: string | null } | null };
 
@@ -24,6 +26,7 @@ export function PaymentSchedule({
   quoteId,
   rows,
   billable,
+  recharges = [],
   canInvoice,
   bankReady,
   emailEnabled,
@@ -33,6 +36,7 @@ export function PaymentSchedule({
   quoteId: string;
   rows: ScheduleRow[];
   billable: BillableVariation[];
+  recharges?: BillableRecharge[];
   canInvoice: boolean;
   bankReady: boolean;
   emailEnabled: boolean;
@@ -85,7 +89,7 @@ export function PaymentSchedule({
                 ) : (
                   <>
                     <span>{dueText(r)}</span>
-                    {canInvoice && <CreateInvoiceButton quoteId={quoteId} row={r} billable={billable} disabled={!bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />}
+                    {canInvoice && <CreateInvoiceButton quoteId={quoteId} row={r} billable={billable} recharges={recharges} disabled={!bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />}
                   </>
                 )}
               </div>
@@ -93,6 +97,15 @@ export function PaymentSchedule({
           );
         })}
       </ol>
+      {canInvoice && recharges.length > 0 && (
+        <div className="mt-2 flex items-center justify-between gap-2 rounded-[10px] bg-warning-soft/50 px-3 py-2.5 text-[12.5px]">
+          <span>
+            <span className="font-medium">{recharges.length} purchase{recharges.length > 1 ? "s" : ""} made for the client</span>
+            <span className="text-ink-2"> to bill back, {formatGBP(recharges.reduce((a, r) => a + r.totalPence, 0))} inc. VAT</span>
+          </span>
+          <CreateInvoiceButton quoteId={quoteId} billable={billable} recharges={recharges} disabled={!bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />
+        </div>
+      )}
     </div>
   );
 }
@@ -101,21 +114,33 @@ function CreateInvoiceButton({
   quoteId,
   row,
   billable,
+  recharges,
   disabled,
   emailEnabled,
   clientName,
   clientEmail,
 }: {
   quoteId: string;
-  row: ScheduleRow;
+  /** The payment to invoice; without one, it's an invoice for purchases (and variations) on their own. */
+  row?: ScheduleRow;
   billable: BillableVariation[];
+  recharges: BillableRecharge[];
   disabled: boolean;
   emailEnabled: boolean;
   clientName: string;
   clientEmail: string | null;
 }) {
   const [picked, setPicked] = React.useState<Set<string>>(() => new Set());
-  const total = row.amount + billable.filter((v) => picked.has(v.id)).reduce((a, v) => a + v.totalPence, 0);
+  const [pickedRecharges, setPickedRecharges] = React.useState<Set<string>>(() => new Set(row ? [] : recharges.map((r) => r.id)));
+  const total =
+    (row?.amount ?? 0) + billable.filter((v) => picked.has(v.id)).reduce((a, v) => a + v.totalPence, 0) + recharges.filter((r) => pickedRecharges.has(r.id)).reduce((a, r) => a + r.totalPence, 0);
+  const toggle = (set: React.Dispatch<React.SetStateAction<Set<string>>>, id: string, on: boolean) =>
+    set((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
   const router = useRouter();
   const canEmail = emailEnabled && Boolean(clientEmail);
   const [open, setOpen] = React.useState(false);
@@ -127,44 +152,54 @@ function CreateInvoiceButton({
       <DialogTrigger asChild>
         <Button variant="secondary" disabled={disabled}>
           <FileText className="text-ink-2" />
-          Create invoice
+          {row ? "Create invoice" : "Bill to client"}
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogTitle>Invoice {row.label.toLowerCase()}?</DialogTitle>
+        <DialogTitle>{row ? `Invoice ${row.label.toLowerCase()}?` : "Bill purchases back to the client"}</DialogTitle>
         <DialogDescription>
-          {formatGBP(row.amount)} inc. VAT, payable by bank transfer. {row.dueKind === "date" && row.dueDate ? `Due ${shortDate(row.dueDate)} (or after your payment terms if that's passed).` : "Due after your payment terms."} It also appears in {clientName}&apos;s portal.
+          {row ? (
+            <>
+              {formatGBP(row.amount)} inc. VAT, payable by bank transfer. {row.dueKind === "date" && row.dueDate ? `Due ${shortDate(row.dueDate)} (or after your payment terms if that's passed).` : "Due after your payment terms."} It also appears in {clientName}&apos;s portal.
+            </>
+          ) : (
+            <>Things you bought on {clientName}&apos;s behalf, on an invoice of their own. Due after your payment terms, and it appears in their portal.</>
+          )}
         </DialogDescription>
+        {recharges.length > 0 && (
+          <fieldset className="mt-4 flex min-w-0 flex-col gap-1.5">
+            <legend className="mb-1.5 text-[12.5px] font-medium">{row ? "Add purchases made for the client" : "Purchases made for the client"}</legend>
+            {recharges.map((r) => (
+              <label key={r.id} className="flex items-center gap-2">
+                <input type="checkbox" checked={pickedRecharges.has(r.id)} onChange={(e) => toggle(setPickedRecharges, r.id, e.target.checked)} />
+                <span className="min-w-0 flex-1 truncate">
+                  {r.description}
+                  {r.supplier && <span className="text-subtle"> · {r.supplier}</span>}
+                </span>
+                <span className="tabular">{formatGBP(r.totalPence)}</span>
+              </label>
+            ))}
+          </fieldset>
+        )}
         {billable.length > 0 && (
-          <fieldset className="mt-4 flex flex-col gap-1.5">
+          <fieldset className="mt-4 flex min-w-0 flex-col gap-1.5">
             <legend className="mb-1.5 text-[12.5px] font-medium">Add approved variations</legend>
             {billable.map((v) => (
               <label key={v.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={picked.has(v.id)}
-                  onChange={(e) =>
-                    setPicked((prev) => {
-                      const next = new Set(prev);
-                      if (e.target.checked) next.add(v.id);
-                      else next.delete(v.id);
-                      return next;
-                    })
-                  }
-                />
+                <input type="checkbox" checked={picked.has(v.id)} onChange={(e) => toggle(setPicked, v.id, e.target.checked)} />
                 <span className="min-w-0 flex-1 truncate">
                   V{v.number} {v.title}
                 </span>
                 <span className="tabular">{formatGBP(v.totalPence)}</span>
               </label>
             ))}
-            {picked.size > 0 && (
-              <div className="mt-1 flex justify-between border-t border-hairline pt-1.5 font-medium tabular">
-                <span>Invoice total</span>
-                <span>{formatGBP(total)}</span>
-              </div>
-            )}
           </fieldset>
+        )}
+        {(picked.size > 0 || pickedRecharges.size > 0) && (
+          <div className="mt-2 flex justify-between border-t border-hairline pt-1.5 font-medium tabular">
+            <span>Invoice total</span>
+            <span>{formatGBP(total)}</span>
+          </div>
         )}
         <label className="mt-4 flex items-center gap-2">
           <input type="checkbox" checked={email} disabled={!canEmail} onChange={(e) => setEmail(e.target.checked)} />
@@ -176,10 +211,10 @@ function CreateInvoiceButton({
             <Button variant="ghost">Cancel</Button>
           </DialogClose>
           <Button
-            disabled={pending}
+            disabled={pending || total <= 0}
             onClick={() =>
               startTransition(async () => {
-                const r = await createInvoice({ quoteId, stageId: row.id, variationIds: [...picked], email: email && canEmail });
+                const r = await createInvoice({ quoteId, stageId: row?.id, variationIds: [...picked], expenseIds: [...pickedRecharges], email: email && canEmail });
                 if (!r.ok) return setError(r.message);
                 if (r.emailError) setError(`Invoice created, but: ${r.emailError}`);
                 else setOpen(false);

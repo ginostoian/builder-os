@@ -146,7 +146,8 @@ export async function checkIn(tx: Tx, orgId: string, me: { workerId: string; mem
   const [mine] = await tx.select({ id: projects.id }).from(projects).where(and(myProjectFilter(orgId, me.workerId, me.memberId), eq(projects.id, projectId)));
   if (!mine) throw new SiteError("not_yours");
   await checkOut(tx, orgId, me.workerId, undefined);
-  await tx.insert(siteVisits).values({ orgId, workerId: me.workerId, projectId, inLat: geo ? String(geo.lat) : null, inLng: geo ? String(geo.lng) : null });
+  const [w] = await tx.select({ dayRatePence: workers.dayRatePence }).from(workers).where(and(eq(workers.orgId, orgId), eq(workers.id, me.workerId)));
+  await tx.insert(siteVisits).values({ orgId, workerId: me.workerId, projectId, dayRatePence: w?.dayRatePence ?? null, inLat: geo ? String(geo.lat) : null, inLng: geo ? String(geo.lng) : null });
 }
 
 export async function checkOut(tx: Tx, orgId: string, workerId: string, geo: Geo) {

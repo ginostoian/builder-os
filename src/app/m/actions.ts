@@ -5,11 +5,14 @@ import { MAX_PHOTO_BYTES, orgFileKey, sniffImage } from "@/core/files";
 import { ukToday } from "@/core/payment-plan";
 import { TASK_STATUSES, type TaskStatus } from "@/core/projects";
 import { can } from "@/core/roles";
-import { geoInput, id, multiLine } from "@/core/schemas";
+import { geoInput, id, multiLine, pence, singleLine } from "@/core/schemas";
+import { vatInGross } from "@/core/costs";
 import { TEXT } from "@/core/limits";
 import { ProjectError, addDiaryEntry, addDiaryPhoto } from "@/db/projects";
+import { CostError, addReceipt, createExpense } from "@/db/costs";
 import { SiteError, checkIn, checkOut, isMyJob, setMyTaskStatus, workerForMember } from "@/db/site";
 import { getSession, withSession, type Session } from "@/auth/session";
+import { storeReceipt } from "@/server/receipts";
 import { deleteObject, putObject, randomName, storageConfigured } from "@/server/storage";
 
 /**
@@ -122,4 +125,70 @@ export async function uploadSitePhoto(form: FormData): Promise<SiteActionResult>
     if (error instanceof StoreError) return { ok: false as const, message: error.message };
     throw error;
   });
+}
+
+// ── Receipts ─────────────────────────────────────────────────────────────────
+
+const receiptInput = {
+  description: singleLine(TEXT.line),
+  supplier: singleLine(TEXT.name).optional(),
+  totalPence: pence,
+};
+
+/**
+ * Log something bought for a job, from the receipt in hand: what, where from, how much. It goes into the
+ * job's costs for the office to check. "Includes VAT" assumes 20%; "for the client" marks it to bill back.
+ */
+export async function addSiteReceiptAction(projectId: string, input: { description: string; supplier?: string; totalPence: number; includesVat: boolean; forClient: boolean }): Promise<SiteActionResult> {
+  if (!id.safeParse(projectId).success) return { ok: false, message: MESSAGES.not_found };
+  const description = receiptInput.description.safeParse((input.description ?? "").trim());
+  const supplier = receiptInput.supplier.safeParse(input.supplier?.trim() || undefined);
+  const total = receiptInput.totalPence.safeParse(input.totalPence);
+  if (!description.success) return { ok: false, message: "Say what you bought." };
+  if (!supplier.success) return { ok: false, message: "Check the shop's name." };
+  if (!total.success || total.data === 0) return { ok: false, message: "Enter the total from the receipt." };
+  return run(
+    (m) =>
+      withSession(m.session, async (tx) => {
+        if (!(await isMyJob(tx, m.session.orgId, m, projectId))) throw new SiteError("not_yours");
+        return createExpense(
+          tx,
+          m.session.orgId,
+          {
+            projectId,
+            category: "materials",
+            supplier: supplier.data,
+            description: description.data,
+            spentOn: ukToday(),
+            totalPence: total.data,
+            vatPence: input.includesVat === true ? vatInGross(total.data, 2000) : 0,
+            rechargeable: input.forClient === true,
+            rechargeMarkupBps: 0,
+          },
+          m.memberId,
+        );
+      }),
+    `/app/projects/${projectId}`,
+    "/app/purchases",
+  );
+}
+
+/** A photo (or PDF) of a receipt I just logged. */
+export async function uploadSiteReceiptAction(form: FormData): Promise<SiteActionResult> {
+  const expenseId = form.get("expenseId");
+  if (typeof expenseId !== "string" || !id.safeParse(expenseId).success) return { ok: false, message: MESSAGES.not_found };
+  const m = await me();
+  if ("ok" in m) return m;
+  const stored = await storeReceipt(m.session.orgId, form.get("file"));
+  if (!stored.ok) return stored;
+  try {
+    await withSession(m.session, (tx) => addReceipt(tx, m.session.orgId, expenseId, { key: stored.key, contentType: stored.contentType }, m.memberId));
+  } catch (error) {
+    await deleteObject(stored.key);
+    if (error instanceof CostError) return { ok: false, message: error.reason === "too_many_receipts" ? "That receipt has as many photos as it can take." : MESSAGES.not_found };
+    throw error;
+  }
+  revalidatePath("/m", "layout");
+  revalidatePath("/app/purchases");
+  return { ok: true };
 }
