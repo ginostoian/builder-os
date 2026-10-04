@@ -32,9 +32,22 @@ describe("Bunny storage", () => {
     expect(init.headers).toMatchObject({ AccessKey: "secret-key", "Content-Type": "image/png", Checksum: createHash("sha256").update(body).digest("hex").toUpperCase() });
   });
 
+  it("copes with settings pasted with spaces, slashes or an https:// prefix", async () => {
+    vi.stubEnv("BUNNY_STORAGE_HOST", " https://uk.storage.bunnycdn.com/ ");
+    vi.stubEnv("BUNNY_STORAGE_ZONE", " builderos/ ");
+    vi.stubEnv("BUNNY_STORAGE_KEY", "secret-key\n");
+    const fetchMock = vi.fn(async () => new Response(null, { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await putObject("orgs/x/logo/a.png", new Uint8Array([1]), "image/png")).toEqual({ ok: true });
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://uk.storage.bunnycdn.com/builderos/orgs/x/logo/a.png");
+    expect(init.headers).toMatchObject({ AccessKey: "secret-key" });
+  });
+
   it("reports a refused upload without leaking details", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("nope", { status: 401 })));
-    expect(await putObject("k", new Uint8Array([1]), "image/png")).toEqual({ ok: false, message: expect.stringMatching(/couldn't be stored/) });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await putObject("k", new Uint8Array([1]), "image/png")).toEqual({ ok: false, message: expect.stringMatching(/couldn't be stored \(storage error 401\)/) });
   });
 
   it("builds public and signed CDN URLs", () => {
