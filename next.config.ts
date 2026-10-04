@@ -3,8 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
-    // Library CSV imports send the file's text to a Server Action (capped at 1 MB in src/core/library-import.ts).
-    serverActions: { bodySizeLimit: "2mb" },
+    // Uploads go through Server Actions: library CSVs (1 MB), photos (shrunk to under 2 MB) and project files
+    // (4 MB, src/core/files.ts). Vercel caps a request at 4.5 MB whatever this says.
+    serverActions: { bodySizeLimit: "5mb" },
   },
 };
 

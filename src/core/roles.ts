@@ -55,6 +55,9 @@ const PERMISSIONS = {
   "costs.view": ["admin", "office", "estimator"],
   "quotes.edit": ["admin", "office", "estimator"],
   "invoices.manage": ["admin", "office"],
+  /** Projects: tasks, diary and files. Site leads run jobs, so they can do all of it (without prices). */
+  "projects.view": OFFICE,
+  "projects.edit": OFFICE,
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;
