@@ -1,5 +1,6 @@
 "use client";
 
+import { StoredImage } from "@/components/stored-image";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Camera, CloudRain, Eye, EyeOff, Snowflake, Sun, Trash2, Wind, X } from "lucide-react";
@@ -96,9 +97,7 @@ function Entry({ projectId, entry, canEdit }: { projectId: string; entry: DiaryE
         <div className="mt-2.5 grid grid-cols-3 gap-1.5 sm:grid-cols-4">
           {entry.photos.map((p, i) => (
             <a key={p.url} href={p.url} target="_blank" rel="noreferrer noopener" className="block aspect-square overflow-hidden rounded-[8px] bg-muted">
-              {/* Our own CDN, per environment: a plain <img>. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.url} alt={`Site photo ${i + 1}`} referrerPolicy="no-referrer" loading="lazy" className="size-full object-cover" />
+              <StoredImage src={p.url} alt={`Site photo ${i + 1}`} className="size-full object-cover" />
             </a>
           ))}
         </div>

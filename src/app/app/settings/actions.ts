@@ -10,6 +10,7 @@ import { renameClerkOrganization } from "@/auth/clerk-admin";
 import { getSession, withSession } from "@/auth/session";
 import { MAX_LOGO_BYTES, keyFromCdnUrl, orgFileKey, sniffImage } from "@/core/files";
 import { cdnBaseUrl, deleteObject, publicUrl, putObject, randomName, storageConfigured } from "@/server/storage";
+import { checkStorage, type StorageCheck } from "@/server/storage-check";
 
 export type SaveSettingsState = {
   status: "idle" | "saved" | "error";
@@ -108,4 +109,11 @@ export async function removeLogo(): Promise<LogoResult> {
   if (oldKey) await deleteObject(oldKey);
   revalidatePath("/app", "layout");
   return { ok: true, logoUrl: null };
+}
+
+/** Upload a test photo and fetch it back through the CDN, to find out why photos don't show. Admin only. */
+export async function checkStorageAction(): Promise<StorageCheck> {
+  const session = await getSession();
+  if (!can(session.role, "settings.manage")) return { ok: false, summary: "Only an Admin can check file storage.", steps: [] };
+  return checkStorage(session.orgId);
 }

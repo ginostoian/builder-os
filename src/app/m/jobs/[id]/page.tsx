@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { StoredImage } from "@/components/stored-image";
 import { notFound } from "next/navigation";
 import { MapPin, Navigation, Phone } from "lucide-react";
 import { AddReceipt } from "@/components/site/add-receipt";
@@ -107,8 +108,7 @@ export default async function SiteJobPage({ params }: { params: Promise<{ id: st
                   <div className="mt-2 grid grid-cols-4 gap-1.5">
                     {d.photos.map((p) => (
                       <a key={p.key} href={publicUrl(p.key)} target="_blank" rel="noreferrer" className="aspect-square overflow-hidden rounded-lg bg-muted">
-                        {/* eslint-disable-next-line @next/next/no-img-element -- CDN image */}
-                        <img src={publicUrl(p.key)} alt="" loading="lazy" className="size-full object-cover" />
+                        <StoredImage src={publicUrl(p.key)} alt="Site photo" className="size-full object-cover" />
                       </a>
                     ))}
                   </div>

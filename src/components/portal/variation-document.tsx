@@ -1,4 +1,5 @@
 import { formatGBP } from "@/core/money";
+import { StoredImage } from "@/components/stored-image";
 import { longDate } from "@/core/quote-snapshot";
 import type { VariationSnapshot } from "@/core/variation";
 import { cn } from "@/lib/utils";
@@ -27,9 +28,7 @@ export function VariationDocument({ snapshot, sentAt }: { snapshot: VariationSna
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {snapshot.photos.map((p, i) => (
               <a key={p.url} href={p.url} target="_blank" rel="noreferrer noopener" className="block aspect-[4/3] overflow-hidden rounded-[10px] bg-muted">
-                {/* Our CDN, set per environment, so a plain <img> rather than next/image. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt={`Photo ${i + 1}`} referrerPolicy="no-referrer" loading="lazy" className="size-full object-cover" />
+                <StoredImage src={p.url} alt={`Photo ${i + 1}`} className="size-full object-cover" />
               </a>
             ))}
           </div>

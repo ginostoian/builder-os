@@ -56,17 +56,16 @@ Code: `src/server/reminders.ts`, `src/app/api/cron/reminders/route.ts`.
 
 ## File storage: Bunny.net
 
-Used for company logos now. The same module is ready for client documents and photos.
+Used for company logos, site and variation photos, project files and receipts.
 
 1. In Bunny: create a **Storage Zone**. The region should be London (`uk`) to keep data in the UK.
 2. Connect a **Pull Zone** to it. Its hostname (`https://….b-cdn.net`, or a custom one) is the CDN URL.
-3. For private files later: enable **Token Authentication** on a pull zone and copy its key.
+3. Leave the pull zone's **Security** settings open: **Token Authentication off**, no "Allowed referrers", and "Block no referrer" unticked. The app links to files directly (their names are long and random, so they can't be guessed), and any of those settings makes photos show as broken even though they uploaded.
 4. In Vercel:
    - `BUNNY_STORAGE_ZONE`: the zone name.
    - `BUNNY_STORAGE_KEY`: Storage Zone → FTP & API Access → Password.
    - `BUNNY_STORAGE_HOST`: `uk.storage.bunnycdn.com` for London. The default is `storage.bunnycdn.com`, which is Falkenstein.
    - `BUNNY_CDN_URL`: the pull zone URL. It must be `https://`.
-   - Optionally `BUNNY_TOKEN_KEY`, for signed private links.
 
 How files are handled:
 - Files are stored under `orgs/{companyId}/…` with random names, so a new upload always gets a new URL.
@@ -80,6 +79,11 @@ If an upload fails with "The file couldn't be stored", the message ends with a c
 - **storage error 404**: the zone name is wrong. `BUNNY_STORAGE_ZONE` is the zone's name exactly as Bunny shows it.
 - **storage unreachable**: the host name doesn't exist. It should look like `uk.storage.bunnycdn.com`.
 
-Vercel's logs (Logs, filter "Bunny") show the same explanation. Settings pasted with spaces, a trailing slash or an `https://` prefix are tidied automatically. After changing a setting, redeploy.
+**Uploads work but photos show as broken?** Go to Settings → Company → **Check file storage**. It uploads a test photo, fetches it back through your CDN link, and says what to change:
+- **error 403**: Token Authentication or hotlink protection is on in the pull zone (step 3).
+- **can't find files**: the pull zone isn't connected to this storage zone, or `BUNNY_CDN_URL` is another pull zone.
+- **takes a few seconds**: normal. A just-uploaded photo can take a moment to reach the CDN, and the app shows your own copy and retries until it does.
+
+Vercel's logs (Logs, filter "Bunny") show the same explanation for failed uploads. Settings pasted with spaces, a trailing slash or an `https://` prefix are tidied automatically. After changing a setting, redeploy.
 
 Code: `src/server/storage.ts`, `src/core/files.ts`.

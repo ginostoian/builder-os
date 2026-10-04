@@ -1,5 +1,6 @@
 "use client";
 
+import { StoredImage } from "@/components/stored-image";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -425,7 +426,7 @@ function LibraryPicker({ library, disabled, onPick }: { library: LibraryPickOpti
 
 /** Site photos on a draft: added and removed straight away (not part of "Save draft"). */
 function Photos({ variationId, initial, enabled }: { variationId: string; initial: { key: string; url: string }[]; enabled: boolean }) {
-  const [photos, setPhotos] = React.useState(initial);
+  const [photos, setPhotos] = React.useState<{ key: string; url: string; preview?: string }[]>(initial);
   const [busy, setBusy] = React.useState(0);
   const [error, setError] = React.useState<string>();
   const input = React.useRef<HTMLInputElement>(null);
@@ -449,7 +450,8 @@ function Photos({ variationId, initial, enabled }: { variationId: string; initia
         form.set("variationId", variationId);
         form.set("photo", new File([shrunk], "photo.jpg", { type: "image/jpeg" }));
         const r = await uploadVariationPhoto(form).catch(() => ({ ok: false as const, message: "The upload didn't go through. Check your connection and try again." }));
-        if (r.ok) setPhotos((p) => [...p, { key: r.key, url: r.url }]);
+        // Show their own copy straight away: the CDN can take a few seconds to have the new photo.
+        if (r.ok) setPhotos((p) => [...p, { key: r.key, url: r.url, preview: URL.createObjectURL(shrunk) }]);
         else setError(r.message);
       } finally {
         setBusy((n) => n - 1);
@@ -471,9 +473,7 @@ function Photos({ variationId, initial, enabled }: { variationId: string; initia
         <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2.5">
           {photos.map((p) => (
             <div key={p.key} className="group relative aspect-square overflow-hidden rounded-[10px] bg-muted shadow-ring">
-              {/* Our own CDN image; plain <img> since the host is configured per environment. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.url} alt="Site photo" referrerPolicy="no-referrer" className="size-full object-cover" />
+              <StoredImage src={p.url} preview={p.preview} alt="Site photo" className="size-full object-cover" />
               <button
                 type="button"
                 aria-label="Remove photo"
