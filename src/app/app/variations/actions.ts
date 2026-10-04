@@ -10,6 +10,7 @@ import { VariationError, addVariationPhoto, createVariation, deleteVariation, re
 import { getSession, withSession, type Session } from "@/auth/session";
 import { emailConfigured, sendEmail } from "@/server/email";
 import { appOrigin, portalVariationUrl } from "@/server/origin";
+import { withSignIn } from "@/server/portal-auth";
 import { deleteObject, publicUrl, putObject, randomName, storageConfigured } from "@/server/storage";
 import { MAX_PHOTO_BYTES, orgFileKey, sniffImage } from "@/core/files";
 import { MAX_VARIATION_PHOTOS } from "@/core/variation";
@@ -124,7 +125,7 @@ export async function sendVariationToClient(input: unknown): Promise<SendVariati
         ["Variation", s.ref],
         [credit ? "Credit inc. VAT" : "Extra cost inc. VAT", formatGBP(Math.abs(s.totals.total))],
       ],
-      button: { label: "Review the variation", href: link },
+      button: { label: "Review the variation", href: await withSignIn(session.orgId, token, link) },
       footer: `${session.memberName}, ${company}. Reply to this email to reach us.`,
     },
   });

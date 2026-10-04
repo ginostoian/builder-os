@@ -52,6 +52,7 @@ async function deliver(session: Session, invoiceId: string): Promise<{ emailed: 
   if (!ctx.client?.email) return { emailed: false, emailError: "This client has no email address. Add one, or copy the invoice link and send it yourself." };
   const result = await emailInvoice({
     kind: "new",
+    orgId: session.orgId,
     origin: await appOrigin(),
     token: ctx.token,
     to: ctx.client.email,

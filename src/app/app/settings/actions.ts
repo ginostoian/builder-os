@@ -6,6 +6,7 @@ import { parseCompanySettingsForm, type SettingsErrors } from "@/core/company-se
 import type { OrgSettingsInput } from "@/core/schemas";
 import { can } from "@/core/roles";
 import { organizations } from "@/db/schema";
+import { setPortalSignIn } from "@/db/portal-auth";
 import { renameClerkOrganization } from "@/auth/clerk-admin";
 import { getSession, withSession } from "@/auth/session";
 import { MAX_LOGO_BYTES, keyFromCdnUrl, orgFileKey, sniffImage } from "@/core/files";
@@ -116,4 +117,13 @@ export async function checkStorageAction(): Promise<StorageCheck> {
   const session = await getSession();
   if (!can(session.role, "settings.manage")) return { ok: false, summary: "Only an Admin can check file storage.", steps: [] };
   return checkStorage(session.orgId);
+}
+
+/** Whether clients confirm their email (a code, once per device) before the portal opens. */
+export async function setPortalSignInAction(on: boolean): Promise<{ ok: boolean; message?: string }> {
+  const session = await getSession();
+  if (!can(session.role, "settings.manage")) return { ok: false, message: "Only Admins can change this." };
+  await withSession(session, (tx) => setPortalSignIn(tx, session.orgId, on === true));
+  revalidatePath("/app/settings");
+  return { ok: true };
 }

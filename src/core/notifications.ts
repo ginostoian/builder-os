@@ -14,6 +14,8 @@ export const NOTIFICATION_KINDS = [
   "task_assigned",
   "receipt_added",
   "certificate_expiring",
+  "survey_booked",
+  "survey_cancelled",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 

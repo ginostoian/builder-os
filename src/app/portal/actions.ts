@@ -1,14 +1,16 @@
 "use server";
 
 /**
- * Actions on the public client portal. There is no login: the token in the URL is the credential. Every
- * action resolves it to its company and client first, then works inside that tenant only.
+ * Actions on the public client portal. The token in the URL says whose portal it is; `requirePortal` also
+ * checks this browser has signed in, when the company asks for that. Every action then works inside that
+ * company's tenant only.
  */
 import { revalidatePath } from "next/cache";
 import { runCompanyAutomations } from "@/server/automations";
 import { after } from "next/server";
 import { portalCommentInput, portalDecisionInput } from "@/core/schemas";
-import { findPortalAccess, withTenant, type Tx } from "@/db";
+import { withTenant, type Tx } from "@/db";
+import { requirePortal } from "@/server/portal-auth";
 import { PortalError, addClientComment, decide, recordView, type PortalErrorReason } from "@/db/portal";
 import { VariationError, decideVariation } from "@/db/variations";
 import { notifyTeam, notifyVariationDecision } from "@/server/notify";
@@ -17,7 +19,7 @@ import { isBot, requestEvidence } from "@/server/origin";
 export type PortalActionResult = { ok: true } | { ok: false; message: string };
 
 const MESSAGES: Record<PortalErrorReason | "bad_link" | "invalid", string> = {
-  bad_link: "This link no longer works. Ask for a new one.",
+  bad_link: "This link no longer works, or you've been signed out. Reload the page.",
   not_found: "This quote isn't available any more.",
   not_open: "This quote is being updated. You'll be able to accept the new version when it arrives.",
   expired: "This quote has expired. Ask for an updated one.",
@@ -33,7 +35,7 @@ const quoteNumber = (n: unknown) => (typeof n === "number" && Number.isInteger(n
 export async function markViewed(token: string, number: number): Promise<void> {
   if (await isBot()) return;
   const n = quoteNumber(number);
-  const access = typeof token === "string" ? await findPortalAccess(token) : null;
+  const access = typeof token === "string" ? await requirePortal(token) : null;
   if (!access || n === null) return;
   const viewed = await withTenant(access.orgId, (tx) => recordView(tx, access.orgId, access, n)).catch((error: unknown) => {
     if (!(error instanceof PortalError)) throw error;
@@ -71,7 +73,7 @@ async function runIn(
   afterwards?: (orgId: string, quoteId: string) => Promise<void>,
 ): Promise<PortalActionResult> {
   const n = quoteNumber(number);
-  const access = typeof token === "string" ? await findPortalAccess(token) : null;
+  const access = typeof token === "string" ? await requirePortal(token) : null;
   if (!access || n === null) return { ok: false, message: MESSAGES.bad_link };
   try {
     const quoteId = await withTenant(access.orgId, (tx) => fn(tx, access.orgId, access.clientId, n));
@@ -90,7 +92,7 @@ export async function decideVariationAction(token: string, quoteNumberArg: numbe
   if (!parsed.success) return { ok: false, message: MESSAGES.invalid };
   const q = quoteNumber(quoteNumberArg);
   const n = quoteNumber(number);
-  const access = typeof token === "string" ? await findPortalAccess(token) : null;
+  const access = typeof token === "string" ? await requirePortal(token) : null;
   if (!access || q === null || n === null) return { ok: false, message: MESSAGES.bad_link };
   const evidence = await requestEvidence();
   const d = parsed.data;

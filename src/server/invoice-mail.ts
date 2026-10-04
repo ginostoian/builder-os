@@ -5,9 +5,11 @@ import type { ReminderKind } from "@/core/payment-plan";
 import type { InvoiceSnapshot } from "@/db/invoices";
 import { sendEmail, type EmailResult } from "./email";
 import { portalInvoiceUrl } from "./origin";
+import { withSignIn } from "./portal-auth";
 
 export async function emailInvoice(opts: {
   kind: "new" | ReminderKind;
+  orgId: string;
   origin: string;
   token: string;
   to: string;
@@ -27,7 +29,7 @@ export async function emailInvoice(opts: {
       totalPence: inv.totalPence,
       dueDate: inv.dueDate,
       bank: s.bank,
-      link: portalInvoiceUrl(opts.origin, opts.token, inv.number),
+      link: await withSignIn(opts.orgId, opts.token, portalInvoiceUrl(opts.origin, opts.token, inv.number)),
     },
     opts.signOff,
   );

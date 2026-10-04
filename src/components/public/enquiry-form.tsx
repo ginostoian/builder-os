@@ -13,6 +13,7 @@ export function EnquiryForm({ token, company }: { token: string; company: string
   const [v, setV] = React.useState({ name: "", email: "", phone: "", postcode: "", projectType: "", budget: "", description: "", heardFrom: "", website: "" });
   const [error, setError] = React.useState<string>();
   const [done, setDone] = React.useState(false);
+  const [booking, setBooking] = React.useState<string>();
   const [pending, startTransition] = React.useTransition();
   const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setV((x) => ({ ...x, [k]: e.target.value }));
   const opt = (s: string) => s.trim() || undefined;
@@ -22,7 +23,13 @@ export function EnquiryForm({ token, company }: { token: string; company: string
       <div className="flex flex-col items-center gap-2 py-8 text-center">
         <CheckCircle2 className="size-9 text-success" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Thanks, {v.name.split(" ")[0]}!</h2>
-        <p className="max-w-[380px] text-ink-2">Your enquiry is with {company}. They&apos;ll be in touch soon.</p>
+        <p className="max-w-[380px] text-ink-2">Your enquiry is with {company}. {booking ? "Want to get a visit in the diary now?" : "They'll be in touch soon."}</p>
+        {booking && (
+          // A new tab, so it works the same when the form is embedded in a website.
+          <a href={booking} target="_blank" rel="noopener" className="mt-2 flex h-12 items-center rounded-xl bg-ink px-6 font-semibold text-white">
+            Book your free survey
+          </a>
+        )}
       </div>
     );
   }
@@ -46,7 +53,10 @@ export function EnquiryForm({ token, company }: { token: string; company: string
             website: v.website || undefined,
             startedAt,
           });
-          if (r.ok) setDone(true);
+          if (r.ok) {
+            setBooking(r.booking);
+            setDone(true);
+          }
           else setError(r.message);
         });
       }}

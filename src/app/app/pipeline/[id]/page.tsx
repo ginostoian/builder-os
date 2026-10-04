@@ -14,6 +14,8 @@ import { quoteRef } from "@/core/quote";
 import { can } from "@/core/roles";
 import { id as uuid } from "@/core/schemas";
 import { getLead, leadOwners } from "@/db/pipeline";
+import { currentBooking } from "@/db/surveys";
+import { SurveyCard } from "@/components/app/pipeline/survey-dialog";
 import { requirePermission, withSession } from "@/auth/session";
 import { emailConfigured } from "@/server/email";
 import { cn } from "@/lib/utils";
@@ -30,7 +32,7 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
   const leadId = (await params).id;
   if (!uuid.safeParse(leadId).success) notFound();
   const today = ukToday();
-  const data = await withSession(session, async (tx) => ({ found: await getLead(tx, session.orgId, leadId), owners: await leadOwners(tx, session.orgId) }));
+  const data = await withSession(session, async (tx) => ({ found: await getLead(tx, session.orgId, leadId), owners: await leadOwners(tx, session.orgId), booking: await currentBooking(tx, session.orgId, leadId) }));
   if (!data.found) notFound();
   const { lead: l, activity, runs } = data.found;
   const canEdit = can(session.role, "leads.edit");
@@ -80,7 +82,7 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
               <Contact icon={Phone} label="Phone" value={l.phone} href={l.phone ? `tel:${l.phone}` : undefined} />
               <Contact icon={Mail} label="Email" value={l.email} href={l.email ? `mailto:${l.email}` : undefined} note={l.emailOptOut ? "unsubscribed from automatic emails" : undefined} />
               <Contact icon={MapPin} label="Where" value={address} href={address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` : undefined} />
-              <Contact icon={CalendarClock} label="Site visit" value={l.visitAt ? visitWhen(l.visitAt) : null} />
+              <Contact icon={CalendarClock} label="Site visit" value={l.visitAt ? `${visitWhen(l.visitAt)}${data.booking?.memberName ? `, ${data.booking.memberName}` : ""}` : null} />
               {l.budget && <Contact icon={Flag} label="Budget" value={l.budget} />}
               {l.description && <p className="col-span-2 rounded-lg bg-surface px-3 py-2 whitespace-pre-line text-ink-2">{l.description}</p>}
             </section>
@@ -119,6 +121,15 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
           </div>
 
           <aside className="flex flex-col gap-4">
+            {(l.stage !== "won" && l.stage !== "lost") || data.booking ? (
+              <SurveyCard
+                leadId={l.id}
+                name={l.name}
+                canEdit={canEdit && l.stage !== "won" && l.stage !== "lost"}
+                hasEmail={Boolean(l.email)}
+                visit={data.booking ? { when: visitWhen(data.booking.startsAt), who: data.booking.memberName, online: data.booking.bookedBy === "client", past: data.booking.startsAt.getTime() < Date.parse(`${today}T00:00:00Z`) } : null}
+              />
+            ) : null}
             {l.stage !== "won" && l.stage !== "lost" && <FollowUp leadId={l.id} on={l.nextActionOn} action={l.nextAction} today={today} canEdit={canEdit} />}
             <QuoteCard
               leadId={l.id}

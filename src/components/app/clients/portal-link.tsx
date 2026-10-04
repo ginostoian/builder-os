@@ -1,15 +1,26 @@
 "use client";
 
 import * as React from "react";
-import { Check, Copy, RotateCcw } from "lucide-react";
-import { getPortalLink, resetPortalLink } from "@/app/app/clients/portal-actions";
+import { Check, Copy, LogOut, RotateCcw, ShieldCheck } from "lucide-react";
+import { getPortalLink, resetPortalLink, signOutEverywhereAction } from "@/app/app/clients/portal-actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Panel } from "../app-shell";
 import { SectionHeading } from "../form-fields";
 
 /** The client's private portal link: every quote sent to them is there. Copy it, or reset it if it leaked. */
-export function PortalLinkPanel({ clientId, clientName, canReset }: { clientId: string; clientName: string; canReset: boolean }) {
+export function PortalLinkPanel({
+  clientId,
+  clientName,
+  canReset,
+  security,
+}: {
+  clientId: string;
+  clientName: string;
+  canReset: boolean;
+  /** Sign-in on (company setting and email set up), whether they have an email, devices signed in now. */
+  security: { on: boolean; hasEmail: boolean; devices: number };
+}) {
   const [copied, setCopied] = React.useState(false);
   const [message, setMessage] = React.useState<string>();
   const [pending, startTransition] = React.useTransition();
@@ -75,6 +86,32 @@ export function PortalLinkPanel({ clientId, clientName, canReset }: { clientId: 
           </Dialog>
         )}
       </div>
+      <p className="flex items-start gap-1.5 text-[12.5px] text-ink-2">
+        <ShieldCheck className="mt-px size-3.5 flex-none" />
+        <span>
+          {!security.on
+            ? "Anyone with the link can open it (sign-in is off for your company, or email isn't set up)."
+            : !security.hasEmail
+              ? "No email address, so the link alone opens it. Add their email to protect it with a sign-in code."
+              : `Protected: on a new device they confirm their email with a code. Signed in on ${security.devices} device${security.devices === 1 ? "" : "s"}.`}
+        </span>
+      </p>
+      {canReset && security.on && security.devices > 0 && (
+        <Button
+          variant="ghost"
+          className="self-start"
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              const r = await signOutEverywhereAction(clientId);
+              setMessage(r.ok ? `Signed out of ${r.count} device${r.count === 1 ? "" : "s"}. They'll need a new code to get back in.` : r.message);
+            })
+          }
+        >
+          <LogOut />
+          Sign out everywhere
+        </Button>
+      )}
       {message && <p className="text-[12.5px] text-ink-2">{message}</p>}
     </Panel>
   );

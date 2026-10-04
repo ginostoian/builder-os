@@ -33,6 +33,8 @@ It also sends the sales pipeline's automation emails that are due that day. Same
 
 Leads who unsubscribe get no more automatic emails. Emails due while email wasn't set up are skipped once they're more than 3 days late, rather than sent late.
 
+The day before each survey visit, the client gets a reminder with a link to move or cancel it.
+
 The web enquiry form (`/enquire/{token}`, or embedded with `?embed=1`) needs nothing extra. It sends new enquiries into the pipeline and emails admins and office (once email is set up).
 
 1. Generate a long random secret: `openssl rand -hex 32`.
@@ -98,3 +100,21 @@ With an Anthropic API key, picking a receipt photo or PDF (office expense form, 
 Each receipt is one request to Claude (`claude-opus-5-5`, low effort); the photo is shrunk in the browser first. If Claude declines a request, the API retries it on a fallback model (`fallbacks: "default"`). Nothing is stored by the reader itself: the file is sent once to read it, and uploaded to Bunny as usual when the expense is saved.
 
 Code: `src/server/receipt-reader.ts`, `src/app/receipt-actions.ts`, `src/components/receipt-reader.ts`.
+
+## Client portal sign-in
+
+With email set up, the client portal asks clients to confirm their email the first time they open it on a new phone or computer (a 6-digit code, emailed). The device is then remembered for 90 days. Buttons in quote, variation and invoice emails sign them in with one tap: each link works once, within a week. Clients can always find their portal at `/portal` by entering their email address; put it on the company website as "Client login".
+
+- It needs email (`RESEND_API_KEY`, `EMAIL_FROM`). Without it, the private link alone opens the portal, as before.
+- Clients with no email address on file also open it with the link alone.
+- Admins can turn it off in Settings → Company → Client portal sign-in. On a client's page, "Sign out everywhere" ends every remembered device.
+
+## Online survey booking
+
+Turn it on under Pipeline → Online booking. Set how long a visit takes, the travel time between visits, notice, how far ahead people can book, and (optionally) the postcode areas you cover. Then give each surveyor their weekly hours.
+
+- After the web enquiry form, people in your areas can book straight away.
+- Add `{{booking_link}}` to an automation email, or copy the booking link from a lead's page, to invite anyone else.
+- The client gets a confirmation with a calendar invite (`.ics`), and a reminder the day before (from the daily job). They can move or cancel it from the same link.
+- The surveyor gets a notification. The visit shows on the lead, in the calendar and in their site app (with directions and a call button).
+- The office can move or cancel any visit from the lead's page, or book one at any time with anyone.

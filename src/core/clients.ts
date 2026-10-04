@@ -64,7 +64,7 @@ function friendly(field: ClientField, code: string, message: string): string {
 /** One-line address for lists, e.g. "14 Elm Road, Bristol BS7 8AA". */
 export function formatAddress(address: Address | null | undefined): string {
   if (!address) return "";
-  return [address.line1, address.line2, `${address.town} ${address.postcode}`].filter(Boolean).join(", ");
+  return [address.line1, address.line2, [address.town, address.postcode].filter(Boolean).join(" ")].filter(Boolean).join(", ");
 }
 
 /**

@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, ShieldCheck } from "lucide-react";
 import { InvoiceDocument } from "@/components/portal/invoice-document";
 import { PrintButton } from "@/components/portal/print-button";
-import { findPortalAccess, withTenant } from "@/db";
+import { withTenant } from "@/db";
+import { PortalBlocked } from "@/components/portal/portal-gate";
+import { requirePortal } from "@/server/portal-auth";
 import { portalInvoice } from "@/db/invoices";
 
 type Params = Promise<{ token: string; number: string }>;
@@ -12,7 +14,7 @@ type Params = Promise<{ token: string; number: string }>;
 async function load(params: Params) {
   const { token, number } = await params;
   const n = /^\d{1,9}$/.test(number) ? Number(number) : null;
-  const access = n ? await findPortalAccess(token) : null;
+  const access = n ? await requirePortal(token) : null;
   if (!access || !n) return null;
   const invoice = await withTenant(access.orgId, (tx) => portalInvoice(tx, access.orgId, access.clientId, n));
   return invoice ? { token, invoice } : null;
@@ -28,7 +30,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 /** One invoice in the client's portal: what's owed, when, and the bank details to pay it. */
 export default async function PortalInvoicePage({ params }: { params: Params }) {
   const data = await load(params);
-  if (!data) notFound();
+  if (!data) return <PortalBlocked token={(await params).token} />;
   const company = data.invoice.snapshot.company.tradingName ?? data.invoice.snapshot.company.name;
   return (
     <div className="min-h-screen bg-muted font-sans text-[13.5px] text-ink antialiased print:bg-white">

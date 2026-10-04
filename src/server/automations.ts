@@ -12,7 +12,9 @@ import { findOrgsWithDueAutomations, withTenant, type Tx } from "@/db";
 import { claimDueEmails, enquiryAlertContext, logLeadEmail, mergeFacts, type DueEmail } from "@/db/pipeline";
 import { ensurePortalToken } from "@/db/sending";
 import { emailConfigured, sendEmail } from "./email";
-import { appOrigin, portalUrl } from "./origin";
+import { getSurveySettings } from "@/db/surveys";
+import { appOrigin, bookingUrl, portalUrl } from "./origin";
+import { addSignIn } from "./portal-auth";
 
 export type AutomationRun = { companies: number; sent: number; failed: number };
 
@@ -88,12 +90,16 @@ async function mergeContext(tx: Tx, orgId: string, d: DueEmail, company: string,
 export async function leadMergeValues(
   tx: Tx,
   orgId: string,
-  lead: { name: string; projectType: string | null; visitAt: Date | null; clientId: string | null },
+  lead: { name: string; projectType: string | null; visitAt: Date | null; clientId: string | null; unsubscribeToken: string },
   facts: Awaited<ReturnType<typeof mergeFacts>>,
   company: string,
   origin: string,
 ): Promise<MergeValues> {
-  const quoteLink = facts.quote && facts.quote.status !== "draft" && lead.clientId ? portalUrl(origin, await ensurePortalToken(tx, orgId, lead.clientId), facts.quote.number) : null;
+  let quoteLink: string | null = null;
+  if (facts.quote && facts.quote.status !== "draft" && lead.clientId) {
+    const token = await ensurePortalToken(tx, orgId, lead.clientId);
+    quoteLink = await addSignIn(tx, orgId, token, portalUrl(origin, token, facts.quote.number));
+  }
   return {
     first_name: firstName(lead.name),
     name: lead.name,
@@ -102,5 +108,7 @@ export async function leadMergeValues(
     my_name: facts.ownerName ? firstName(facts.ownerName) : company,
     visit_date: lead.visitAt ? visitWhen(lead.visitAt) : null,
     quote_link: quoteLink,
+    // Only when the company takes bookings online; the same link moves or cancels a booked visit.
+    booking_link: (await getSurveySettings(tx, orgId)).enabled ? bookingUrl(origin, lead.unsubscribeToken) : null,
   };
 }

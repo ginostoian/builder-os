@@ -5,12 +5,17 @@ import { LEAD_SOURCE_LABEL } from "@/core/pipeline";
 import { ukToday } from "@/core/payment-plan";
 import { enquiryInput } from "@/core/schemas";
 import { findEnquiryForm, withTenant } from "@/db";
+import { and, eq } from "drizzle-orm";
+import { postcodeCovered } from "@/core/surveys";
 import { createLead, enquiryAlertContext, recentWebEnquiries } from "@/db/pipeline";
+import { leads } from "@/db/schema";
+import { getSurveySettings, openSlots } from "@/db/surveys";
 import { runCompanyAutomations } from "@/server/automations";
 import { emailConfigured, sendEmail } from "@/server/email";
 import { appOrigin } from "@/server/origin";
 
-export type EnquiryResult = { ok: true } | { ok: false; message: string };
+/** `booking`: the page where they can book a survey straight away, when the company takes bookings online. */
+export type EnquiryResult = { ok: true; booking?: string } | { ok: false; message: string };
 
 /** At most this many website enquiries per company in 10 minutes: enough for a busy day, not for a bot. */
 const FLOOD_LIMIT = 20;
@@ -32,7 +37,7 @@ export async function submitEnquiry(token: string, input: unknown): Promise<Enqu
   if (!orgId) return { ok: false, message: "This form isn't taking enquiries at the moment." };
   const created = await withTenant(orgId, async (tx) => {
     if ((await recentWebEnquiries(tx, orgId, 10)) >= FLOOD_LIMIT) return null;
-    return createLead(
+    const leadId = await createLead(
       tx,
       orgId,
       {
@@ -48,13 +53,21 @@ export async function submitEnquiry(token: string, input: unknown): Promise<Enqu
       },
       { memberId: null, viaWebForm: true, today: ukToday() },
     );
+    // Offer online booking straight away when there are times free and the postcode is one they cover.
+    const settings = await getSurveySettings(tx, orgId);
+    let booking: string | undefined;
+    if (settings.enabled && postcodeCovered(d.postcode, settings.postcodes) && (await openSlots(tx, orgId, new Date())).slots.length > 0) {
+      const [l] = await tx.select({ token: leads.unsubscribeToken }).from(leads).where(and(eq(leads.orgId, orgId), eq(leads.id, leadId)));
+      booking = l ? `/book/${l.token}` : undefined;
+    }
+    return { leadId, booking };
   });
   if (!created) return { ok: false, message: "We've had a lot of enquiries in the last few minutes. Please try again shortly, or give us a call." };
   after(async () => {
-    await alertTeam(orgId, created, d).catch(() => undefined);
+    await alertTeam(orgId, created.leadId, d).catch(() => undefined);
     await runCompanyAutomations(orgId).catch(() => undefined);
   });
-  return { ok: true };
+  return { ok: true, booking: created.booking };
 }
 
 async function alertTeam(orgId: string, leadId: string, d: { name: string; email: string; phone?: string; postcode?: string; projectType?: string; budget?: string; description?: string }) {

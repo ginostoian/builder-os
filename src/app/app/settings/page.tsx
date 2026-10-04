@@ -7,6 +7,9 @@ import { can } from "@/core/roles";
 import { organizations } from "@/db/schema";
 import { requirePermission, withSession } from "@/auth/session";
 import { storageConfigured } from "@/server/storage";
+import { PortalSecuritySetting } from "@/components/app/settings/portal-security";
+import { emailConfigured } from "@/server/email";
+import { appOrigin } from "@/server/origin";
 
 export const metadata: Metadata = { title: "Company settings" };
 
@@ -23,6 +26,7 @@ export default async function CompanySettingsPage() {
         defaultMarkupBps: organizations.defaultMarkupBps,
         defaultVatRateBps: organizations.defaultVatRateBps,
         quoteTerms: organizations.quoteTerms,
+        portalSignIn: organizations.portalSignIn,
       })
       .from(organizations)
       .where(eq(organizations.id, session.orgId)),
@@ -32,6 +36,9 @@ export default async function CompanySettingsPage() {
     <LiveAppShell active="settings" crumbs={["Settings", "Company"]}>
       <SettingsFrame active="company" title="Company" subtitle="How your company appears on quotes, invoices and the client portal.">
         <CompanySettingsForm initial={org} canEdit={can(session.role, "settings.manage")} storageEnabled={storageConfigured()} />
+        <div className="mt-4">
+          <PortalSecuritySetting on={org.portalSignIn} canEdit={can(session.role, "settings.manage")} emailEnabled={emailConfigured()} portalHome={`${(await appOrigin()).replace(/^https?:\/\//, "")}/portal`} />
+        </div>
       </SettingsFrame>
     </LiveAppShell>
   );

@@ -107,7 +107,22 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
      - expiring certificates: admins and office, from the daily cron, even when email isn't set up.
    - `href` must be a path inside the app (check constraint: starts with `/`, not `//`).
    - Search (`src/db/search.ts`) and the calendar (`src/db/calendar.ts`) only read, inside the tenant transaction, and check the role per kind of result.
-17. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
+17. **Survey booking (migration 0017).**
+   - `survey_settings` (one row per company: on/off, visit length, travel time, notice, how far ahead, postcode areas) and `survey_hours` (each person's weekly windows, UK time).
+   - `survey_bookings` holds the visits; the lead's `visit_at` mirrors the live one.
+     - One live booking per lead (partial unique index).
+     - **No double-booking:** an exclusion constraint (`btree_gist`) refuses two live bookings of one person that overlap, so two clients picking the same slot at once can't both get it (`23P01` → "just taken").
+     - Bookings are cancelled, never deleted (the app role has no DELETE); they go with their lead.
+   - What's on offer is worked out in `src/core/surveys.ts`, from hours minus existing visits (with travel time either side), notice and range. Each time is offered once and given to whoever is free with the fewest visits that day. A client can only book a time that's on offer; the office can book any time, with anyone.
+   - The client's booking page uses the lead's private link token (the same one as unsubscribe), found with `app_lead_unsubscribe_lookup`.
+   - `app_orgs_with_due_survey_reminders(from, to)` finds companies with visits to remind about; the lookup role can see only `org_id`, `status`, `starts_at` and `reminder_sent_at` of bookings.
+18. **Client portal sign-in (migration 0017).**
+   - `organizations.portal_sign_in` (default on): on a new device the client confirms their email before the portal opens.
+   - `portal_codes`: 6-digit codes and one-time sign-in links, stored as SHA-256 (with the portal link's id mixed in). At most 6 per portal link per hour; a code allows 5 tries and lasts 10 minutes. The app role can only update `attempts` and `used_at`.
+   - `portal_sessions`: remembered devices. The cookie holds a random secret; only its hash is stored. 90 days; the app role can only update `last_seen_at`. Sessions belong to one portal link, so resetting the link signs everyone out.
+   - "Find my portal" (`/portal`) uses `app_portal_by_email(email)`, which returns ids of active links whose (non-archived) client has that email. The lookup role can see only `id`, `org_id`, `email` and `archived_at` of clients.
+   - Every portal page and action checks `requirePortal` itself (never only a layout), so nothing private is read for a browser that hasn't signed in.
+19. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
 
 **Adding a table:**
 - Give it `org_id`, `tenantPolicy(t.orgId)`, `.enableRLS()`, and a `unique(org_id, id)` if anything references it.

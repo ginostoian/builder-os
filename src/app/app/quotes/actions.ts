@@ -12,6 +12,7 @@ import { emailConfigured, sendEmail } from "@/server/email";
 import { formatGBP } from "@/core/money";
 import { longDate } from "@/core/quote-snapshot";
 import { appOrigin, portalUrl } from "@/server/origin";
+import { withSignIn } from "@/server/portal-auth";
 import { getSession, withSession, type Session } from "@/auth/session";
 import type { RecordActionResult } from "@/components/app/archive-panel";
 
@@ -146,7 +147,7 @@ export async function sendQuoteToClient(input: unknown): Promise<SendQuoteResult
         ["Total inc. VAT", formatGBP(s.totals.total)],
         ...(s.quote.validUntil ? ([["Valid until", longDate(s.quote.validUntil)]] as [string, string][]) : []),
       ],
-      button: { label: "View your quote", href: link },
+      button: { label: "View your quote", href: await withSignIn(session.orgId, sent.token, link) },
       footer: `${session.memberName}, ${company}. Reply to this email to reach us.`,
     },
   });

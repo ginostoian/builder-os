@@ -132,6 +132,7 @@ export const MERGE_FIELDS = [
   { key: "my_name", label: "Your name (the lead's owner)", sample: "Gino" },
   { key: "visit_date", label: "Site visit date and time", sample: "Thursday 8 October at 10:00" },
   { key: "quote_link", label: "Link to their quote", sample: "https://…/portal/…" },
+  { key: "booking_link", label: "Link to book (or move) their survey online", sample: "https://…/book/…" },
 ] as const;
 export type MergeKey = (typeof MERGE_FIELDS)[number]["key"];
 export type MergeValues = Partial<Record<MergeKey, string | null>>;

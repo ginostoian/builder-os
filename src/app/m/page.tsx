@@ -6,7 +6,10 @@ import { MyTasks } from "@/components/site/my-tasks";
 import { SiteFrame, SiteHeading } from "@/components/site/site-frame";
 import { isForToday, toMyTask } from "@/components/site/to-my-task";
 import { formatAddress } from "@/core/clients";
-import { ukToday } from "@/core/payment-plan";
+import { addDays, ukToday } from "@/core/payment-plan";
+import { londonToUtc } from "@/core/surveys";
+import { mySurveys } from "@/db/surveys";
+import { MySurveys } from "@/components/site/my-surveys";
 import { can } from "@/core/roles";
 import { myJobs, myTasks, openVisit, workerForMember } from "@/db/site";
 import { requirePermission, withSession } from "@/auth/session";
@@ -25,6 +28,14 @@ export default async function SiteTodayPage() {
   const session = await requirePermission("site.app");
   const today = ukToday();
   const office = can(session.role, "app.office");
+  // Today's and tomorrow's survey visits are mine whether or not I'm on the team list (estimators often aren't).
+  const surveys = await withSession(session, (tx) => mySurveys(tx, session.orgId, session.memberId, londonToUtc(today, 0), londonToUtc(addDays(today, 2), 0)));
+  const surveyList = surveys.length > 0 && (
+    <>
+      <SiteHeading title="Surveys" aside={`${surveys.length}`} />
+      <MySurveys surveys={surveys} today={today} canOpenLead={can(session.role, "leads.view")} />
+    </>
+  );
   const data = await withSession(session, async (tx) => {
     const worker = await workerForMember(tx, session.orgId, session.memberId);
     if (!worker) return null;
@@ -36,6 +47,7 @@ export default async function SiteTodayPage() {
   if (!data) {
     return (
       <SiteFrame eyebrow={longToday(today)} title={`${greeting()}, ${firstName}`} office={office}>
+        {surveyList}
         <div className="flex flex-col items-center gap-2 rounded-2xl bg-white px-6 py-10 text-center shadow-ring">
           <HardHat className="size-6 text-subtle" strokeWidth={1.5} />
           <p className="font-medium">You&apos;re not on the team list</p>
@@ -55,6 +67,8 @@ export default async function SiteTodayPage() {
       {(data.open || data.jobs.length > 0) && (
         <CheckIn open={data.open ? { projectId: data.open.projectId, projectName: data.open.projectName, checkedInAt: data.open.checkedInAt.toISOString() } : null} jobs={data.jobs.map((j) => ({ id: j.id, name: j.name }))} />
       )}
+
+      {surveyList}
 
       <SiteHeading title="Today" aside={todays.length > 0 ? `${done} of ${todays.length} done` : undefined} />
       <MyTasks tasks={todays} showJob />

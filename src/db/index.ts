@@ -10,7 +10,7 @@ import { z } from "zod";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { clerkOrgId, clerkUserId } from "@/core/clerk";
-import { id, isoDate, portalToken } from "@/core/schemas";
+import { email, id, isoDate, portalToken } from "@/core/schemas";
 import { databaseUrl } from "./env";
 import * as schema from "./schema";
 
@@ -123,6 +123,25 @@ export async function findPortalAccess(token: string): Promise<{ accessId: strin
   return rows[0] ? { accessId: rows[0].access_id, orgId: rows[0].org_id, clientId: rows[0].client_id } : null;
 }
 
+/** Companies with survey visits between `from` and `to` whose client hasn't had a reminder. */
+export async function findOrgsWithDueSurveyReminders(from: Date, to: Date): Promise<string[]> {
+  const database = await checkedDb();
+  const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_orgs_with_due_survey_reminders(${from.toISOString()}::timestamptz, ${to.toISOString()}::timestamptz) as org_id`);
+  return rows.map((row) => row.org_id);
+}
+
+/**
+ * Every active portal link whose client has this email, across companies (at most 20). For "find my
+ * portal": the caller emails sign-in links and never says whether anything matched.
+ */
+export async function findPortalAccessesByEmail(address: string): Promise<{ accessId: string; orgId: string; clientId: string }[]> {
+  const parsed = email.safeParse(address);
+  if (!parsed.success) return [];
+  const database = await checkedDb();
+  const rows = await database.execute<{ access_id: string; org_id: string; client_id: string }>(sql`select access_id, org_id, client_id from app_portal_by_email(${parsed.data})`);
+  return rows.map((r) => ({ accessId: r.access_id, orgId: r.org_id, clientId: r.client_id }));
+}
+
 /**
  * Companies with unpaid invoices due on or before `until` that have reminders switched on. The daily reminder
  * job calls this first, then works through each company inside `withTenant`.
@@ -161,6 +180,9 @@ export async function findLeadForUnsubscribe(token: string): Promise<{ orgId: st
   const rows = await database.execute<{ org_id: string; lead_id: string }>(sql`select org_id, lead_id from app_lead_unsubscribe_lookup(${parsed.data})`);
   return rows[0] ? { orgId: rows[0].org_id, leadId: rows[0].lead_id } : null;
 }
+
+/** The lead behind a lead's private link (booking page, unsubscribe): the same token serves both. */
+export const findLeadByLink = findLeadForUnsubscribe;
 
 /** Companies with automation emails due by `now`. The automation run calls this, then works in each tenant. */
 export async function findOrgsWithDueAutomations(now: Date): Promise<string[]> {
