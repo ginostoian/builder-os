@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { can, type Permission } from "@/core/roles";
 import { bookSurveyInput, id, surveyHoursInput, surveySettingsInput } from "@/core/schemas";
 import { slotLabels } from "@/core/surveys";
+import { hasFeature, planBlock } from "@/server/plan";
 import { getSession, withSession, type Session } from "@/auth/session";
 import { getLead } from "@/db/pipeline";
 import { SurveyError, bookSurvey, cancelSurvey, currentBooking, getSurveySettings, openSlots, saveSurveySettings, setSurveyHours, surveyors, type SurveyErrorReason } from "@/db/surveys";
@@ -25,7 +26,7 @@ const MESSAGES: Record<SurveyErrorReason, string> = {
 
 async function allowed(permission: Permission): Promise<Session | null> {
   const s = await getSession();
-  return can(s.role, permission) ? s : null;
+  return can(s.role, permission) && (await hasFeature("pipeline")) ? s : null;
 }
 
 function refresh(leadId?: string) {
@@ -61,7 +62,7 @@ export async function surveyOptionsAction(leadId: string) {
 
 export async function bookSurveyAction(leadId: string, input: unknown): Promise<SurveyActionResult> {
   const s = await allowed("leads.edit");
-  if (!s) return { ok: false, message: "Your role can't book visits." };
+  if (!s) return { ok: false, message: (await planBlock("pipeline")) ?? "Your role can't book visits." };
   const parsed = bookSurveyInput.safeParse(input);
   if (!parsed.success || !id.safeParse(leadId).success) return { ok: false, message: "Choose a date and time." };
   const d = parsed.data;
@@ -85,7 +86,7 @@ export async function bookSurveyAction(leadId: string, input: unknown): Promise<
 
 export async function cancelSurveyAction(leadId: string, emailClient: boolean): Promise<SurveyActionResult> {
   const s = await allowed("leads.edit");
-  if (!s) return { ok: false, message: "Your role can't change visits." };
+  if (!s) return { ok: false, message: (await planBlock("pipeline")) ?? "Your role can't change visits." };
   if (!id.safeParse(leadId).success) return { ok: false, message: MESSAGES.not_found };
   try {
     const visit = await withSession(s, (tx) => cancelSurvey(tx, s.orgId, leadId, "office", s.memberId));
@@ -104,7 +105,7 @@ export async function cancelSurveyAction(leadId: string, emailClient: boolean): 
 /** The lead's booking page, to send by text or WhatsApp. */
 export async function bookingLinkAction(leadId: string): Promise<{ ok: true; link: string } | { ok: false; message: string }> {
   const s = await allowed("leads.edit");
-  if (!s || !id.safeParse(leadId).success) return { ok: false, message: "Your role can't share booking links." };
+  if (!s || !id.safeParse(leadId).success) return { ok: false, message: (s ? null : await planBlock("pipeline")) ?? "Your role can't share booking links." };
   const found = await withSession(s, (tx) => getLead(tx, s.orgId, leadId));
   if (!found) return { ok: false, message: MESSAGES.not_found };
   return { ok: true, link: bookingUrl(await appOrigin(), found.lead.unsubscribeToken) };
@@ -114,7 +115,7 @@ export async function bookingLinkAction(leadId: string): Promise<{ ok: true; lin
 
 export async function saveSurveySettingsAction(input: unknown): Promise<SurveyActionResult> {
   const s = await allowed("automations.manage");
-  if (!s) return { ok: false, message: "Only Admins and the office can change survey booking." };
+  if (!s) return { ok: false, message: (await planBlock("pipeline")) ?? "Only Admins and the office can change survey booking." };
   const parsed = surveySettingsInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: "Check the numbers and postcode areas." };
   await withSession(s, (tx) => saveSurveySettings(tx, s.orgId, parsed.data));
@@ -124,7 +125,7 @@ export async function saveSurveySettingsAction(input: unknown): Promise<SurveyAc
 
 export async function saveSurveyHoursAction(input: unknown): Promise<SurveyActionResult> {
   const s = await allowed("automations.manage");
-  if (!s) return { ok: false, message: "Only Admins and the office can change survey hours." };
+  if (!s) return { ok: false, message: (await planBlock("pipeline")) ?? "Only Admins and the office can change survey hours." };
   const parsed = surveyHoursInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the times." };
   try {

@@ -14,6 +14,7 @@ import { portalHeader, portalQuotes } from "@/db/portal";
 import { portalInvoices } from "@/db/invoices";
 import { portalVariations } from "@/db/variations";
 import { portalProjects } from "@/db/projects";
+import { planAllows } from "@/db/billing";
 import { PROJECT_STATUS_LABEL } from "@/core/projects";
 import { variationRef } from "@/core/variation";
 import { invoiceRef, invoiceState, ukToday } from "@/core/payment-plan";
@@ -52,7 +53,7 @@ export default async function PortalHome({ params }: { params: Promise<{ token: 
   const access = gate.access;
   const data = await withTenant(access.orgId, async (tx) => {
     const header = await portalHeader(tx, access.orgId, access.clientId);
-    return header && { ...header, quotes: await portalQuotes(tx, access.orgId, access.clientId), invoices: await portalInvoices(tx, access.orgId, access.clientId), variations: await portalVariations(tx, access.orgId, access.clientId), projects: await portalProjects(tx, access.orgId, access.clientId) };
+    return header && { ...header, quotes: await portalQuotes(tx, access.orgId, access.clientId), invoices: await portalInvoices(tx, access.orgId, access.clientId), variations: await portalVariations(tx, access.orgId, access.clientId), projects: (await planAllows(tx, access.orgId, "projects")) ? await portalProjects(tx, access.orgId, access.clientId) : [] };
   });
   if (!data) notFound();
   const company = data.company.tradingName ?? data.company.name;

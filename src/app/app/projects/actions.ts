@@ -32,6 +32,7 @@ import {
   updateTask,
   type ProjectErrorReason,
 } from "@/db/projects";
+import { hasFeature, planBlock } from "@/server/plan";
 import { getSession, withSession, type Session } from "@/auth/session";
 import { deleteObject, publicUrl, putObject, randomName, storageConfigured } from "@/server/storage";
 
@@ -52,13 +53,16 @@ const MESSAGES: Record<ProjectErrorReason, string> = {
 
 async function editor(): Promise<Session | null> {
   const session = await getSession();
-  return can(session.role, "projects.edit") ? session : null;
+  return can(session.role, "projects.edit") && (await hasFeature("projects")) ? session : null;
 }
+
+/** Why editor() said no: the plan, or the role. */
+const refused = async () => (await planBlock("projects")) ?? NOT_ALLOWED;
 
 /** Run a project change: permission, then the change, then refresh the project's pages. */
 async function change(projectId: unknown, fn: (session: Session, projectId: string) => Promise<string | void>): Promise<ProjectActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   const parsed = id.safeParse(projectId);
   if (!parsed.success) return { ok: false, message: MESSAGES.not_found };
   let result: string | void;
@@ -78,7 +82,7 @@ const invalid = (issues: z.ZodError) => ({ ok: false as const, message: issues.i
 
 export async function startProjectFromQuote(input: unknown): Promise<ProjectActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   const parsed = projectFromQuoteInput.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
   let projectId: string;
@@ -96,7 +100,7 @@ export async function startProjectFromQuote(input: unknown): Promise<ProjectActi
 
 export async function createProjectAction(input: unknown): Promise<ProjectActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   const parsed = projectInput.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
   let projectId: string;

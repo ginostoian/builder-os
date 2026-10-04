@@ -89,7 +89,11 @@ export async function runSurveyReminders(origin: string, today = ukToday()): Pro
   for (const orgId of await findOrgsWithDueSurveyReminders(from, to)) {
     run.companies++;
     try {
-      const { visits, company } = await withTenant(orgId, async (tx) => ({ visits: await surveysToRemind(tx, orgId, from, to), company: await enquiryAlertContext(tx, orgId) }));
+      const { visits, company } = await withTenant(orgId, async (tx) => ({
+        // Visits already booked still get their reminder, whatever the plan now: the client is expecting it.
+        visits: await surveysToRemind(tx, orgId, from, to),
+        company: await enquiryAlertContext(tx, orgId),
+      }));
       for (const v of visits) {
         if (!(await withTenant(orgId, (tx) => claimSurveyReminder(tx, orgId, v.id)))) continue;
         if (!v.email) continue;

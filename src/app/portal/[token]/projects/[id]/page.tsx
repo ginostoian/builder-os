@@ -9,6 +9,7 @@ import { PROJECT_STATUS_LABEL } from "@/core/projects";
 import { longDate } from "@/core/quote-snapshot";
 import { id as uuid } from "@/core/schemas";
 import { withTenant } from "@/db";
+import { planAllows } from "@/db/billing";
 import { PortalBlocked } from "@/components/portal/portal-gate";
 import { requirePortal } from "@/server/portal-auth";
 import { portalHeader } from "@/db/portal";
@@ -23,6 +24,7 @@ async function load(params: Params) {
   const access = await requirePortal(token);
   if (!access) return null;
   const data = await withTenant(access.orgId, async (tx) => {
+    if (!(await planAllows(tx, access.orgId, "projects"))) return null;
     const header = await portalHeader(tx, access.orgId, access.clientId);
     const project = await portalProject(tx, access.orgId, access.clientId, id);
     return header && project ? { header, project } : null;

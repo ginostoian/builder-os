@@ -5,6 +5,7 @@ import { can } from "@/core/roles";
 import { createInvoiceInput, id, markPaidInput, paymentSettingsInput } from "@/core/schemas";
 import { InvoiceError, createInvoice as raiseInvoice, getInvoice, markPaid, markSent, markUnpaid, savePaymentSettings, voidInvoice, type InvoiceErrorReason } from "@/db/invoices";
 import { clientContact, ensurePortalToken, memberEmail } from "@/db/sending";
+import { hasFeature, planBlock } from "@/server/plan";
 import { getSession, withSession, type Session } from "@/auth/session";
 import { emailConfigured } from "@/server/email";
 import { emailInvoice } from "@/server/invoice-mail";
@@ -29,8 +30,11 @@ export type InvoiceActionResult = { ok: true; invoiceId?: string; emailed?: bool
 
 async function manager(): Promise<Session | null> {
   const session = await getSession();
-  return can(session.role, "invoices.manage") ? session : null;
+  return can(session.role, "invoices.manage") && (await hasFeature("invoicing")) ? session : null;
 }
+
+/** Why manager() said no: the plan, or the role. */
+const refused = async () => (await planBlock("invoicing")) ?? NOT_ALLOWED;
 
 const refresh = (invoiceId?: string, quoteId?: string | null) => {
   revalidatePath("/app/payments");
@@ -68,7 +72,7 @@ async function deliver(session: Session, invoiceId: string): Promise<{ emailed: 
 /** Turn one payment of an accepted quote's plan into an invoice, and optionally email it. */
 export async function createInvoice(input: unknown): Promise<InvoiceActionResult> {
   const session = await manager();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   const parsed = createInvoiceInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: MESSAGES.unknown_stage };
   let created: Awaited<ReturnType<typeof raiseInvoice>>;
@@ -86,7 +90,7 @@ export async function createInvoice(input: unknown): Promise<InvoiceActionResult
 
 export async function sendInvoice(invoiceId: string): Promise<InvoiceActionResult> {
   const session = await manager();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   if (!id.safeParse(invoiceId).success) return { ok: false, message: MESSAGES.not_found };
   const mail = await deliver(session, invoiceId);
   refresh(invoiceId);
@@ -95,7 +99,7 @@ export async function sendInvoice(invoiceId: string): Promise<InvoiceActionResul
 
 async function change(invoiceId: string, fn: (session: Session) => Promise<string | null>): Promise<InvoiceActionResult> {
   const session = await manager();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   if (!id.safeParse(invoiceId).success) return { ok: false, message: MESSAGES.not_found };
   let quoteId: string | null;
   try {

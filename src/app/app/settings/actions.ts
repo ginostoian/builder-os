@@ -7,6 +7,7 @@ import type { OrgSettingsInput } from "@/core/schemas";
 import { can } from "@/core/roles";
 import { organizations } from "@/db/schema";
 import { setPortalSignIn } from "@/db/portal-auth";
+import { planBlock } from "@/server/plan";
 import { renameClerkOrganization } from "@/auth/clerk-admin";
 import { getSession, withSession } from "@/auth/session";
 import { MAX_LOGO_BYTES, keyFromCdnUrl, orgFileKey, sniffImage } from "@/core/files";
@@ -75,6 +76,8 @@ export type LogoResult = { ok: true; logoUrl: string | null } | { ok: false; mes
 export async function uploadLogo(form: FormData): Promise<LogoResult> {
   const session = await getSession();
   if (!can(session.role, "settings.manage")) return { ok: false, message: "Only an Admin can change the logo." };
+  const blocked = await planBlock("branding");
+  if (blocked) return { ok: false, message: blocked };
   if (!storageConfigured()) return { ok: false, message: "File storage isn't set up yet. Paste a link to your logo instead." };
   const file = form.get("logo");
   if (!(file instanceof File) || file.size === 0) return { ok: false, message: "Choose an image file." };

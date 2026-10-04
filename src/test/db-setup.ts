@@ -14,10 +14,13 @@ export default async function setup(): Promise<void> {
         END IF;
       END $$;
       ALTER ROLE ${ownerCredentials.user} PASSWORD '${ownerCredentials.password}';
-      -- Roles are server-wide: let this owner manage the lookup role even if another database created it.
+      -- Roles are server-wide: let this owner manage the lookup and billing roles even if another database created it.
       DO $$ BEGIN
         IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'builderos_lookup') THEN
           GRANT builderos_lookup TO ${ownerCredentials.user} WITH ADMIN OPTION;
+        END IF;
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'builderos_billing') THEN
+          GRANT builderos_billing TO ${ownerCredentials.user} WITH ADMIN OPTION;
         END IF;
       END $$;
       DROP SCHEMA IF EXISTS drizzle CASCADE;

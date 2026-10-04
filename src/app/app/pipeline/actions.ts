@@ -33,6 +33,7 @@ import {
 } from "@/db/pipeline";
 import { memberEmail } from "@/db/sending";
 import { SurveyError } from "@/db/surveys";
+import { hasFeature, planBlock } from "@/server/plan";
 import { getSession, withSession, type Session } from "@/auth/session";
 import { leadMergeValues, runCompanyAutomations, toParagraphs } from "@/server/automations";
 import { emailConfigured, sendEmail } from "@/server/email";
@@ -49,13 +50,13 @@ const MESSAGES: Record<PipelineErrorReason, string> = {
 
 async function allowed(permission: Permission): Promise<Session | null> {
   const session = await getSession();
-  return can(session.role, permission) ? session : null;
+  return can(session.role, permission) && (await hasFeature("pipeline")) ? session : null;
 }
 
 /** Run a change; afterwards refresh the pipeline and send any automation emails it started. */
 async function run(permission: Permission, fn: (s: Session) => Promise<string | void>, leadId?: string): Promise<PipelineActionResult> {
   const session = await allowed(permission);
-  if (!session) return { ok: false, message: permission === "automations.manage" ? "Only Admins and the office can change automations." : "Your role can't change leads." };
+  if (!session) return { ok: false, message: (await planBlock("pipeline")) ?? (permission === "automations.manage" ? "Only Admins and the office can change automations." : "Your role can't change leads.") };
   let result: string | void;
   try {
     result = await fn(session);
@@ -130,7 +131,7 @@ export async function deleteLeadAction(leadId: string): Promise<PipelineActionRe
 export async function startQuoteAction(leadId: string): Promise<PipelineActionResult> {
   if (!id.safeParse(leadId).success) return { ok: false, message: MESSAGES.not_found };
   const session = await allowed("quotes.edit");
-  if (!session) return { ok: false, message: "Your role can't write quotes." };
+  if (!session) return { ok: false, message: (await planBlock("pipeline")) ?? "Your role can't write quotes." };
   let quoteId: string;
   try {
     quoteId = await withSession(session, (tx) => startQuoteForLead(tx, session.orgId, leadId, session.memberId));
@@ -154,7 +155,7 @@ export async function emailLeadAction(leadId: string, input: unknown): Promise<P
   const parsed = leadEmailInput.safeParse(input);
   if (!parsed.success || !id.safeParse(leadId).success) return { ok: false, message: parsed.success ? MESSAGES.not_found : issue(parsed.error) };
   const session = await allowed("leads.edit");
-  if (!session) return { ok: false, message: "Your role can't email leads." };
+  if (!session) return { ok: false, message: (await planBlock("pipeline")) ?? "Your role can't email leads." };
   if (!emailConfigured()) return { ok: false, message: "Email isn't set up yet. Use your own email app for now." };
   const origin = await appOrigin();
   const ctx = await withSession(session, async (tx) => {
@@ -226,7 +227,7 @@ export async function sendTestAction(input: unknown): Promise<PipelineActionResu
   const parsed = z.strictObject({ subject: singleLine(TEXT.line), body: multiLine(4_000).pipe(z.string().min(1)) }).safeParse(input);
   if (!parsed.success) return { ok: false, message: "Write the subject and the email first." };
   const session = await allowed("automations.manage");
-  if (!session) return { ok: false, message: "Only Admins and the office can test automations." };
+  if (!session) return { ok: false, message: (await planBlock("pipeline")) ?? "Only Admins and the office can test automations." };
   if (!emailConfigured()) return { ok: false, message: "Email isn't set up yet, so test emails can't be sent." };
   const ctx = await withSession(session, async (tx) => ({ to: await memberEmail(tx, session.orgId, session.memberId), company: await enquiryAlertContext(tx, session.orgId) }));
   if (!ctx.to) return { ok: false, message: "Your login has no email address." };

@@ -13,6 +13,7 @@ import { claimDueEmails, enquiryAlertContext, logLeadEmail, mergeFacts, type Due
 import { ensurePortalToken } from "@/db/sending";
 import { emailConfigured, sendEmail } from "./email";
 import { getSurveySettings } from "@/db/surveys";
+import { planAllows } from "@/db/billing";
 import { appOrigin, bookingUrl, portalUrl } from "./origin";
 import { addSignIn } from "./portal-auth";
 
@@ -39,6 +40,8 @@ export async function runCompanyAutomations(orgId: string, origin?: string, now 
   if (!emailConfigured()) return { sent: 0, failed: 0 };
   const base = origin ?? (await appOrigin());
   const prepared = await withTenant(orgId, async (tx) => {
+    // Automations are a Pro feature: a company that's left Pro sends none (and claims none, so they wait).
+    if (!(await planAllows(tx, orgId, "automations"))) return [];
     const due = await claimDueEmails(tx, orgId, now);
     if (due.length === 0) return [];
     const company = await enquiryAlertContext(tx, orgId);

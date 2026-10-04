@@ -1,5 +1,10 @@
 "use server";
 
+import { FREE_QUOTES_PER_MONTH } from "@/core/plans";
+import { ukToday } from "@/core/payment-plan";
+import { londonToUtc } from "@/core/surveys";
+import { firstSendsSince, isFirstSend } from "@/db/billing";
+import { hasFeature, upgradeMessage } from "@/server/plan";
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { runCompanyAutomations } from "@/server/automations";
@@ -75,6 +80,7 @@ export async function saveQuoteChanges(input: unknown): Promise<SaveQuoteResult>
   if (!session) return { ok: false, reason: "not_allowed", message: NOT_ALLOWED };
   const parsed = quoteSave.safeParse(input);
   if (!parsed.success) return { ok: false, reason: "invalid", message: "Some of these changes weren't valid, so they weren't saved. Reload and try again." };
+  if (parsed.data.paymentPlan?.length && !(await hasFeature("invoicing"))) return { ok: false, reason: "invalid", message: upgradeMessage("invoicing") };
   try {
     const version = await withSession(session, (tx) => saveQuote(tx, session.orgId, parsed.data));
     return { ok: true, version };
@@ -111,6 +117,11 @@ export async function sendQuoteToClient(input: unknown): Promise<SendQuoteResult
   if (!session) return { ok: false, message: NOT_ALLOWED };
   const parsed = sendQuoteInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: "That message is too long or has odd characters in it." };
+  // Free plan: 3 new quotes sent a month (sending an updated version doesn't count).
+  if (!(await hasFeature("unlimited_quotes"))) {
+    const used = await withSession(session, async (tx) => ((await isFirstSend(tx, session.orgId, parsed.data.quoteId)) ? firstSendsSince(tx, session.orgId, londonToUtc(`${ukToday().slice(0, 7)}-01`, 0)) : 0));
+    if (used >= FREE_QUOTES_PER_MONTH) return { ok: false, message: `You've sent ${FREE_QUOTES_PER_MONTH} new quotes this month, the most on the Free plan. Upgrade to Essentials for unlimited quotes.` };
+  }
   let sent: Awaited<ReturnType<typeof sendQuote>>;
   let senderEmail: string | null = null;
   try {

@@ -14,6 +14,7 @@ import { findOrgsWithDueInvoices, findOrgsWithExpiringCertificates, withTenant }
 import { claimReminder, invoicesForReminders, type InvoiceSnapshot } from "@/db/invoices";
 import { clientContact, ensurePortalToken, memberEmail } from "@/db/sending";
 import { membersWithRoles, notify } from "@/db/notifications";
+import { planAllows } from "@/db/billing";
 import { certificateReminderContext, certificatesToRemind, markCertificatesReminded } from "@/db/team";
 import { emailConfigured, sendEmail } from "./email";
 import { emailInvoice } from "./invoice-mail";
@@ -31,6 +32,8 @@ export async function runReminders(origin: string, today = ukToday()): Promise<R
     try {
       claimed = await withTenant(orgId, async (tx) => {
         const out: Claimed[] = [];
+        // Payment reminders are part of invoicing (Essentials).
+        if (!(await planAllows(tx, orgId, "invoicing"))) return out;
         for (const inv of await invoicesForReminders(tx, orgId, addDays(today, 3))) {
           const kind = reminderDue(today, inv.dueDate, inv.sent);
           if (!kind) continue;
@@ -82,7 +85,11 @@ export async function runCertificateReminders(origin: string, today = ukToday())
   for (const orgId of await findOrgsWithExpiringCertificates(until)) {
     run.companies++;
     try {
-      const { certs, ctx } = await withTenant(orgId, async (tx) => ({ certs: await certificatesToRemind(tx, orgId, until), ctx: await certificateReminderContext(tx, orgId) }));
+      const { certs, ctx } = await withTenant(orgId, async (tx) => ({
+        // Certificates are part of the team features (Pro).
+        certs: (await planAllows(tx, orgId, "team")) ? await certificatesToRemind(tx, orgId, until) : [],
+        ctx: await certificateReminderContext(tx, orgId),
+      }));
       if (certs.length === 0) continue;
       const batch = certs.slice(0, 40);
       const expired = certs.filter((c) => c.expiresOn! < today).length;

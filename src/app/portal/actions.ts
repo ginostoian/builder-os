@@ -11,10 +11,15 @@ import { after } from "next/server";
 import { portalCommentInput, portalDecisionInput } from "@/core/schemas";
 import { withTenant, type Tx } from "@/db";
 import { requirePortal } from "@/server/portal-auth";
+import { and, eq } from "drizzle-orm";
+import { clients } from "@/db/schema";
+import { portalInvoice } from "@/db/invoices";
+import { invoiceCheckout } from "@/server/stripe";
+import { onlinePaymentsReady } from "@/server/payments";
 import { PortalError, addClientComment, decide, recordView, type PortalErrorReason } from "@/db/portal";
 import { VariationError, decideVariation } from "@/db/variations";
 import { notifyTeam, notifyVariationDecision } from "@/server/notify";
-import { isBot, requestEvidence } from "@/server/origin";
+import { appOrigin, isBot, portalInvoiceUrl, requestEvidence } from "@/server/origin";
 
 export type PortalActionResult = { ok: true } | { ok: false; message: string };
 
@@ -114,4 +119,38 @@ export async function decideVariationAction(token: string, quoteNumberArg: numbe
   }
   revalidatePath(`/portal/${token}`, "layout");
   return { ok: true };
+}
+
+/**
+ * Pay an invoice online: a Stripe Checkout page on the company's own account. Only for unpaid invoices of
+ * this client, when the company takes online payments.
+ */
+export async function payInvoiceAction(token: string, number: number): Promise<{ ok: true; url: string } | { ok: false; message: string }> {
+  const n = quoteNumber(number);
+  const access = typeof token === "string" ? await requirePortal(token) : null;
+  if (!access || n === null) return { ok: false, message: MESSAGES.bad_link };
+  const found = await withTenant(access.orgId, async (tx) => {
+    const invoice = await portalInvoice(tx, access.orgId, access.clientId, n);
+    if (!invoice || invoice.status !== "issued") return null;
+    const ready = await onlinePaymentsReady(tx, access.orgId);
+    if (!ready) return null;
+    const [client] = await tx.select({ email: clients.email }).from(clients).where(and(eq(clients.orgId, access.orgId), eq(clients.id, access.clientId)));
+    return { invoice, accountId: ready, email: client?.email ?? null };
+  });
+  if (!found) return { ok: false, message: "This invoice can't be paid online. Please use the bank details." };
+  const s = found.invoice.snapshot;
+  const url = await invoiceCheckout({
+    orgId: access.orgId,
+    accountId: found.accountId,
+    invoiceId: found.invoice.id,
+    ref: s.ref,
+    company: s.company.tradingName ?? s.company.name,
+    totalPence: found.invoice.totalPence,
+    email: found.email,
+    returnUrl: portalInvoiceUrl(await appOrigin(), token, n),
+  }).catch((error: unknown) => {
+    console.error("Couldn't start an invoice payment", error instanceof Error ? error.message : error);
+    return null;
+  });
+  return url ? { ok: true, url } : { ok: false, message: "Online payment isn't available right now. Please use the bank details." };
 }

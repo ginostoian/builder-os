@@ -13,6 +13,7 @@ import {
   HardHat,
   LayoutDashboard,
   Library,
+  Lock,
   Plus,
   Receipt,
   Search,
@@ -76,6 +77,10 @@ export type ShellAccount = {
   search: React.ReactNode;
   bell: React.ReactNode;
   newMenu: React.ReactNode;
+  /** Screens the company's plan doesn't include (shown with a lock). */
+  locked?: AdminScreen[];
+  /** Trial days left, or an upgrade nudge, in the top bar. */
+  banner?: React.ReactNode;
 };
 
 /**
@@ -142,6 +147,7 @@ export function AppShell({
                 <span className="flex-1">{n.label}</span>
                 {/* Badges are demo counts: only the marketing screenshots show them. */}
                 {n.badge && !account && <span className="text-[11px] text-subtle tabular">{n.badge}</span>}
+                {n.screen && account?.locked?.includes(n.screen) && <Lock className="size-3 text-faint" aria-label="Not on your plan" />}
               </Link>
             );
           })}
@@ -190,6 +196,7 @@ export function AppShell({
           <div className="flex-1" />
           {account ? (
             <div className="flex items-center gap-1.5">
+              {account.banner}
               {account.bell}
               {account.newMenu}
             </div>

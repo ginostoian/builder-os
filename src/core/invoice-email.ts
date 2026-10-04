@@ -16,6 +16,8 @@ export type InvoiceEmailFacts = {
   dueDate: string;
   bank: { accountName: string; sortCode: string; accountNumber: string };
   link: string;
+  /** The company takes card and bank payments online: the button pays the invoice. */
+  payOnline?: boolean;
 };
 
 const COPY: Record<"new" | ReminderKind, { subject: (f: InvoiceEmailFacts, c: string) => string; heading: (f: InvoiceEmailFacts) => string; intro: (f: InvoiceEmailFacts, c: string) => string }> = {
@@ -53,9 +55,15 @@ export function invoiceEmail(kind: "new" | ReminderKind, f: InvoiceEmailFacts, s
     subject: copy.subject(f, company),
     content: {
       company: { name: company, brandColour: f.company.brandColour },
-      preheader: `${formatGBP(f.totalPence)} due ${longDate(f.dueDate)}. Pay by bank transfer.`,
+      preheader: `${formatGBP(f.totalPence)} due ${longDate(f.dueDate)}. ${f.payOnline ? "Pay online or by bank transfer." : "Pay by bank transfer."}`,
       heading: copy.heading(f),
-      paragraphs: [`Hi ${f.clientName},`, copy.intro(f, company), `Please pay by bank transfer, using ${f.ref} as the payment reference so we can match it.`],
+      paragraphs: [
+        `Hi ${f.clientName},`,
+        copy.intro(f, company),
+        f.payOnline
+          ? `You can pay online by card or from your bank with the button below, or by bank transfer using ${f.ref} as the payment reference.`
+          : `Please pay by bank transfer, using ${f.ref} as the payment reference so we can match it.`,
+      ],
       details: [
         ["Amount due", formatGBP(f.totalPence)],
         ["Due date", longDate(f.dueDate)],
@@ -64,7 +72,7 @@ export function invoiceEmail(kind: "new" | ReminderKind, f: InvoiceEmailFacts, s
         ["Account number", f.bank.accountNumber],
         ["Reference", f.ref],
       ],
-      button: { label: "View invoice", href: f.link },
+      button: { label: f.payOnline ? "View and pay online" : "View invoice", href: f.link },
       footer: `${signOff ? `${signOff}, ` : ""}${company}. Reply to this email to reach us.`,
     },
   };

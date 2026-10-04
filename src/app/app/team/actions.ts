@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { can } from "@/core/roles";
 import { certificateInput, id, workerInput } from "@/core/schemas";
 import { TeamError, addCertificate, createWorker, deleteCertificate, linkWorker, setWorkerArchived, updateCertificate, updateWorker, type TeamErrorReason } from "@/db/team";
+import { hasFeature, planBlock } from "@/server/plan";
 import { getSession, withSession, type Session } from "@/auth/session";
 
 export type TeamActionResult = { ok: true } | { ok: false; message: string };
@@ -18,12 +19,15 @@ const MESSAGES: Record<TeamErrorReason, string> = {
 
 async function editor(): Promise<Session | null> {
   const session = await getSession();
-  return can(session.role, "team.edit") ? session : null;
+  return can(session.role, "team.edit") && (await hasFeature("team")) ? session : null;
 }
+
+/** Why editor() said no: the plan, or the role. */
+const refused = async () => (await planBlock("team")) ?? NOT_ALLOWED;
 
 async function change(workerId: unknown, fn: (s: Session, workerId: string) => Promise<unknown>): Promise<TeamActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   const w = id.safeParse(workerId);
   if (!w.success) return { ok: false, message: MESSAGES.not_found };
   try {
@@ -46,7 +50,7 @@ const firstIssue = (e: { issues: { path: PropertyKey[]; message: string }[] }) =
 
 export async function createWorkerAction(input: unknown): Promise<TeamActionResult> {
   const session = await editor();
-  if (!session) return { ok: false, message: NOT_ALLOWED };
+  if (!session) return { ok: false, message: await refused() };
   const parsed = workerInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: firstIssue(parsed.error) };
   const data = can(session.role, "costs.view") ? parsed.data : { ...parsed.data, dayRatePence: undefined };

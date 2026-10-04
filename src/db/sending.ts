@@ -7,6 +7,8 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, inArray, isNull, max, sql } from "drizzle-orm";
 import { DEFAULT_PLAN } from "@/core/payment-plan";
 import { PlanError, buildSnapshot, canonicalJson, type QuoteSnapshot } from "@/core/quote-snapshot";
+import { entitlement, planHas } from "@/core/plans";
+import { billingFacts } from "./billing";
 import type { Tx } from "./index";
 import { leadQuoteSent } from "./pipeline";
 import { QuoteError, getQuote } from "./quotes";
@@ -70,10 +72,13 @@ export async function sendQuote(tx: Tx, orgId: string, input: { quoteId: string;
   const loaded = (await getQuote(tx, orgId, input.quoteId))!;
   if (!loaded.sections.some((s) => s.lines.length > 0)) throw new QuoteError("empty");
 
-  const [org] = await tx
+  const [found] = await tx
     .select({ name: organizations.name, tradingName: organizations.tradingName, vatNumber: organizations.vatNumber, logoUrl: organizations.logoUrl, brandColour: organizations.brandColour, terms: organizations.quoteTerms })
     .from(organizations)
     .where(eq(organizations.id, orgId));
+  // Your own logo and colours on quotes are an Essentials feature; Free quotes go out in Builder OS's style.
+  const branded = planHas(entitlement(await billingFacts(tx, orgId), new Date()).plan, "branding");
+  const org = found && (branded ? found : { ...found, logoUrl: null, brandColour: null });
   const [{ last }] = await tx
     .select({ last: max(quoteVersions.versionNo) })
     .from(quoteVersions)
