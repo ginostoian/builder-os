@@ -42,15 +42,19 @@ export async function setStripeCustomer(tx: Tx, orgId: string, customerId: strin
   return ok(await tx.execute<{ ok: boolean }>(sql`select app_billing_set_customer(${orgId}::uuid, ${customerId}) as ok`));
 }
 
-/** A subscription's state as just fetched from Stripe. False if it isn't for this company's customer. */
+/**
+ * A subscription's state as just fetched from Stripe. False if it isn't for this company's customer.
+ * `monthlyPence` is what it pays us a month before VAT; the database counts it as MRR only while the
+ * subscription is active or past due, and records each change for the platform dashboard.
+ */
 export async function applySubscription(
   tx: Tx,
   orgId: string,
-  s: { customerId: string; subscriptionId: string; plan: Exclude<Plan, "free">; status: string; periodEnd: Date | null; cancelAtPeriodEnd: boolean },
+  s: { customerId: string; subscriptionId: string; plan: Exclude<Plan, "free">; status: string; periodEnd: Date | null; cancelAtPeriodEnd: boolean; monthlyPence: number },
 ): Promise<boolean> {
   return ok(
     await tx.execute<{ ok: boolean }>(
-      sql`select app_billing_apply_subscription(${orgId}::uuid, ${s.customerId}, ${s.subscriptionId}, ${s.plan}::plan, ${s.status}, ${s.periodEnd?.toISOString() ?? null}::timestamptz, ${s.cancelAtPeriodEnd}) as ok`,
+      sql`select app_billing_apply_subscription(${orgId}::uuid, ${s.customerId}, ${s.subscriptionId}, ${s.plan}::plan, ${s.status}, ${s.periodEnd?.toISOString() ?? null}::timestamptz, ${s.cancelAtPeriodEnd}, ${Math.max(0, Math.round(s.monthlyPence))}::int) as ok`,
     ),
   );
 }

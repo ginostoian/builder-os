@@ -8,6 +8,7 @@ const tabs = [
   { id: "payments", label: "Payments", href: appRoutes.paymentSettings },
   { id: "billing", label: "Plan & billing", href: "/app/settings/billing" },
   { id: "team", label: "Team", href: appRoutes.team },
+  { id: "guide", label: "Getting started", href: "/app/settings/getting-started" },
 ] as const;
 
 /** Settings layout: section nav on the left (like the service library's categories), content on the right. */

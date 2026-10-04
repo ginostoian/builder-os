@@ -68,8 +68,21 @@ export async function syncSubscription(subscriptionId: string): Promise<boolean>
       status: sub.status,
       periodEnd: item?.current_period_end ? new Date(item.current_period_end * 1000) : null,
       cancelAtPeriodEnd: sub.cancel_at_period_end,
+      monthlyPence: monthlyPence(sub),
     }),
   );
+}
+
+/** What a subscription pays a month (pence, before tax): yearly prices count as a twelfth, discounts aren't taken off. */
+export function monthlyPence(sub: Pick<Stripe.Subscription, "items">): number {
+  const perMonth: Record<string, number> = { day: 365 / 12, week: 52 / 12, month: 1, year: 1 / 12 };
+  let total = 0;
+  for (const item of sub.items.data) {
+    const r = item.price.recurring;
+    if (!r) continue;
+    total += ((item.price.unit_amount ?? 0) * (item.quantity ?? 1) * (perMonth[r.interval] ?? 1)) / (r.interval_count || 1);
+  }
+  return Math.round(total);
 }
 
 // ── Client payments (Connect) ────────────────────────────────────────────────

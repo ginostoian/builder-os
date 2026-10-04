@@ -205,6 +205,13 @@ The test roles (`builderos_owner_test`, `builderos_app_test`) get fresh random p
 - `invoices.stripe_payment_id` (unique) records an online payment; the app role may set it along with the paid status. An invoice is marked paid online only if the payment is on the company's own connected account and the amount equals the invoice total.
 - The migration creates `builderos_billing` if it's missing and grants it to the migrating role `WITH INHERIT FALSE, SET TRUE` (Postgres 16 needs SET to hand a function to a role).
 
+## Platform metrics and getting started (migration 0019)
+
+- `member_activity`: one row per person per UK day, with page views, sessions (a view after 30 minutes away starts a new one) and site app views. The app records it from a beacon in the office and site apps (`activityAction`); it can insert and update, not delete. Only counts are stored, never which pages.
+- `subscription_events`: every change to what a company pays us (`mrr_before_pence`, `mrr_after_pence`), written by `app_billing_apply_subscription`, which now also takes the subscription's monthly amount and keeps `organizations.mrr_pence` current. The app role has no access to this table at all.
+- `builderos_metrics`: a NOLOGIN, read-only role with no BYPASSRLS. It can read a handful of columns (plans, MRR, member and activity counts, quote send dates, project and lead dates, invoice paid totals) through `platform_metrics` policies and column grants. It owns four `SECURITY DEFINER` functions that return totals and per-company counts for the platform dashboard (`/app/admin`): `app_platform_company_stats`, `app_platform_daily_activity`, `app_platform_subscription_events`, `app_platform_user_signups`. The page checks `PLATFORM_ADMIN_EMAILS` before calling them.
+- `members.onboarding_tour_at`, `onboarding_hidden` and `onboarding_seen` hold each person's tour and checklist choices. Checklist progress itself is read from the company's own data, so it can't drift.
+
 ## Still to do
 
 - A purge job for soft-deleted companies after the grace period, built with the per-company GDPR export (plan §7).

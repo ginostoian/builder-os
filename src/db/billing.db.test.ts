@@ -62,7 +62,7 @@ describe("billing", () => {
       // Never re-pointed.
       expect(await setStripeCustomer(tx, a.orgId, cusB)).toBe(false);
     });
-    const sub = (id: string, status: string, customerId = cusA) => ({ customerId, subscriptionId: id, plan: "essentials" as const, status, periodEnd: new Date("2026-11-05T00:00:00Z"), cancelAtPeriodEnd: false });
+    const sub = (id: string, status: string, customerId = cusA) => ({ customerId, subscriptionId: id, plan: "essentials" as const, status, periodEnd: new Date("2026-11-05T00:00:00Z"), cancelAtPeriodEnd: false, monthlyPence: 4900 });
     await withTenant(a.orgId, async (tx) => {
       expect(await applySubscription(tx, a.orgId, sub("sub_one", "active"))).toBe(true);
       // Someone else's customer: refused.
