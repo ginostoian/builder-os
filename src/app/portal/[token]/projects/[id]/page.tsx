@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { StoredImage } from "@/components/stored-image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarDays, Check, ChevronLeft, FileImage, FileText, MapPin, ShieldCheck } from "lucide-react";
@@ -112,9 +113,7 @@ export default async function PortalProjectPage({ params }: { params: Params }) 
                   <div className="mt-2.5 grid grid-cols-3 gap-1.5">
                     {d.photos.map((ph, i) => (
                       <a key={ph.key} href={publicUrl(ph.key)} target="_blank" rel="noreferrer noopener" className="block aspect-square overflow-hidden rounded-[8px] bg-muted">
-                        {/* The company's CDN: a plain <img>, no referrer. */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={publicUrl(ph.key)} alt={`Photo ${i + 1}`} referrerPolicy="no-referrer" loading="lazy" className="size-full object-cover" />
+                        <StoredImage src={publicUrl(ph.key)} alt={`Photo ${i + 1}`} className="size-full object-cover" />
                       </a>
                     ))}
                   </div>

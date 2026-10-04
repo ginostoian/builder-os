@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Panel } from "../app-shell";
 import { Field, SectionHeading, control } from "../form-fields";
 import { LogoUpload } from "./logo-upload";
+import { StorageCheckButton } from "./storage-check";
 
 export type CompanySettingsValues = {
   name: string;
@@ -136,6 +137,7 @@ export function CompanySettingsForm({ initial, canEdit, storageEnabled }: { init
               </div>
             </Field>
           </div>
+                  {storageEnabled && canEdit && <StorageCheckButton />}
         </Panel>
 
         <Panel className="flex flex-col gap-4 p-5">

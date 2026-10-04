@@ -1,5 +1,6 @@
 "use client";
 
+import { StoredImage } from "@/components/stored-image";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Paperclip, Trash2, X } from "lucide-react";
@@ -317,8 +318,7 @@ export function ReceiptThumb({ url, pdf, onRemove, disabled }: { url: string; pd
         {pdf ? (
           <FileText className="size-6 text-subtle" />
         ) : (
-          // eslint-disable-next-line @next/next/no-img-element -- CDN image
-          <img src={url} alt="Receipt" className="size-full object-cover" />
+          <StoredImage src={url} alt="Receipt" className="size-full object-cover" />
         )}
       </a>
       {onRemove && (
