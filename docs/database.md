@@ -80,7 +80,12 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
    - A worker has at most one open visit (a partial unique index). Checking in closes the previous visit first. Location is optional, numeric(9,6), and checked to be in range. Timesheets group visits by the UK day they started.
    - The site app (`src/db/site.ts`) is scoped to the signed-in member's worker. It shows only active jobs they manage or have a task on, and changes only their own tasks and visits.
    - Certificate reminders: the daily cron finds companies through `app_orgs_with_expiring_certificates(date)`, a `SECURITY DEFINER` function owned by `builderos_lookup`. It can read only `worker_certificates (org_id, worker_id, expires_on, reminded_at)` and `workers (id, org_id, archived_at)`. Each certificate is emailed once to admins and office. `reminded_at` is reset when its expiry date changes.
-14. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
+14. **Job costs (migration 0014).** `expenses` (receipts, supplier bills, subcontractor invoices) and `purchase_orders`, both per project with forced RLS and composite FKs.
+   - Expenses store the total and the VAT part; `net = total - vat` is checked. Receipts are photos or PDFs on Bunny under `orgs/{companyId}/receipts/`, at most 6 per expense.
+   - `rechargeable` marks a purchase made on the client's behalf. It is billed back through `createInvoice` (`expenseIds`, a "Purchased on your behalf" line at the quote's VAT rate, cost plus `recharge_markup_bps`), or marked paid back with `recovered_on`. A recharge on a live invoice can't be edited or deleted; cancelling the invoice frees it.
+   - Costing (`jobCosting`, `costingReport`): income is the accepted quote's net plus approved variations; the estimate is the quote's cost prices plus approved variations' costs; costs are non-recharge expenses (net if the company has a VAT number, gross if not) plus labour. Labour is site-visit minutes × day rate ÷ 480, using `site_visits.day_rate_pence`, recorded at check-in (migration 0014 back-filled it from current rates).
+   - Purchase orders are numbered per company under an advisory lock, as invoices are. Drafts can be deleted; sent ones are cancelled instead.
+15. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
 
 **Adding a table:**
 - Give it `org_id`, `tenantPolicy(t.orgId)`, `.enableRLS()`, and a `unique(org_id, id)` if anything references it.

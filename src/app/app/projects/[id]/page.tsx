@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LiveAppShell } from "@/components/app/live-app-shell";
+import { JobCosts } from "@/components/app/costs/job-costs";
+import { toExpense } from "@/components/app/costs/to-expense";
 import { ProjectFiles } from "@/components/app/projects/project-files";
 import { ProjectHeader } from "@/components/app/projects/project-header";
 import { PROJECT_VIEWS, type ProjectView } from "@/components/app/projects/types";
@@ -14,6 +16,7 @@ import { can } from "@/core/roles";
 import { id as uuid } from "@/core/schemas";
 import { clientOptions } from "@/db/clients";
 import { assignableMembers, assignableWorkers, getProject, listDiary, listFiles, projectMoney } from "@/db/projects";
+import { costProjects, jobCosting } from "@/db/costs";
 import { requirePermission, withSession } from "@/auth/session";
 import { publicUrl, storageConfigured } from "@/server/storage";
 
@@ -24,7 +27,9 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   const { id } = await params;
   if (!uuid.safeParse(id).success) notFound();
   const raw = (await searchParams).view;
-  const view: ProjectView = PROJECT_VIEWS.find((v) => v.key === (Array.isArray(raw) ? raw[0] : raw))?.key ?? "overview";
+  const seesCosts = can(session.role, "costs.view");
+  const asked = PROJECT_VIEWS.find((v) => v.key === (Array.isArray(raw) ? raw[0] : raw))?.key ?? "overview";
+  const view: ProjectView = asked === "costs" && !seesCosts ? "overview" : asked;
   const canEdit = can(session.role, "projects.edit");
   const seesMoney = can(session.role, "quotes.edit");
   const today = ukToday();
@@ -41,6 +46,8 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       diary: await listDiary(tx, session.orgId, id),
       files: await listFiles(tx, session.orgId, id),
       money: q && seesMoney ? await projectMoney(tx, session.orgId, q) : null,
+      costing: view === "costs" ? await jobCosting(tx, session.orgId, id) : null,
+      costProjects: view === "costs" ? await costProjects(tx, session.orgId) : [],
     };
   });
   if (!data) notFound();
@@ -60,6 +67,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
         quote={p.quoteId && found.quoteNumber ? { id: p.quoteId, ref: quoteRef(found.quoteNumber) } : null}
         counts={{ diary: data.diary.length, files: data.files.length, late: tasks.filter((t) => isLate(t, today)).length }}
         canEdit={canEdit}
+        showCosts={seesCosts}
         clients={data.clients}
         members={data.members}
       />
@@ -95,6 +103,17 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           canEdit={canEdit}
           storageEnabled={storageConfigured()}
           shareProgress={p.shareProgress}
+        />
+      )}
+      {view === "costs" && data.costing && (
+        <JobCosts
+          projectId={p.id}
+          quoteId={p.quoteId}
+          costing={data.costing}
+          expenses={data.costing.expenses.map(toExpense)}
+          projects={data.costProjects.map((x) => ({ id: x.id, name: x.name }))}
+          canEdit={can(session.role, "costs.edit")}
+          storageEnabled={storageConfigured()}
         />
       )}
     </LiveAppShell>

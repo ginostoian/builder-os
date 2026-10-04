@@ -33,6 +33,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { MAX_MARKUP_BPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, TEXT } from "../core/limits";
+import { EXPENSE_CATEGORIES, MAX_PO_LINES, MAX_RECEIPTS, PO_STATUSES, type PoLine } from "../core/costs";
 import { MAX_DIARY_PHOTOS, PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "../core/projects";
 import { WORKER_KINDS } from "../core/team";
 import { MAX_VARIATION_PHOTOS, VARIATION_STATUSES, type VariationLine, type VariationPhoto } from "../core/variation";
@@ -881,6 +882,8 @@ export const siteVisits = pgTable(
     inLng: numeric("in_lng", { precision: 9, scale: 6 }),
     outLat: numeric("out_lat", { precision: 9, scale: 6 }),
     outLng: numeric("out_lng", { precision: 9, scale: 6 }),
+    /** The worker's day rate when they checked in, for costing the job (rates change; past jobs shouldn't). */
+    dayRatePence: integer("day_rate_pence"),
     ...timestamps,
   },
   (t) => [
@@ -892,5 +895,101 @@ export const siteVisits = pgTable(
     check("site_visits_out_after_in", sql`${t.checkedOutAt} is null or ${t.checkedOutAt} >= ${t.checkedInAt}`),
     check("site_visits_lat", sql`${t.inLat} is null or ${t.inLat} between -90 and 90`),
     check("site_visits_lng", sql`${t.inLng} is null or ${t.inLng} between -180 and 180`),
+    check("site_visits_day_rate", sql`${t.dayRatePence} is null or ${t.dayRatePence} between 0 and ${n(MAX_RATE_PENCE)}`),
+  ],
+).enableRLS();
+
+// ── Job costs ────────────────────────────────────────────────────────────────
+
+export const expenseCategory = pgEnum("expense_category", EXPENSE_CATEGORIES);
+export const poStatus = pgEnum("po_status", PO_STATUSES);
+
+/** A receipt or bill: a photo or PDF stored on Bunny. */
+export type Receipt = { key: string; contentType: string };
+
+/**
+ * An order to a supplier for a job: what, how many, at what price. When the supplier's bill comes in it's
+ * recorded as an expense linked to the order.
+ */
+export const purchaseOrders = pgTable(
+  "purchase_orders",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    number: integer("number").notNull(),
+    projectId: uuid("project_id").notNull(),
+    supplierName: text("supplier_name").notNull(),
+    supplierEmail: text("supplier_email"),
+    status: poStatus("status").notNull().default("draft"),
+    orderedOn: date("ordered_on"),
+    neededBy: date("needed_by"),
+    deliveryNotes: text("delivery_notes"),
+    lines: jsonb("lines").$type<PoLine[]>().notNull().default(sql`'[]'::jsonb`),
+    vatRateBps: integer("vat_rate_bps").notNull().default(2000),
+    netPence: integer("net_pence").notNull().default(0),
+    createdByMemberId: uuid("created_by_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    unique("purchase_orders_org_id_id_key").on(t.orgId, t.id),
+    unique("purchase_orders_org_number_key").on(t.orgId, t.number),
+    foreignKey({ name: "purchase_orders_project_fk", columns: [t.orgId, t.projectId], foreignColumns: [projects.orgId, projects.id] }).onDelete("cascade"),
+    foreignKey({ name: "purchase_orders_member_fk", columns: [t.orgId, t.createdByMemberId], foreignColumns: [members.orgId, members.id] }),
+    index("purchase_orders_project_idx").on(t.orgId, t.projectId),
+    check("purchase_orders_number_positive", sql`${t.number} > 0`),
+    len("purchase_orders_supplier_len", t.supplierName, TEXT.name),
+    len("purchase_orders_supplier_email_len", t.supplierEmail, TEXT.email),
+    len("purchase_orders_delivery_notes_len", t.deliveryNotes, TEXT.note),
+    between("purchase_orders_vat_range", t.vatRateBps, 0, MAX_VAT_BPS),
+    between("purchase_orders_net_range", t.netPence, 0, MAX_RATE_PENCE),
+    check("purchase_orders_lines_array", sql`jsonb_typeof(${t.lines}) = 'array' and jsonb_array_length(${t.lines}) <= ${n(MAX_PO_LINES)}`),
+    check("purchase_orders_ordered_has_date", sql`${t.status} in ('draft', 'cancelled') or ${t.orderedOn} is not null`),
+  ],
+).enableRLS();
+
+/**
+ * Money spent on a job: a receipt, a supplier's bill or a subcontractor's invoice. Amounts as on the
+ * receipt (VAT shown separately when there is some). `rechargeable` marks things bought on the client's
+ * behalf, to bill back: on an invoice (`invoice_id`) or marked as recovered some other way.
+ */
+export const expenses = pgTable(
+  "expenses",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").notNull(),
+    purchaseOrderId: uuid("purchase_order_id"),
+    category: expenseCategory("category").notNull().default("materials"),
+    supplier: text("supplier"),
+    description: text("description").notNull(),
+    spentOn: date("spent_on").notNull(),
+    netPence: integer("net_pence").notNull(),
+    vatPence: integer("vat_pence").notNull().default(0),
+    totalPence: integer("total_pence").notNull(),
+    receipts: jsonb("receipts").$type<Receipt[]>().notNull().default(sql`'[]'::jsonb`),
+    rechargeable: boolean("rechargeable").notNull().default(false),
+    rechargeMarkupBps: integer("recharge_markup_bps").notNull().default(0),
+    invoiceId: uuid("invoice_id"),
+    recoveredOn: date("recovered_on"),
+    createdByMemberId: uuid("created_by_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    unique("expenses_org_id_id_key").on(t.orgId, t.id),
+    foreignKey({ name: "expenses_project_fk", columns: [t.orgId, t.projectId], foreignColumns: [projects.orgId, projects.id] }).onDelete("cascade"),
+    foreignKey({ name: "expenses_po_fk", columns: [t.orgId, t.purchaseOrderId], foreignColumns: [purchaseOrders.orgId, purchaseOrders.id] }),
+    foreignKey({ name: "expenses_invoice_fk", columns: [t.orgId, t.invoiceId], foreignColumns: [invoices.orgId, invoices.id] }),
+    foreignKey({ name: "expenses_member_fk", columns: [t.orgId, t.createdByMemberId], foreignColumns: [members.orgId, members.id] }),
+    index("expenses_project_idx").on(t.orgId, t.projectId, t.spentOn),
+    index("expenses_po_idx").on(t.orgId, t.purchaseOrderId),
+    len("expenses_supplier_len", t.supplier, TEXT.name),
+    len("expenses_description_len", t.description, TEXT.line),
+    between("expenses_total_range", t.totalPence, 0, MAX_RATE_PENCE),
+    check("expenses_amounts_add_up", sql`${t.netPence} + ${t.vatPence} = ${t.totalPence} and ${t.netPence} >= 0 and ${t.vatPence} >= 0`),
+    between("expenses_markup_range", t.rechargeMarkupBps, 0, MAX_MARKUP_BPS),
+    check("expenses_receipts_array", sql`jsonb_typeof(${t.receipts}) = 'array' and jsonb_array_length(${t.receipts}) <= ${n(MAX_RECEIPTS)}`),
+    check("expenses_billed_when_rechargeable", sql`${t.rechargeable} or (${t.invoiceId} is null and ${t.recoveredOn} is null)`),
   ],
 ).enableRLS();

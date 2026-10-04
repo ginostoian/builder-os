@@ -44,7 +44,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
  * Storage key for a company file: `orgs/{orgId}/{area}/{random}.{ext}`. The random part makes keys
  * unguessable and never reused, so a new logo is a new URL (no stale CDN cache).
  */
-export function orgFileKey(orgId: string, area: "logo" | "files" | "photos", random: string, ext: string): string {
+export function orgFileKey(orgId: string, area: "logo" | "files" | "photos" | "receipts", random: string, ext: string): string {
   if (!UUID.test(orgId)) throw new Error("Invalid org id");
   if (!/^[A-Za-z0-9_-]{16,64}$/.test(random) || !/^[a-z0-9]{2,5}$/.test(ext)) throw new Error("Invalid file key part");
   return `orgs/${orgId}/${area}/${random}.${ext}`;

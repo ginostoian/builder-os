@@ -34,6 +34,7 @@ export function ProjectHeader({
   quote,
   counts,
   canEdit,
+  showCosts,
   clients,
   members,
 }: {
@@ -46,6 +47,8 @@ export function ProjectHeader({
   quote: { id: string; ref: string } | null;
   counts: { diary: number; files: number; late: number };
   canEdit: boolean;
+  /** Costs are for people who see prices. */
+  showCosts: boolean;
   clients: { id: string; name: string; address: Address | null }[];
   members: Member[];
 }) {
@@ -171,7 +174,7 @@ export function ProjectHeader({
         )}
       </div>
       <nav className="flex gap-5 px-6 pt-3" aria-label="Project views">
-        {PROJECT_VIEWS.map((v) => (
+        {PROJECT_VIEWS.filter((v) => v.key !== "costs" || showCosts).map((v) => (
           <Link
             key={v.key}
             href={v.key === "overview" ? `/app/projects/${projectId}` : `/app/projects/${projectId}?view=${v.key}`}

@@ -34,6 +34,9 @@ describe("permissions", () => {
     expect(can("employee", "team.view")).toBe(false);
     expect(can("site_lead", "team.view")).toBe(true);
     expect(can("site_lead", "team.edit")).toBe(false);
+    expect(can("office", "costs.edit")).toBe(true);
+    expect(can("estimator", "costs.edit")).toBe(false);
+    expect(can("site_lead", "costs.view")).toBe(false);
   });
 
   it("sends employees to the employee app", () => {

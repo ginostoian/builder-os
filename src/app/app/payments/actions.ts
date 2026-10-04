@@ -22,6 +22,7 @@ const MESSAGES: Record<InvoiceErrorReason, string> = {
   no_bank_details: "Add your bank details in Settings → Payments first, so the client knows where to pay.",
   not_paid: "This invoice isn't marked as paid.",
   not_open: "Only unpaid invoices can be changed like that.",
+  unknown_recharge: "A purchase you picked is already invoiced or was marked as paid back. Reload to see the latest.",
 };
 
 export type InvoiceActionResult = { ok: true; invoiceId?: string; emailed?: boolean; emailError?: string } | { ok: false; message: string };
@@ -71,13 +72,14 @@ export async function createInvoice(input: unknown): Promise<InvoiceActionResult
   if (!parsed.success) return { ok: false, message: MESSAGES.unknown_stage };
   let created: Awaited<ReturnType<typeof raiseInvoice>>;
   try {
-    created = await withSession(session, (tx) => raiseInvoice(tx, session.orgId, { quoteId: parsed.data.quoteId, stageId: parsed.data.stageId, variationIds: parsed.data.variationIds, memberId: session.memberId }));
+    created = await withSession(session, (tx) => raiseInvoice(tx, session.orgId, { quoteId: parsed.data.quoteId, stageId: parsed.data.stageId, variationIds: parsed.data.variationIds, expenseIds: parsed.data.expenseIds, memberId: session.memberId }));
   } catch (error) {
     if (error instanceof InvoiceError) return { ok: false, message: MESSAGES[error.reason] };
     throw error;
   }
   const mail = parsed.data.email ? await deliver(session, created.id) : { emailed: false };
   refresh(created.id, parsed.data.quoteId);
+  if (parsed.data.expenseIds?.length) revalidatePath("/app/purchases");
   return { ok: true, invoiceId: created.id, ...mail };
 }
 
