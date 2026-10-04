@@ -1,12 +1,14 @@
 import { timingSafeEqual } from "node:crypto";
 import { appOrigin } from "@/server/origin";
+import { runAutomations } from "@/server/automations";
 import { runCertificateReminders, runReminders } from "@/server/reminders";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /**
- * Daily reminders: payment reminders to clients, and expiring team certificates to the office. Vercel Cron calls this (vercel.json) with `Authorization: Bearer $CRON_SECRET`;
+ * The daily run: payment reminders to clients, expiring team certificates to the office, and the
+ * pipeline's automation emails due today. Vercel Cron calls this (vercel.json) with `Authorization: Bearer $CRON_SECRET`;
  * anything else is refused. Without CRON_SECRET the endpoint is off.
  */
 export async function GET(request: Request) {
@@ -18,5 +20,6 @@ export async function GET(request: Request) {
   const origin = await appOrigin();
   const payments = await runReminders(origin);
   const certificates = await runCertificateReminders(origin);
-  return Response.json({ ...payments, certificates });
+  const automations = await runAutomations(origin);
+  return Response.json({ ...payments, certificates, automations });
 }

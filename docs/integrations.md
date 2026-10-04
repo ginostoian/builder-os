@@ -27,6 +27,14 @@ Clients get an email about an unpaid invoice 3 days before it's due, on the day,
 
 The same daily job also emails admins and office about team certificates (CSCS, Gas Safe, insurance) that expire within 30 days or have already expired. Each certificate is mentioned once, until its date changes.
 
+It also sends the sales pipeline's automation emails that are due that day. Same-day ones go out straight away, when the lead is added or moves stage. Each automatic email carries:
+- an unsubscribe link (`/unsubscribe/{token}`);
+- one-click `List-Unsubscribe` headers (`POST /api/unsubscribe/{token}`).
+
+Leads who unsubscribe get no more automatic emails. Emails due while email wasn't set up are skipped once they're more than 3 days late, rather than sent late.
+
+The web enquiry form (`/enquire/{token}`, or embedded with `?embed=1`) needs nothing extra. It sends new enquiries into the pipeline and emails admins and office (once email is set up).
+
 1. Generate a long random secret: `openssl rand -hex 32`.
 2. In Vercel (Production only), set `CRON_SECRET` to it. Vercel Cron sends it as `Authorization: Bearer …`.
 3. Email must be set up as above. Without `CRON_SECRET`, `/api/cron/reminders` answers 503.

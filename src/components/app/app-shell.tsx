@@ -19,6 +19,7 @@ import {
   ShoppingCart,
   Smartphone,
   SquareKanban,
+  Target,
   type LucideIcon,
 } from "lucide-react";
 import { LogoMark, Avatar } from "@/components/brand";
@@ -31,6 +32,7 @@ type NavItem = { id: string; label: string; icon: LucideIcon; href: string; badg
 
 const nav: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: appRoutes.dashboard, screen: "dashboard" },
+  { id: "pipeline", label: "Pipeline", icon: Target, href: appRoutes.pipeline, screen: "pipeline" },
   { id: "quote", label: "Quotes", icon: FileSpreadsheet, href: appRoutes.quote, badge: "4", screen: "quote" },
   { id: "templates", label: "Service library", icon: Library, href: appRoutes.library, screen: "templates" },
   { id: "variations", label: "Variations", icon: FileDiff, href: appRoutes.variations, badge: "2", screen: "variations" },
@@ -58,6 +60,7 @@ const crumbs: Record<AdminScreen, [string, string]> = {
   people: ["Team", "People"],
   purchases: ["Purchases", "Expenses"],
   reports: ["Reports", "Job costing"],
+  pipeline: ["Pipeline", "Board"],
   settings: ["Settings", "Company"],
 };
 

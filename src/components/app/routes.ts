@@ -14,11 +14,12 @@ export const appRoutes = {
   team: "/app/settings/team",
   people: "/app/team",
   purchases: "/app/purchases",
+  pipeline: "/app/pipeline",
   reports: "/app/reports",
   paymentSettings: "/app/settings/payments",
   clientQuote: "/q/hale-sons/1042",
   employee: "/m",
 } as const;
 
-export type AdminScreen = "dashboard" | "quote" | "templates" | "variations" | "board" | "invoices" | "crm" | "people" | "purchases" | "reports" | "settings";
-export type ScreenId = Exclude<AdminScreen, "settings" | "variations" | "people" | "purchases" | "reports"> | "client" | "mobile";
+export type AdminScreen = "dashboard" | "quote" | "templates" | "variations" | "board" | "invoices" | "crm" | "people" | "purchases" | "reports" | "pipeline" | "settings";
+export type ScreenId = Exclude<AdminScreen, "settings" | "variations" | "people" | "purchases" | "reports" | "pipeline"> | "client" | "mobile";

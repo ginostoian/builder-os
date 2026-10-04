@@ -6,6 +6,7 @@
  */
 import "server-only";
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { clerkOrgId, clerkUserId } from "@/core/clerk";
@@ -138,6 +139,33 @@ export async function findOrgsWithExpiringCertificates(until: string): Promise<s
   const day = isoDate.parse(until);
   const database = await checkedDb();
   const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_orgs_with_expiring_certificates(${day}::date) as org_id`);
+  return rows.map((row) => row.org_id);
+}
+
+const lookupToken = z.string().regex(/^[A-Za-z0-9_-]{20,64}$/);
+
+/** The company whose public enquiry form this token opens, or null (unknown, switched off, or deleted). */
+export async function findEnquiryForm(token: string): Promise<string | null> {
+  const parsed = lookupToken.safeParse(token);
+  if (!parsed.success) return null;
+  const database = await checkedDb();
+  const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_enquiry_form_lookup(${parsed.data}) as org_id`);
+  return rows[0]?.org_id ?? null;
+}
+
+/** The company and lead an unsubscribe link belongs to, or null. */
+export async function findLeadForUnsubscribe(token: string): Promise<{ orgId: string; leadId: string } | null> {
+  const parsed = lookupToken.safeParse(token);
+  if (!parsed.success) return null;
+  const database = await checkedDb();
+  const rows = await database.execute<{ org_id: string; lead_id: string }>(sql`select org_id, lead_id from app_lead_unsubscribe_lookup(${parsed.data})`);
+  return rows[0] ? { orgId: rows[0].org_id, leadId: rows[0].lead_id } : null;
+}
+
+/** Companies with automation emails due by `now`. The automation run calls this, then works in each tenant. */
+export async function findOrgsWithDueAutomations(now: Date): Promise<string[]> {
+  const database = await checkedDb();
+  const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_orgs_with_due_automations(${now.toISOString()}::timestamptz) as org_id`);
   return rows.map((row) => row.org_id);
 }
 

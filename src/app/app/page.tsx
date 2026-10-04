@@ -5,6 +5,7 @@ import {
   Eye,
   FilePen,
   MessageSquare,
+  Phone,
   Plus,
   ThumbsDown,
   Users,
@@ -20,6 +21,7 @@ import { invoiceTotals } from "@/db/invoices";
 import { listProjects } from "@/db/projects";
 import { JobsPanel } from "@/components/app/projects/jobs-panel";
 import { ukToday } from "@/core/payment-plan";
+import { followUpsDue } from "@/db/pipeline";
 import { certificateAlerts } from "@/db/team";
 import { getSession, withSession } from "@/auth/session";
 
@@ -103,7 +105,7 @@ export default async function DashboardPage() {
   }
 
   const canInvoice = can(session.role, "invoices.manage");
-  const [d, money, jobs, certs] = await withSession(
+  const [d, money, jobs, certs, due] = await withSession(
     session,
     async (tx) =>
       [
@@ -111,6 +113,7 @@ export default async function DashboardPage() {
         canInvoice ? await invoiceTotals(tx, session.orgId) : null,
         await listProjects(tx, session.orgId, "active", ukToday()),
         can(session.role, "team.view") ? await certificateAlerts(tx, session.orgId, ukToday()) : [],
+        can(session.role, "leads.view") ? await followUpsDue(tx, session.orgId, ukToday()) : [],
       ] as const,
   );
   const kpis = [
@@ -198,6 +201,18 @@ export default async function DashboardPage() {
             <span className="ml-auto text-[12.5px] text-ink-2">
               View payments →
             </span>
+          </Link>
+        )}
+
+        {due.length > 0 && (
+          <Link href="/app/pipeline" className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-card hover:bg-surface">
+            <Phone className={`size-4 ${due.some((l) => l.nextActionOn! < ukToday()) ? "text-danger" : "text-warning"}`} />
+            <span className="font-medium">Follow-ups due</span>
+            <span className="min-w-0 flex-1 truncate text-ink-2">
+              {due.length} lead{due.length === 1 ? "" : "s"} to chase: {due.slice(0, 3).map((l) => `${l.name} (${l.nextAction ?? "follow up"})`).join(", ")}
+              {due.length > 3 ? "…" : ""}
+            </span>
+            <span className="text-[12.5px] text-ink-2">Open pipeline →</span>
           </Link>
         )}
 

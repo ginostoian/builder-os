@@ -1,6 +1,8 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
+import { runCompanyAutomations } from "@/server/automations";
 import { redirect } from "next/navigation";
 import { can } from "@/core/roles";
 import { id, newQuoteInput, quoteSave, sendQuoteInput, staffReplyInput } from "@/core/schemas";
@@ -120,6 +122,8 @@ export async function sendQuoteToClient(input: unknown): Promise<SendQuoteResult
     throw error;
   }
   const link = portalUrl(await appOrigin(), sent.token, sent.snapshot.quote.number);
+  // The lead (if any) is now "Quote sent": same-day follow-ups go out after this responds.
+  after(() => runCompanyAutomations(session.orgId).catch(() => undefined));
   revalidatePath("/app/quotes");
   revalidatePath(`/app/quotes/${parsed.data.quoteId}`);
 
