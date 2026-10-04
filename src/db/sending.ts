@@ -8,6 +8,7 @@ import { and, asc, count, desc, eq, inArray, isNull, max, sql } from "drizzle-or
 import { DEFAULT_PLAN } from "@/core/payment-plan";
 import { PlanError, buildSnapshot, canonicalJson, type QuoteSnapshot } from "@/core/quote-snapshot";
 import type { Tx } from "./index";
+import { leadQuoteSent } from "./pipeline";
 import { QuoteError, getQuote } from "./quotes";
 import { clients, members, organizations, portalAccess, quoteComments, quoteDecisions, quoteEvents, quoteVersions, quotes } from "./schema";
 
@@ -99,6 +100,7 @@ export async function sendQuote(tx: Tx, orgId: string, input: { quoteId: string;
     .returning({ id: quoteVersions.id });
   await tx.insert(quoteEvents).values({ orgId, quoteId: q.id, versionId: version.id, kind: "sent", actor: "staff", memberId: input.memberId });
   const token = await ensurePortalToken(tx, orgId, q.clientId);
+  await leadQuoteSent(tx, orgId, input.quoteId);
   return { versionId: version.id, versionNo, token, snapshot, clientEmail: loaded.client?.email ?? null };
 }
 

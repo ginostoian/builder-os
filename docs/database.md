@@ -85,7 +85,20 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
    - `rechargeable` marks a purchase made on the client's behalf. It is billed back through `createInvoice` (`expenseIds`, a "Purchased on your behalf" line at the quote's VAT rate, cost plus `recharge_markup_bps`), or marked paid back with `recovered_on`. A recharge on a live invoice can't be edited or deleted; cancelling the invoice frees it.
    - Costing (`jobCosting`, `costingReport`): income is the accepted quote's net plus approved variations; the estimate is the quote's cost prices plus approved variations' costs; costs are non-recharge expenses (net if the company has a VAT number, gross if not) plus labour. Labour is site-visit minutes × day rate ÷ 480, using `site_visits.day_rate_pence`, recorded at check-in (migration 0014 back-filled it from current rates).
    - Purchase orders are numbered per company under an advisory lock, as invoices are. Drafts can be deleted; sent ones are cancelled instead.
-15. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
+15. **Sales pipeline (migration 0015).** The tables are `leads`, `lead_activities` (the timeline), `automations` (the company's own email sequences) and `automation_runs` (one lead going through one automation). All have forced RLS and composite FKs.
+   - **Stages.** Changes go through `setStage`, which does three things: it logs the change, stops runs that belong to another stage, and starts the switched-on automations for the new stage.
+   - **Quotes move their lead.** `sendQuote` moves it to Quote sent. `decide` moves it to Won, or to Lost with `declined_quote`. A lost lead must have a reason (check constraint).
+   - **Automation runs.** At most one live run per automation and lead (partial unique index).
+     - `claimDueEmails` reserves each due step before sending, row-locked with `skip locked`, so overlapping runners never send twice.
+     - A run stops when the lead leaves its stage, opts out or has no email; when the automation is switched off or its trigger changes; or when the step is over 3 days late.
+     - Steps are due at the start of the UK day, `delayDays` after the previous step. Same-day steps go at once, because actions call `runCompanyAutomations` in `after()`.
+   - **Lookups.** Three public entry points use `SECURITY DEFINER` functions owned by `builderos_lookup`, each returning only ids:
+     - `app_enquiry_form_lookup(token)`, for the web form; it matches `organizations.enquiry_token`;
+     - `app_lead_unsubscribe_lookup(token)`, for unsubscribe links; it matches `leads.unsubscribe_token`;
+     - `app_orgs_with_due_automations(now)`, for the daily cron.
+
+     The lookup role can read only the columns those functions match on.
+16. **No raw drivers outside `src/db`.** Lint blocks importing `postgres` or `drizzle-orm/postgres-js` anywhere else. `import "server-only"` keeps `@/db` out of client bundles.
 
 **Adding a table:**
 - Give it `org_id`, `tenantPolicy(t.orgId)`, `.enableRLS()`, and a `unique(org_id, id)` if anything references it.

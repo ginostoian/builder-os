@@ -12,6 +12,7 @@ import { MAX_VARIATION_LINES } from "./variation";
 import { PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "./projects";
 import { WORKER_KINDS } from "./team";
 import { EXPENSE_CATEGORIES, MAX_PO_LINES } from "./costs";
+import { AUTOMATION_TRIGGERS, LEAD_SOURCES, LEAD_STAGES, LOST_REASONS, MAX_AUTOMATION_STEPS, MAX_DELAY_DAYS } from "./pipeline";
 import { MAX_PAYMENT_STAGES, PAYMENT_AMOUNT_KINDS, PAYMENT_DUE_KINDS } from "./payment-plan";
 import { MAX_BUNDLE_ITEMS, MAX_LINES_PER_QUOTE, MAX_MARKUP_BPS, MAX_PATCH_OPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, QTY_DECIMALS, TEXT } from "./limits";
 
@@ -452,3 +453,66 @@ export const purchaseOrderInput = z.strictObject({
   lines: z.array(poLineInput).max(MAX_PO_LINES),
 });
 export type PurchaseOrderInput = z.infer<typeof purchaseOrderInput>;
+
+// ── Sales pipeline ───────────────────────────────────────────────────────────
+
+/** A lead's details. Only the name is needed; an enquiry often starts as a name and a number. */
+export const leadInput = z.strictObject({
+  name: singleLine(TEXT.name),
+  email: email.optional(),
+  phone: phone.optional(),
+  address: address.optional(),
+  postcode: singleLine(12).optional(),
+  source: z.enum(LEAD_SOURCES),
+  sourceDetail: singleLine(TEXT.name).optional(),
+  projectType: singleLine(TEXT.short).optional(),
+  description: multiLine(TEXT.note).optional(),
+  budget: singleLine(TEXT.short).optional(),
+  valuePence: pence.optional(),
+  ownerMemberId: id.optional(),
+});
+export type LeadInput = z.infer<typeof leadInput>;
+
+export const stageChangeInput = z
+  .strictObject({
+    stage: z.enum(LEAD_STAGES),
+    lostReason: z.enum(LOST_REASONS).optional(),
+    lostNote: multiLine(TEXT.note).optional(),
+    visitAt: z.iso.datetime({ offset: true }).optional(),
+  })
+  .refine((s) => s.stage !== "lost" || s.lostReason, { message: "Say why it was lost", path: ["lostReason"] });
+export type StageChangeInput = z.infer<typeof stageChangeInput>;
+
+export const automationStepInput = z.strictObject({
+  id,
+  delayDays: z.int().min(0).max(MAX_DELAY_DAYS),
+  subject: singleLine(TEXT.line),
+  body: multiLine(4_000).pipe(z.string().min(1, "Write the email")),
+});
+
+export const automationInput = z
+  .strictObject({
+    name: singleLine(TEXT.name),
+    trigger: z.enum(AUTOMATION_TRIGGERS),
+    stage: z.enum(LEAD_STAGES).optional(),
+    steps: z.array(automationStepInput).min(1, "Add at least one email").max(MAX_AUTOMATION_STEPS),
+  })
+  .refine((a) => (a.trigger === "stage_entered") === (a.stage !== undefined), { message: "Choose the stage", path: ["stage"] });
+export type AutomationInput = z.infer<typeof automationInput>;
+
+/** The public enquiry form. `website` is a honeypot: people never see it, bots fill it in. */
+export const enquiryInput = z.strictObject({
+  name: singleLine(TEXT.name),
+  email: email,
+  phone: phone.optional(),
+  postcode: singleLine(12).optional(),
+  projectType: singleLine(TEXT.short).optional(),
+  budget: singleLine(TEXT.short).optional(),
+  description: multiLine(TEXT.note).optional(),
+  heardFrom: z.enum(LEAD_SOURCES).optional(),
+  website: z.string().max(200).optional(),
+  startedAt: z.int().optional(),
+});
+
+/** A one-off email to a lead from their page. */
+export const leadEmailInput = z.strictObject({ subject: singleLine(TEXT.line), body: multiLine(4_000).pipe(z.string().min(1, "Write the email")) });

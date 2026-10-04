@@ -33,6 +33,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { MAX_MARKUP_BPS, MAX_QTY, MAX_RATE_PENCE, MAX_VAT_BPS, TEXT } from "../core/limits";
+import { AUTOMATION_TRIGGERS, LEAD_SOURCES, LEAD_STAGES, LOST_REASONS, MAX_AUTOMATION_STEPS, type AutomationStep } from "../core/pipeline";
 import { EXPENSE_CATEGORIES, MAX_PO_LINES, MAX_RECEIPTS, PO_STATUSES, type PoLine } from "../core/costs";
 import { MAX_DIARY_PHOTOS, PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "../core/projects";
 import { WORKER_KINDS } from "../core/team";
@@ -97,6 +98,8 @@ export const organizations = pgTable(
     tradingName: text("trading_name"),
     vatNumber: text("vat_number"),
     logoUrl: text("logo_url"),
+    /** The public web enquiry form's link (/enquire/{token}); null until the company turns it on. */
+    enquiryToken: text("enquiry_token").unique("organizations_enquiry_token_key"),
     brandColour: text("brand_colour"),
     plan: plan("plan").notNull().default("free"),
     stripeCustomerId: text("stripe_customer_id"),
@@ -991,5 +994,159 @@ export const expenses = pgTable(
     between("expenses_markup_range", t.rechargeMarkupBps, 0, MAX_MARKUP_BPS),
     check("expenses_receipts_array", sql`jsonb_typeof(${t.receipts}) = 'array' and jsonb_array_length(${t.receipts}) <= ${n(MAX_RECEIPTS)}`),
     check("expenses_billed_when_rechargeable", sql`${t.rechargeable} or (${t.invoiceId} is null and ${t.recoveredOn} is null)`),
+  ],
+).enableRLS();
+
+// ── Sales pipeline ───────────────────────────────────────────────────────────
+
+export const leadStage = pgEnum("lead_stage", LEAD_STAGES);
+export const leadSource = pgEnum("lead_source", LEAD_SOURCES);
+export const lostReason = pgEnum("lost_reason", LOST_REASONS);
+export const automationTrigger = pgEnum("automation_trigger", AUTOMATION_TRIGGERS);
+export const leadActivityKind = pgEnum("lead_activity_kind", ["created", "note", "call", "email", "automation_email", "stage", "visit", "quote"]);
+export const automationRunStatus = pgEnum("automation_run_status", ["active", "done", "stopped"]);
+
+/**
+ * An enquiry, from first contact to won or lost. Becomes a client and a quote along the way. The
+ * `unsubscribe_token` goes in automated emails; `email_opt_out` stops them for good.
+ */
+export const leads = pgTable(
+  "leads",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    email: text("email"),
+    phone: text("phone"),
+    address: jsonb("address").$type<Address>(),
+    /** From the web form, which asks for a postcode rather than a full address. */
+    postcode: text("postcode"),
+    source: leadSource("source").notNull().default("other"),
+    sourceDetail: text("source_detail"),
+    projectType: text("project_type"),
+    description: text("description"),
+    budget: text("budget"),
+    valuePence: integer("value_pence"),
+    stage: leadStage("stage").notNull().default("new"),
+    stageChangedAt: timestamp("stage_changed_at", { withTimezone: true }).notNull().defaultNow(),
+    ownerMemberId: uuid("owner_member_id"),
+    nextActionOn: date("next_action_on"),
+    nextAction: text("next_action"),
+    visitAt: timestamp("visit_at", { withTimezone: true }),
+    lostReason: lostReason("lost_reason"),
+    lostNote: text("lost_note"),
+    clientId: uuid("client_id"),
+    quoteId: uuid("quote_id"),
+    emailOptOut: boolean("email_opt_out").notNull().default(false),
+    unsubscribeToken: text("unsubscribe_token").notNull(),
+    viaWebForm: boolean("via_web_form").notNull().default(false),
+    createdByMemberId: uuid("created_by_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    pgPolicy("lead_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
+    unique("leads_org_id_id_key").on(t.orgId, t.id),
+    unique("leads_unsubscribe_token_key").on(t.unsubscribeToken),
+    foreignKey({ name: "leads_owner_fk", columns: [t.orgId, t.ownerMemberId], foreignColumns: [members.orgId, members.id] }),
+    foreignKey({ name: "leads_created_by_fk", columns: [t.orgId, t.createdByMemberId], foreignColumns: [members.orgId, members.id] }),
+    foreignKey({ name: "leads_client_fk", columns: [t.orgId, t.clientId], foreignColumns: [clients.orgId, clients.id] }),
+    foreignKey({ name: "leads_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
+    index("leads_org_stage_idx").on(t.orgId, t.stage),
+    index("leads_quote_idx").on(t.orgId, t.quoteId),
+    index("leads_web_recent_idx").on(t.orgId, t.createdAt).where(sql`${t.viaWebForm}`),
+    len("leads_name_len", t.name, TEXT.name),
+    len("leads_email_len", t.email, TEXT.email),
+    len("leads_phone_len", t.phone, TEXT.phone),
+    len("leads_postcode_len", t.postcode, 12),
+    len("leads_source_detail_len", t.sourceDetail, TEXT.name),
+    len("leads_project_type_len", t.projectType, TEXT.short),
+    len("leads_description_len", t.description, TEXT.note),
+    len("leads_budget_len", t.budget, TEXT.short),
+    len("leads_next_action_len", t.nextAction, TEXT.line),
+    len("leads_lost_note_len", t.lostNote, TEXT.note),
+    between("leads_value_range", t.valuePence, 0, MAX_RATE_PENCE),
+    check("leads_address_object", sql`${t.address} is null or jsonb_typeof(${t.address}) = 'object'`),
+    check("leads_lost_has_reason", sql`(${t.stage} = 'lost') = (${t.lostReason} is not null)`),
+    check("leads_token_len", sql`char_length(${t.unsubscribeToken}) between 20 and 64`),
+  ],
+).enableRLS();
+
+/** What happened with a lead, newest first on screen: notes, calls, emails, stage changes. */
+export const leadActivities = pgTable(
+  "lead_activities",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    leadId: uuid("lead_id").notNull(),
+    kind: leadActivityKind("kind").notNull(),
+    body: text("body").notNull(),
+    memberId: uuid("member_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    foreignKey({ name: "lead_activities_lead_fk", columns: [t.orgId, t.leadId], foreignColumns: [leads.orgId, leads.id] }).onDelete("cascade"),
+    foreignKey({ name: "lead_activities_member_fk", columns: [t.orgId, t.memberId], foreignColumns: [members.orgId, members.id] }),
+    index("lead_activities_lead_idx").on(t.orgId, t.leadId, t.createdAt),
+    len("lead_activities_body_len", t.body, 8_000),
+  ],
+).enableRLS();
+
+/**
+ * A company's email automation: a trigger (web enquiry, new lead, or a lead entering a stage) and steps,
+ * each an email sent some days after the one before. Written and switched on by the company.
+ */
+export const automations = pgTable(
+  "automations",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    enabled: boolean("enabled").notNull().default(false),
+    trigger: automationTrigger("trigger").notNull(),
+    stage: leadStage("stage"),
+    steps: jsonb("steps").$type<AutomationStep[]>().notNull().default(sql`'[]'::jsonb`),
+    templateKey: text("template_key"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    unique("automations_org_id_id_key").on(t.orgId, t.id),
+    len("automations_name_len", t.name, TEXT.name),
+    check("automations_stage_for_trigger", sql`(${t.trigger} = 'stage_entered') = (${t.stage} is not null)`),
+    check("automations_steps_array", sql`jsonb_typeof(${t.steps}) = 'array' and jsonb_array_length(${t.steps}) <= ${n(MAX_AUTOMATION_STEPS)}`),
+  ],
+).enableRLS();
+
+/**
+ * One lead going through one automation: the next step and when it's due. It stops when the lead leaves
+ * the stage it started in, opts out, or the automation is switched off; at most one live run per pair.
+ */
+export const automationRuns = pgTable(
+  "automation_runs",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    automationId: uuid("automation_id").notNull(),
+    leadId: uuid("lead_id").notNull(),
+    stage: leadStage("stage").notNull(),
+    status: automationRunStatus("status").notNull().default("active"),
+    step: integer("step").notNull().default(0),
+    nextAt: timestamp("next_at", { withTimezone: true }),
+    endedReason: text("ended_reason"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    pgPolicy("automation_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
+    foreignKey({ name: "automation_runs_automation_fk", columns: [t.orgId, t.automationId], foreignColumns: [automations.orgId, automations.id] }).onDelete("cascade"),
+    foreignKey({ name: "automation_runs_lead_fk", columns: [t.orgId, t.leadId], foreignColumns: [leads.orgId, leads.id] }).onDelete("cascade"),
+    uniqueIndex("automation_runs_one_live").on(t.orgId, t.automationId, t.leadId).where(sql`${t.status} = 'active'`),
+    index("automation_runs_due_idx").on(t.nextAt).where(sql`${t.status} = 'active'`),
+    index("automation_runs_lead_idx").on(t.orgId, t.leadId),
+    check("automation_runs_step", sql`${t.step} >= 0`),
+    check("automation_runs_active_has_next", sql`${t.status} <> 'active' or ${t.nextAt} is not null`),
+    len("automation_runs_reason_len", t.endedReason, TEXT.short),
   ],
 ).enableRLS();

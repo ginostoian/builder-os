@@ -8,6 +8,7 @@ import { and, count, desc, eq, gt, inArray } from "drizzle-orm";
 import { isExpired, type QuoteSnapshot } from "@/core/quote-snapshot";
 import type { PortalCommentInput, PortalDecisionInput } from "@/core/schemas";
 import type { Tx } from "./index";
+import { leadQuoteDecided } from "./pipeline";
 import { clients, organizations, portalAccess, quoteComments, quoteDecisions, quoteEvents, quoteVersions, quotes } from "./schema";
 
 export type PortalErrorReason = "not_found" | "not_open" | "expired" | "decided" | "unknown_line" | "too_many";
@@ -165,5 +166,6 @@ export async function decide(
     userAgent: evidence.userAgent?.slice(0, 500) ?? null,
   });
   await tx.insert(quoteEvents).values({ orgId, quoteId: q.quoteId, versionId: q.version.id, kind: input.decision, actor: "client" });
+  await leadQuoteDecided(tx, orgId, q.quoteId, accepted);
   return q.quoteId;
 }

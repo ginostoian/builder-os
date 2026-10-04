@@ -67,10 +67,13 @@ describe("lookups", () => {
     const fns = await raw<{ name: string; owner: string; definer: boolean }[]>`
       select p.proname as name, r.rolname as owner, p.prosecdef as definer
       from pg_proc p join pg_roles r on r.oid = p.proowner
-      where p.proname in ('app_org_for_clerk', 'app_orgs_for_clerk_user', 'app_orgs_with_due_invoices', 'app_orgs_with_expiring_certificates', 'app_portal_lookup') order by 1`;
+      where p.proname in ('app_enquiry_form_lookup', 'app_lead_unsubscribe_lookup', 'app_org_for_clerk', 'app_orgs_for_clerk_user', 'app_orgs_with_due_automations', 'app_orgs_with_due_invoices', 'app_orgs_with_expiring_certificates', 'app_portal_lookup') order by 1`;
     expect(fns).toEqual([
+      { name: "app_enquiry_form_lookup", owner: "builderos_lookup", definer: true },
+      { name: "app_lead_unsubscribe_lookup", owner: "builderos_lookup", definer: true },
       { name: "app_org_for_clerk", owner: "builderos_lookup", definer: true },
       { name: "app_orgs_for_clerk_user", owner: "builderos_lookup", definer: true },
+      { name: "app_orgs_with_due_automations", owner: "builderos_lookup", definer: true },
       { name: "app_orgs_with_due_invoices", owner: "builderos_lookup", definer: true },
       { name: "app_orgs_with_expiring_certificates", owner: "builderos_lookup", definer: true },
       { name: "app_portal_lookup", owner: "builderos_lookup", definer: true },
@@ -82,13 +85,20 @@ describe("lookups", () => {
         and has_column_privilege('builderos_lookup', c.oid, a.attnum, 'SELECT')
       order by 1, 2`;
     expect(visible).toEqual([
+      { table: "automation_runs", column: "next_at" },
+      { table: "automation_runs", column: "org_id" },
+      { table: "automation_runs", column: "status" },
       { table: "invoices", column: "due_date" },
       { table: "invoices", column: "org_id" },
       { table: "invoices", column: "status" },
+      { table: "leads", column: "id" },
+      { table: "leads", column: "org_id" },
+      { table: "leads", column: "unsubscribe_token" },
       { table: "members", column: "clerk_user_id" },
       { table: "members", column: "org_id" },
       { table: "organizations", column: "clerk_org_id" },
       { table: "organizations", column: "deleted_at" },
+      { table: "organizations", column: "enquiry_token" },
       { table: "organizations", column: "id" },
       { table: "organizations", column: "reminders_enabled" },
       { table: "portal_access", column: "client_id" },

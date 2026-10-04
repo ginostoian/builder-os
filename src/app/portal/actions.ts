@@ -5,6 +5,7 @@
  * action resolves it to its company and client first, then works inside that tenant only.
  */
 import { revalidatePath } from "next/cache";
+import { runCompanyAutomations } from "@/server/automations";
 import { after } from "next/server";
 import { portalCommentInput, portalDecisionInput } from "@/core/schemas";
 import { findPortalAccess, withTenant, type Tx } from "@/db";
@@ -55,9 +56,11 @@ export async function decideQuote(token: string, number: number, input: unknown)
   if (!parsed.success) return { ok: false, message: MESSAGES.invalid };
   const evidence = await requestEvidence();
   const d = parsed.data;
-  return runIn(token, number, (tx, orgId, clientId, n) => decide(tx, orgId, clientId, n, d, evidence), (orgId, quoteId) =>
-    notifyTeam(orgId, quoteId, d.decision === "accepted" ? { kind: "accepted", signer: d.signature } : { kind: "declined", name: d.fullName, reason: d.reason }),
-  );
+  return runIn(token, number, (tx, orgId, clientId, n) => decide(tx, orgId, clientId, n, d, evidence), async (orgId, quoteId) => {
+    await notifyTeam(orgId, quoteId, d.decision === "accepted" ? { kind: "accepted", signer: d.signature } : { kind: "declined", name: d.fullName, reason: d.reason });
+    // Won or lost: start any same-day automation for that stage (a welcome email, say).
+    await runCompanyAutomations(orgId).catch(() => undefined);
+  });
 }
 
 /** Resolve the token, run `fn` in that company's tenant, then (after responding) `afterwards` with the quote id. */

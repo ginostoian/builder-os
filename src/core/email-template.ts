@@ -35,14 +35,14 @@ export function renderEmail(c: EmailContent): { html: string; text: string } {
   const button = c.button
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 22px"><tr><td style="border-radius:9px;background:#10100F"><a href="${escapeHtml(c.button.href)}" style="display:inline-block;padding:12px 20px;font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none">${escapeHtml(c.button.label)}</a></td></tr></table>`
     : "";
-  const html = `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(c.heading)}</title></head>
+  const html = `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(c.heading || c.preheader)}</title></head>
 <body style="margin:0;padding:0;background:#F4F3EF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(c.preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F3EF;padding:28px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#FFFFFF;border-radius:14px;overflow:hidden">
 <tr><td style="height:4px;background:${brand}"></td></tr>
 <tr><td style="padding:24px 28px 6px;font-size:14px;font-weight:600;color:#10100F">${escapeHtml(c.company.name)}</td></tr>
-<tr><td style="padding:6px 28px 12px"><h1 style="margin:0 0 14px;font-size:21px;line-height:1.3;color:#10100F">${escapeHtml(c.heading)}</h1>${c.paragraphs.map(p).join("")}${details}${button}</td></tr>
+<tr><td style="padding:6px 28px 12px">${c.heading ? `<h1 style="margin:0 0 14px;font-size:21px;line-height:1.3;color:#10100F">${escapeHtml(c.heading)}</h1>` : ""}${c.paragraphs.map(p).join("")}${details}${button}</td></tr>
 </table>
 <p style="max-width:560px;margin:14px auto 0;font-size:12px;line-height:1.5;color:#8A8983">${escapeHtml(c.footer ?? `Sent by ${c.company.name} using Builder OS.`)}</p>
 </td></tr></table></body></html>`;
@@ -50,8 +50,7 @@ export function renderEmail(c: EmailContent): { html: string; text: string } {
   const text = [
     c.company.name,
     "",
-    c.heading,
-    "",
+    ...(c.heading ? [c.heading, ""] : []),
     ...c.paragraphs.flatMap((s) => [s, ""]),
     ...(c.details?.length ? [...c.details.map(([k, v]) => `${k}: ${v}`), ""] : []),
     ...(c.button ? [`${c.button.label}: ${c.button.href}`, ""] : []),

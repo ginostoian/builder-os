@@ -14,7 +14,7 @@ export const emailConfigured = () => Boolean(process.env.RESEND_API_KEY && proce
 
 export type EmailResult = { ok: true } | { ok: false; message: string };
 
-export async function sendEmail(mail: { to: string | string[]; replyTo?: string | null; subject: string; content: EmailContent; fromName?: string }): Promise<EmailResult> {
+export async function sendEmail(mail: { to: string | string[]; replyTo?: string | null; subject: string; content: EmailContent; fromName?: string; headers?: Record<string, string> }): Promise<EmailResult> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
   if (!key || !from) return { ok: false, message: "Email isn't set up yet." };
@@ -30,6 +30,7 @@ export async function sendEmail(mail: { to: string | string[]; replyTo?: string 
         subject: mail.subject,
         text,
         html,
+        headers: mail.headers,
       }),
       signal: AbortSignal.timeout(10_000),
     });

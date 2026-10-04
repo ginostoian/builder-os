@@ -63,6 +63,11 @@ const PERMISSIONS = {
   /** The Team page: everyone who works for the company, their certificates, the week's plan, timesheets. */
   "team.view": OFFICE,
   "team.edit": ["admin", "office"],
+  /** The sales pipeline: leads, follow-ups, emails to leads. Estimators win work too. */
+  "leads.view": ["admin", "office", "estimator"],
+  "leads.edit": ["admin", "office", "estimator"],
+  /** The company's email automations and its web enquiry form. */
+  "automations.manage": ["admin", "office"],
   /** The site app at /m: today's jobs and tasks, site updates, check in and out. Everyone. */
   "site.app": ["admin", "office", "estimator", "site_lead", "employee"],
 } as const satisfies Record<string, readonly Role[]>;
