@@ -40,7 +40,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
   return (
     <LiveAppShell active="invoices" crumbs={["Payments", FILTERS.find((f) => f.key === filter)!.label]}>
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
-        <ScreenTitle title="Payments" subtitle="Invoices raised from accepted quotes, paid by bank transfer." />
+        <ScreenTitle title="Payments" subtitle="Invoices raised from accepted quotes, paid by bank transfer or online." />
 
         {!settings?.bankSortCode && (
           <Panel className="flex items-center gap-3 border-l-4 border-warning px-4 py-3">

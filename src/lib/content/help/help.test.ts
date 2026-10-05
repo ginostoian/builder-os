@@ -8,19 +8,22 @@ import { STEP_GUIDES } from "./step-guides";
 const allText = (a: (typeof ARTICLES)[number]) => [a.title, a.summary, ...(a.keywords ?? []), ...a.body.flatMap((b) => ("items" in b ? b.items : [b.text]))];
 const links = (t: string) => [...t.matchAll(/\[[^\]]+\]\(([^)\s]+)\)/g)].map((m) => m[1]);
 
-/** Does an /app/... link match a page in src/app (dynamic [segments] match anything)? */
+/** Does a link match a page in src/app (route groups are skipped, dynamic [segments] match anything)? */
 function appPageExists(href: string): boolean {
   const path = href.split(/[?#]/)[0].replace(/^\//, "").split("/").filter(Boolean);
   let dir = join(process.cwd(), "src/app");
   for (const seg of path) {
     if (existsSync(join(dir, seg))) dir = join(dir, seg);
+    else if (readdirSync(dir).some((d) => d.startsWith("(") && existsSync(join(dir, d, seg)))) dir = join(dir, readdirSync(dir).find((d) => d.startsWith("(") && existsSync(join(dir, d, seg)))!, seg);
     else {
       const dyn = readdirSync(dir, { withFileTypes: true }).find((d) => d.isDirectory() && d.name.startsWith("["));
       if (!dyn) return false;
       dir = join(dir, dyn.name);
     }
   }
-  return existsSync(join(dir, "page.tsx"));
+  if (existsSync(join(dir, "page.tsx"))) return true;
+  // An optional catch-all ([[...rest]]) also answers the bare path.
+  return readdirSync(dir).some((d) => d.startsWith("[[...") && existsSync(join(dir, d, "page.tsx")));
 }
 
 describe("help centre content", () => {

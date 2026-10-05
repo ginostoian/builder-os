@@ -30,7 +30,7 @@ export function HelpSearch({ entries }: { entries: SearchEntry[] }) {
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search the help centre, e.g. stage payments"
           aria-label="Search the help centre"
-          className="min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-subtle"
+          className="min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-subtle focus-visible:shadow-none focus-visible:outline-none"
         />
       </label>
       {words.length > 0 && (

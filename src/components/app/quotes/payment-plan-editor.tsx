@@ -67,7 +67,7 @@ export function PaymentPlanEditor({ plan, total, disabled, onChange }: { plan: P
           <div>
             <h2 className="text-[13.5px] font-semibold">How the client pays</h2>
             <p className="max-w-[520px] text-subtle">
-              Shown on the quote, and each payment becomes an invoice with one click once it&apos;s accepted. Paid by bank transfer.
+              Shown on the quote, and each payment becomes an invoice with one click once it&apos;s accepted. Clients pay by bank transfer, or online if you take payments online.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

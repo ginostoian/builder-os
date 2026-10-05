@@ -158,7 +158,7 @@ export function AppShell({
       <div className="flex flex-col gap-px">
         <div className="px-2.5 py-1 text-[11px] font-medium text-subtle">Portals</div>
         {portals.map((p) => (
-          <Link key={p.label} href={p.href} className="flex h-8 items-center gap-2.5 rounded-md px-2.5 text-ink-2 hover:bg-accent hover:text-ink">
+          <Link key={p.label} href={account && p.label === "Client portal" ? "/portal" : p.href} className="flex h-8 items-center gap-2.5 rounded-md px-2.5 text-ink-2 hover:bg-accent hover:text-ink">
             <p.icon className="size-[15px] w-4" strokeWidth={1.75} />
             <span className="flex-1">{p.label}</span>
             <ArrowUpRight className="size-3 text-faint-2" />

@@ -160,7 +160,7 @@ function CreateInvoiceButton({
         <DialogDescription>
           {row ? (
             <>
-              {formatGBP(row.amount)} inc. VAT, payable by bank transfer. {row.dueKind === "date" && row.dueDate ? `Due ${shortDate(row.dueDate)} (or after your payment terms if that's passed).` : "Due after your payment terms."} It also appears in {clientName}&apos;s portal.
+              {formatGBP(row.amount)} inc. VAT, payable by bank transfer (or online, if you take payments online). {row.dueKind === "date" && row.dueDate ? `Due ${shortDate(row.dueDate)} (or after your payment terms if that's passed).` : "Due after your payment terms."} It also appears in {clientName}&apos;s portal.
             </>
           ) : (
             <>Things you bought on {clientName}&apos;s behalf, on an invoice of their own. Due after your payment terms, and it appears in their portal.</>
