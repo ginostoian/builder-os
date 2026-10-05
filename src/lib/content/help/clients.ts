@@ -1,0 +1,174 @@
+import type { HelpArticle } from "./types";
+
+export const CLIENT_ARTICLES: HelpArticle[] = [
+  {
+    slug: "clients",
+    title: "Clients",
+    summary: "Keep your clients' details in one place, see their quotes, and archive old ones.",
+    category: "clients",
+    who: "Admins, the office and Estimators can add and change clients. Site leads can view them.",
+    keywords: ["customers", "contacts", "address book", "add client", "archive", "delete", "gdpr", "data request"],
+    body: [
+      { type: "p", text: "Every quote is for a client, so this is where it starts. Your client list holds their contact details, address and every quote you've sent them." },
+      { type: "h", text: "Adding a client" },
+      {
+        type: "steps",
+        items: [
+          "Go to **Clients** and click **Add client**.",
+          "Type their **Name**. It can be a person or a company. Only the name is required.",
+          "Add their **Email** and **Phone** if you have them. An email lets you send quotes straight to them.",
+          "Fill in their **Address**. Each quote can have its own site address if the work is somewhere else.",
+          "Under **More**, note **How did they find you?** (Referral, Website, Checkatrade and so on, or type your own) and any **Notes**. Only your team sees notes.",
+          "Click **Add client**.",
+        ],
+      },
+      { type: "h", text: "A client's page" },
+      {
+        type: "list",
+        items: [
+          "Change their details and click **Save changes**.",
+          "See their **Quotes**, and click **New quote** to start one for them straight away.",
+          "Copy their [client portal](/help/client-portal) link, or reset it if it went to the wrong person.",
+          "Click **Export data** to download everything held about them, for example if they make a data request under UK GDPR.",
+        ],
+      },
+      { type: "h", text: "Finding clients" },
+      { type: "p", text: "Search by name, email, phone, address or postcode. Use **Active** and **Archived** to switch between lists." },
+      { type: "h", text: "Archiving and deleting" },
+      {
+        type: "list",
+        items: [
+          "**Archive** hides a client from the list but keeps their history. Restore them any time to quote for them again.",
+          "Only clients with no quotes can be deleted. Anyone you've quoted must be archived instead, so your records stay complete.",
+        ],
+      },
+      { type: "note", text: "Site leads can see client names, contact details and addresses to run jobs, but not quote prices." },
+      { type: "tip", text: "Always add an email address. It means quotes can be emailed and the portal can be protected with a sign-in code." },
+    ],
+    related: ["building-a-quote", "client-portal", "portal-sign-in", "leads"],
+  },
+  {
+    slug: "client-portal",
+    title: "The client portal",
+    summary: "Your client's private page for reading quotes, asking questions, signing, and paying invoices.",
+    category: "clients",
+    keywords: ["portal", "client link", "client login", "customer page", "share", "reset link", "pdf"],
+    body: [
+      { type: "p", text: "Each client gets one private link to their own portal. Everything you send them lives there, so they're never digging through emails for the latest version." },
+      { type: "h", text: "What your client can do" },
+      {
+        type: "list",
+        items: [
+          "Read every quote you've sent them, with its status, such as 'Awaiting your reply' or 'Accepted'.",
+          "Ask questions about the whole quote or a single line. See [Client comments and questions](/help/client-comments-and-questions).",
+          "Accept and sign, or decline. See [Accepted quotes and signatures](/help/accepted-quotes-and-signatures).",
+          "Approve or reject [variations](/help/variations).",
+          "See their invoices and what's left to pay, and pay online if you take card payments.",
+          "Follow job progress, if you're on Pro and share it. See [Sharing progress with clients](/help/sharing-progress-with-clients).",
+          "Print or save any quote as a PDF.",
+        ],
+      },
+      { type: "p", text: "They only see what you've sent: never your drafts, costs or markups. The portal shows your company name, and on Essentials and Pro your logo and brand colour too." },
+      { type: "h", text: "Getting the link" },
+      {
+        type: "list",
+        items: [
+          "It's in every quote email you send.",
+          "On a client's page, click **Copy portal link** under **Client portal**.",
+          "On a sent quote, click **Copy client link**.",
+        ],
+      },
+      { type: "h", text: "If a link goes to the wrong person" },
+      {
+        type: "steps",
+        items: [
+          "Open the client's page.",
+          "Under **Client portal**, click **Reset link**, then confirm.",
+          "The old link stops working straight away and the new one is copied for you. Send it to your client.",
+        ],
+      },
+      { type: "note", text: "Admins, the office and Estimators can copy and reset portal links. Site leads don't see the portal panel." },
+      { type: "tip", text: "Turn on portal sign-in so a forwarded link on its own isn't enough to get in. See [Portal sign-in](/help/portal-sign-in)." },
+    ],
+    related: ["portal-sign-in", "sending-a-quote", "client-comments-and-questions", "sharing-progress-with-clients"],
+  },
+  {
+    slug: "portal-sign-in",
+    title: "Portal sign-in for clients",
+    summary: "Protect your clients' portals with a one-time email code, and help them find their link again.",
+    category: "clients",
+    who: "Admins turn it on or off",
+    keywords: ["sign in", "login", "code", "security", "verification", "client login", "find my portal", "sign out"],
+    body: [
+      { type: "p", text: "Portal sign-in makes sure only your client can open their portal. The first time they open it on a phone or computer, they confirm their email with a 6-digit code. A forwarded or leaked link on its own isn't enough." },
+      { type: "h", text: "Turning it on" },
+      { type: "p", text: "Go to [Settings](/app/settings) and find **Client portal sign-in**. Tick **Ask clients to confirm their email (recommended)**. Only Admins can change this." },
+      { type: "h", text: "What your client sees" },
+      {
+        type: "list",
+        items: [
+          "From an email you've sent: they tap **Continue** and they're in. Links in your quote and invoice emails sign them in with one tap, for up to a week.",
+          "From a plain link: they see **Check it's you**, click **Email me a code**, and type the 6 digits. The code works once, for 10 minutes.",
+          "After that, the device is remembered for 90 days.",
+        ],
+      },
+      { type: "h", text: "When sign-in doesn't apply" },
+      {
+        type: "list",
+        items: [
+          "If the client has no email address, the link alone opens their portal. Add their email to protect it.",
+          "If email isn't set up for your account yet, codes can't be sent, so the link alone opens portals for now.",
+        ],
+      },
+      { type: "p", text: "A client's page shows which applies, and how many devices they're signed in on." },
+      { type: "h", text: "Signing a client out" },
+      { type: "p", text: "On a client's page, under **Client portal**, click **Sign out everywhere**. Use it if they signed in on a shared computer or a link was forwarded. They'll need a new code to get back in." },
+      { type: "h", text: "Helping clients find their portal" },
+      { type: "p", text: "Clients can go to your portal address (shown in Settings under **Client portal sign-in**, ending in /portal), enter their email address and we email them a sign-in link. It works once, for 30 minutes. Put it on your website as 'Client login'." },
+      { type: "tip", text: "If a client has changed email address, update it on their client page so codes reach them." },
+    ],
+    related: ["client-portal", "clients", "privacy-and-security"],
+  },
+  {
+    slug: "client-comments-and-questions",
+    title: "Client comments and questions",
+    summary: "Clients can ask about a quote or a single line in their portal, and you reply right on the quote.",
+    category: "clients",
+    who: "Admins, the office and Estimators can reply",
+    keywords: ["comments", "questions", "messages", "chat", "reply", "conversation", "line comment"],
+    body: [
+      { type: "p", text: "Questions about a quote are best answered on the quote itself. Your client asks in their portal, you reply in Builder OS, and the whole conversation stays with the job instead of getting lost in texts." },
+      { type: "h", text: "How your client asks" },
+      {
+        type: "list",
+        items: [
+          "On the quote in their portal, they use the **Questions and comments** box, add their name and click **Send**.",
+          "To ask about one line, they click **Comment on this line**. For example: 'Could we use oak flooring instead?' The comment shows which line it's about.",
+        ],
+      },
+      { type: "h", text: "How you'll know" },
+      { type: "p", text: "Whoever sent the quote gets a notification and an email with the comment (or the Admins, if that person has left). The quote's activity list shows it too." },
+      { type: "h", text: "Replying" },
+      {
+        type: "steps",
+        items: [
+          "Open the quote. The **Conversation with** panel on the right shows every comment, including which line it's about.",
+          "Type your answer in the reply box.",
+          "Click **Reply**. Your client sees it on the quote in their portal, with your name and company.",
+        ],
+      },
+      { type: "h", text: "Good to know" },
+      {
+        type: "list",
+        items: [
+          "Clients aren't emailed when you reply. If it's urgent, give them a ring or drop them a message too.",
+          "Comments stay with the quote across every version, so nothing is lost when you send an update.",
+          "Clients can comment after accepting or declining. A client who declined is invited to leave a comment if they change their mind.",
+          "When you use **Preview as client**, nothing you do is recorded and it doesn't count as an open.",
+        ],
+      },
+      { type: "tip", text: "If a question means the price changes, [revise the quote](/help/revising-a-quote) and send an update, then reply to say it's on its way." },
+    ],
+    related: ["client-portal", "sending-a-quote", "revising-a-quote", "notifications"],
+  },
+];
