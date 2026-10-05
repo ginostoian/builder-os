@@ -4,12 +4,13 @@ import { AlertTriangle, ChevronLeft, ChevronRight, HardHat, MapPin, Plus, Smartp
 import { LiveAppShell } from "@/components/app/live-app-shell";
 import { Panel, ScreenTitle } from "@/components/app/app-shell";
 import { TASK_DOT, initials, shortDay } from "@/components/app/projects/types";
+import { VisitPlaces, VisitTimes } from "@/components/app/team/visit-times";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { addDays } from "@/core/payment-plan";
 import { startOfWeek } from "@/core/projects";
 import { ROLE_LABELS, can } from "@/core/roles";
-import { WORKER_KIND_LABEL, formatMinutes, londonDay, londonTime, taskOnDay, timesheet, visitMinutes } from "@/core/team";
+import { WORKER_KIND_LABEL, formatMinutes, londonDay, taskOnDay, timesheet, visitMinutes } from "@/core/team";
 import { ukToday } from "@/core/payment-plan";
 import { certificateAlerts, listVisits, listWorkers, teamSchedule } from "@/db/team";
 import { requirePermission, withSession } from "@/auth/session";
@@ -125,7 +126,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
         )}
 
         {view === "week" && data.schedule && <Week schedule={data.schedule} days={days} today={today} />}
-        {view === "hours" && <Hours visits={data.visits} team={data.team} days={days} today={today} />}
+        {view === "hours" && <Hours visits={data.visits} team={data.team} days={days} today={today} canEdit={can(session.role, "team.edit")} />}
       </div>
     </LiveAppShell>
   );
@@ -271,11 +272,13 @@ function Hours({
   team,
   days,
   today,
+  canEdit,
 }: {
   visits: Awaited<ReturnType<typeof listVisits>>;
   team: { id: string; name: string }[];
   days: string[];
   today: string;
+  canEdit: boolean;
 }) {
   const now = new Date();
   const sheet = timesheet(visits, days, now);
@@ -337,9 +340,9 @@ function Hours({
 
       <Panel className="overflow-x-auto">
         <h2 className="border-b border-hairline px-4 py-2.5 font-semibold">Check-ins</h2>
-        <ul className="min-w-[640px]">
+        <ul className="min-w-[780px]">
           {visits.map((v) => (
-            <li key={v.id} className="grid grid-cols-[110px_minmax(0,1fr)_minmax(0,1.2fr)_130px_80px] items-center gap-3 border-b border-muted px-4 py-2 last:border-0">
+            <li key={v.id} className="grid grid-cols-[110px_minmax(0,1fr)_minmax(0,1.2fr)_180px_90px_70px] items-center gap-3 border-b border-muted px-4 py-2 last:border-0">
               <span className="text-ink-2">
                 {weekday(londonDay(v.checkedInAt))} {shortDay(londonDay(v.checkedInAt))}
               </span>
@@ -349,9 +352,8 @@ function Hours({
               <Link href={`/app/projects/${v.projectId}`} className="truncate text-ink-2 hover:text-ink">
                 {v.projectName}
               </Link>
-              <span className="text-ink-2 tabular">
-                {londonTime(v.checkedInAt)} – {v.checkedOutAt ? londonTime(v.checkedOutAt) : <span className="text-success">now</span>}
-              </span>
+              <VisitTimes visit={v} canEdit={canEdit} />
+              <VisitPlaces visit={v} />
               <span className="text-right tabular">{formatMinutes(visitMinutes(v.checkedInAt, v.checkedOutAt, now))}</span>
             </li>
           ))}

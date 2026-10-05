@@ -130,7 +130,7 @@ Setup:
 2. With `STRIPE_SECRET_KEY` in `.env.local`, run `pnpm stripe:setup`. It creates the two products and their monthly GBP prices (found by lookup keys `builderos_essentials_monthly` and `builderos_pro_monthly`, so no price ids to copy) and a billing portal configuration. Run it once in test mode and once with the live key.
 3. Add two webhook endpoints, both to `https://<your-domain>/api/webhooks/stripe`:
    - **Your account:** `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.paused`, `customer.subscription.resumed`, `checkout.session.completed`.
-   - **Connected accounts:** `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `account.updated`.
+   - **Connected accounts:** `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `account.updated`, `charge.refunded` (a full refund marks the invoice unpaid again; a part refund just tells the office).
 4. In Vercel:
    - `STRIPE_SECRET_KEY`: the secret (or restricted) key.
    - `STRIPE_WEBHOOK_SECRET`: the signing secret of the "your account" endpoint.

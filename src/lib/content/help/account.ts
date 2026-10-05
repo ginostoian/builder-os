@@ -14,6 +14,7 @@ export const ACCOUNT_ARTICLES: HelpArticle[] = [
       {
         type: "list",
         items: [
+          "One login: yours. You can invite others, but they can't get in until you choose a plan.",
           "3 new quotes sent a month. Sending an updated version of a quote doesn't count.",
           "A service library of up to 25 items.",
           "Client quote links, comments and online signatures.",

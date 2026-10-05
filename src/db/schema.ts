@@ -945,10 +945,14 @@ export const siteVisits = pgTable(
     outLng: numeric("out_lng", { precision: 9, scale: 6 }),
     /** The worker's day rate when they checked in, for costing the job (rates change; past jobs shouldn't). */
     dayRatePence: integer("day_rate_pence"),
+    /** When the office last corrected the times, and who (shown as "edited" on timesheets). */
+    editedAt: timestamp("edited_at", { withTimezone: true }),
+    editedByMemberId: uuid("edited_by_member_id"),
     ...timestamps,
   },
   (t) => [
     tenantPolicy(t.orgId),
+    foreignKey({ name: "site_visits_editor_fk", columns: [t.orgId, t.editedByMemberId], foreignColumns: [members.orgId, members.id] }),
     uniqueIndex("site_visits_one_open").on(t.orgId, t.workerId).where(sql`${t.checkedOutAt} is null`),
     foreignKey({ name: "site_visits_worker_fk", columns: [t.orgId, t.workerId], foreignColumns: [workers.orgId, workers.id] }).onDelete("cascade"),
     foreignKey({ name: "site_visits_project_fk", columns: [t.orgId, t.projectId], foreignColumns: [projects.orgId, projects.id] }).onDelete("cascade"),

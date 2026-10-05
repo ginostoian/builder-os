@@ -15,5 +15,5 @@ export default clerkMiddleware(
 );
 
 export const config = {
-  matcher: ["/app/:path*", "/m/:path*", "/admin/:path*", "/admin", "/sign-in/:path*", "/sign-up/:path*", "/select-company/:path*", "/api/:path*"],
+  matcher: ["/app/:path*", "/m/:path*", "/admin/:path*", "/admin", "/sign-in/:path*", "/sign-up/:path*", "/select-company/:path*", "/plan-limit", "/api/:path*"],
 };

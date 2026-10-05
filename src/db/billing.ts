@@ -6,9 +6,9 @@
  */
 import "server-only";
 import { and, count, eq, gte, sql } from "drizzle-orm";
-import { entitlement, planHas, type BillingFacts, type Feature, type Plan } from "@/core/plans";
+import { FREE_USERS, entitlement, planHas, type BillingFacts, type Feature, type Plan } from "@/core/plans";
 import type { Tx } from "./index";
-import { invoices, organizations, quoteVersions, services } from "./schema";
+import { invoices, members, organizations, quoteVersions, services } from "./schema";
 
 export async function billingFacts(tx: Tx, orgId: string): Promise<BillingFacts & { stripeCustomerId: string | null; connectAccountId: string | null; connectChargesEnabled: boolean; connectDetailsSubmitted: boolean }> {
   const [o] = await tx
@@ -126,4 +126,59 @@ export async function markPaidOnline(
     .where(and(eq(invoices.orgId, orgId), eq(invoices.id, invoiceId), eq(invoices.status, "issued")))
     .returning({ number: invoices.number, totalPence: invoices.totalPence });
   return rows[0] ? { marked: true, ...rows[0] } : { marked: false, reason: "not open" };
+}
+
+/**
+ * A refund of an online payment. Fully refunded: the invoice is open again (unpaid), so reminders and
+ * "Pay now" come back. Part refunded: it stays paid, and the team is told. Only for the payment that
+ * paid it, so a repeated event (or an old payment) changes nothing.
+ */
+export async function refundOnline(
+  tx: Tx,
+  orgId: string,
+  invoiceId: string,
+  paymentId: string,
+  full: boolean,
+): Promise<{ changed: true; reopened: boolean; number: number; totalPence: number } | { changed: false }> {
+  const [inv] = await tx
+    .select({ status: invoices.status, paymentId: invoices.stripePaymentId, number: invoices.number, totalPence: invoices.totalPence })
+    .from(invoices)
+    .where(and(eq(invoices.orgId, orgId), eq(invoices.id, invoiceId)));
+  if (!inv || inv.paymentId !== paymentId || inv.status !== "paid") return { changed: false };
+  if (!full) return { changed: true, reopened: false, number: inv.number, totalPence: inv.totalPence };
+  const rows = await tx
+    .update(invoices)
+    .set({ status: "issued", paidOn: null, paidReference: null, stripePaymentId: null })
+    .where(and(eq(invoices.orgId, orgId), eq(invoices.id, invoiceId), eq(invoices.stripePaymentId, paymentId)))
+    .returning({ id: invoices.id });
+  return rows.length ? { changed: true, reopened: true, number: inv.number, totalPence: inv.totalPence } : { changed: false };
+}
+
+// ── Logins ───────────────────────────────────────────────────────────────────
+
+/**
+ * Whether this member can use Builder OS on the company's plan. Free has one login: the first active
+ * Admin, or the earliest active member if there's no Admin. Paid plans, trials and complimentary
+ * companies have no limit.
+ */
+export async function hasSeat(tx: Tx, orgId: string, memberId: string, now = new Date()): Promise<boolean> {
+  if (entitlement(await billingFacts(tx, orgId), now).plan !== "free") return true;
+  const holders = await tx
+    .select({ id: members.id })
+    .from(members)
+    .where(and(eq(members.orgId, orgId), eq(members.active, true)))
+    .orderBy(sql`(${members.role} = 'admin') desc`, members.createdAt, members.id)
+    .limit(FREE_USERS);
+  return holders.some((h) => h.id === memberId);
+}
+
+/** The person holding the Free plan's login, to name on the "ask them to upgrade" page. */
+export async function seatHolderName(tx: Tx, orgId: string): Promise<string | null> {
+  const [h] = await tx
+    .select({ name: members.name })
+    .from(members)
+    .where(and(eq(members.orgId, orgId), eq(members.active, true)))
+    .orderBy(sql`(${members.role} = 'admin') desc`, members.createdAt, members.id)
+    .limit(1);
+  return h?.name ?? null;
 }

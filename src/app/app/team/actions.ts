@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { can } from "@/core/roles";
-import { certificateInput, id, workerInput } from "@/core/schemas";
-import { TeamError, addCertificate, createWorker, deleteCertificate, linkWorker, setWorkerArchived, updateCertificate, updateWorker, type TeamErrorReason } from "@/db/team";
+import { certificateInput, id, visitTimesInput, workerInput } from "@/core/schemas";
+import { MAX_VISIT_HOURS, visitTimes } from "@/core/team";
+import { TeamError, addCertificate, createWorker, deleteCertificate, editVisit, linkWorker, setWorkerArchived, updateCertificate, updateWorker, type TeamErrorReason } from "@/db/team";
 import { hasFeature, planBlock } from "@/server/plan";
 import { getSession, withSession, type Session } from "@/auth/session";
 
@@ -15,6 +16,8 @@ const MESSAGES: Record<TeamErrorReason, string> = {
   not_found: "This person was removed or changed somewhere else. Reload to see the latest.",
   member_taken: "That login is already linked to someone else on the team.",
   unknown_member: "That login no longer exists.",
+  visit_end: "This visit has finished, so it needs a leaving time.",
+  visit_overlap: "Those times overlap another of their check-ins. Correct that one first.",
 };
 
 async function editor(): Promise<Session | null> {
@@ -89,4 +92,14 @@ export async function updateCertificateAction(workerId: string, certificateId: s
 export async function deleteCertificateAction(workerId: string, certificateId: string): Promise<TeamActionResult> {
   if (!id.safeParse(certificateId).success) return { ok: false, message: MESSAGES.not_found };
   return change(workerId, (s, w) => withSession(s, (tx) => deleteCertificate(tx, s.orgId, w, certificateId)));
+}
+
+/** The office corrects a check-in's times. The worker id is only used to refresh their page. */
+export async function editVisitAction(workerId: string, visitId: string, input: unknown): Promise<TeamActionResult> {
+  const parsed = visitTimesInput.safeParse(input);
+  if (!parsed.success) return { ok: false, message: "Check the date and times." };
+  if (!id.safeParse(visitId).success) return { ok: false, message: MESSAGES.not_found };
+  const times = visitTimes(parsed.data);
+  if (!times.ok) return { ok: false, message: times.reason === "future" ? "Those times are in the future." : `A visit can't be longer than ${MAX_VISIT_HOURS} hours.` };
+  return change(workerId, (s) => withSession(s, (tx) => editVisit(tx, s.orgId, visitId, s.memberId, times)));
 }

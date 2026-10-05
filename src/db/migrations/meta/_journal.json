@@ -148,6 +148,13 @@
       "when": 1791156401609,
       "tag": "0020_rate_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791176192514,
+      "tag": "0021_checkin_edits_refunds",
+      "breakpoints": true
     }
   ]
 }

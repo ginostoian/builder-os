@@ -9,7 +9,7 @@ import type { CertificateInput, WorkerInput } from "@/core/schemas";
 import type { Tx } from "./index";
 import { members, organizations, projectTasks, projects, siteVisits, workerCertificates, workers } from "./schema";
 
-export type TeamErrorReason = "not_found" | "member_taken" | "unknown_member";
+export type TeamErrorReason = "not_found" | "member_taken" | "unknown_member" | "visit_end" | "visit_overlap";
 
 export class TeamError extends Error {
   constructor(readonly reason: TeamErrorReason) {
@@ -300,8 +300,15 @@ export async function listVisits(tx: Tx, orgId: string, { from, to, workerId }: 
       projectName: projects.name,
       checkedInAt: siteVisits.checkedInAt,
       checkedOutAt: siteVisits.checkedOutAt,
+      inLat: siteVisits.inLat,
+      inLng: siteVisits.inLng,
+      outLat: siteVisits.outLat,
+      outLng: siteVisits.outLng,
+      editedAt: siteVisits.editedAt,
+      editedByName: members.name,
     })
     .from(siteVisits)
+    .leftJoin(members, and(eq(members.orgId, siteVisits.orgId), eq(members.id, siteVisits.editedByMemberId)))
     .innerJoin(workers, and(eq(workers.orgId, siteVisits.orgId), eq(workers.id, siteVisits.workerId)))
     .innerJoin(projects, and(eq(projects.orgId, siteVisits.orgId), eq(projects.id, siteVisits.projectId)))
     .where(
@@ -314,4 +321,37 @@ export async function listVisits(tx: Tx, orgId: string, { from, to, workerId }: 
     )
     .orderBy(desc(siteVisits.checkedInAt))
     .limit(2_000);
+}
+
+/**
+ * The office corrects a visit's times (a forgotten check-out, a phone that died). A finished visit must
+ * keep a leaving time; an open one may be closed. The corrected times can't overlap the person's other
+ * visits. Records who made the change and when.
+ */
+export async function editVisit(tx: Tx, orgId: string, visitId: string, editorMemberId: string, times: { checkedInAt: Date; checkedOutAt: Date | null }) {
+  const [visit] = await tx
+    .select({ workerId: siteVisits.workerId, checkedOutAt: siteVisits.checkedOutAt })
+    .from(siteVisits)
+    .where(and(eq(siteVisits.orgId, orgId), eq(siteVisits.id, visitId)))
+    .for("update");
+  if (!visit) throw new TeamError("not_found");
+  if (visit.checkedOutAt && !times.checkedOutAt) throw new TeamError("visit_end");
+  const [clash] = await tx
+    .select({ id: siteVisits.id })
+    .from(siteVisits)
+    .where(
+      and(
+        eq(siteVisits.orgId, orgId),
+        eq(siteVisits.workerId, visit.workerId),
+        ne(siteVisits.id, visitId),
+        times.checkedOutAt ? lt(siteVisits.checkedInAt, times.checkedOutAt) : undefined,
+        sql`coalesce(${siteVisits.checkedOutAt}, 'infinity'::timestamptz) > ${times.checkedInAt.toISOString()}::timestamptz`,
+      ),
+    )
+    .limit(1);
+  if (clash) throw new TeamError("visit_overlap");
+  await tx
+    .update(siteVisits)
+    .set({ checkedInAt: times.checkedInAt, checkedOutAt: times.checkedOutAt, editedAt: new Date(), editedByMemberId: editorMemberId })
+    .where(and(eq(siteVisits.orgId, orgId), eq(siteVisits.id, visitId)));
 }

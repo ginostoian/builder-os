@@ -175,12 +175,28 @@ export async function viewCounts(tx: Tx, orgId: string, quoteIds: string[]): Pro
   return new Map(rows.map((r) => [r.quoteId, r.n]));
 }
 
-/** A reply from the team on the latest sent version. */
+/**
+ * A reply from the team on the latest sent version. Returns what's needed to email the client about it:
+ * their current email and portal link (null `to` when they have no email or their link was revoked).
+ */
 export async function addStaffReply(tx: Tx, orgId: string, input: { quoteId: string; body: string; memberId: string; memberName: string }) {
   const version = await latestVersion(tx, orgId, input.quoteId);
   if (!version) throw new QuoteError("not_sent");
   await tx.insert(quoteComments).values({ orgId, quoteId: input.quoteId, versionId: version.id, authorKind: "staff", authorName: input.memberName, memberId: input.memberId, body: input.body });
   await tx.insert(quoteEvents).values({ orgId, quoteId: input.quoteId, versionId: version.id, kind: "replied", actor: "staff", memberId: input.memberId });
+  const [q] = await tx.select({ clientId: quotes.clientId }).from(quotes).where(and(eq(quotes.orgId, orgId), eq(quotes.id, input.quoteId)));
+  const [client] = q ? await tx.select({ name: clients.name, email: clients.email }).from(clients).where(and(eq(clients.orgId, orgId), eq(clients.id, q.clientId))) : [];
+  const token = q ? await currentPortalToken(tx, orgId, q.clientId) : null;
+  const s = version.snapshot;
+  return {
+    to: client?.email && token ? client.email : null,
+    token,
+    clientName: client?.name ?? s.client.name,
+    number: s.quote.number,
+    ref: s.quote.ref,
+    title: s.quote.title,
+    company: { name: s.company.tradingName ?? s.company.name, brandColour: s.company.brandColour },
+  };
 }
 
 /** The client's email and name, for the send dialog. */
