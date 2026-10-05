@@ -7,6 +7,7 @@
  * - Tenant (`orgId`) is never part of an input schema. It always comes from the session on the server.
  * - Money is integer pence, percentages are basis points, quantities have at most 3 decimals.
  */
+import { CIS_STATUSES } from "./cis";
 import { z } from "zod";
 import { MAX_VARIATION_LINES } from "./variation";
 import { PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "./projects";
@@ -441,8 +442,12 @@ export const expenseInput = z
     vatPence: pence,
     rechargeable: z.boolean(),
     rechargeMarkupBps: markupBps,
+    /** CIS (when the company uses it): which subcontractor was paid, and the materials part before VAT. */
+    cis: z.strictObject({ workerId: id, materialsPence: pence }).optional(),
   })
-  .refine((e) => e.vatPence <= e.totalPence, { message: "The VAT is more than the total", path: ["vatPence"] });
+  .refine((e) => e.vatPence <= e.totalPence, { message: "The VAT is more than the total", path: ["vatPence"] })
+  .refine((e) => !e.cis || e.category === "subcontractor", { message: "CIS is only for subcontractors", path: ["cis"] })
+  .refine((e) => !e.cis || e.cis.materialsPence <= e.totalPence - e.vatPence, { message: "Materials can't be more than the amount before VAT", path: ["cis"] });
 export type ExpenseInput = z.infer<typeof expenseInput>;
 
 export const poLineInput = z.strictObject({
@@ -571,3 +576,63 @@ export const clientBookingInput = z.strictObject({
   addressLine: singleLine(TEXT.line).optional(),
   postcode: singleLine(12).optional(),
 });
+
+// ── CIS ──────────────────────────────────────────────────────────────────────
+
+const utr = z
+  .string()
+  .transform((s) => s.replace(/\s+/g, ""))
+  .pipe(z.string().regex(/^\d{10}$/));
+
+/** The company's CIS details, as they go on the monthly return. */
+export const cisSettingsInput = z.strictObject({
+  enabled: z.boolean(),
+  contractorUtr: utr.optional(),
+  /** Employer PAYE reference, e.g. 123/AB45678. */
+  employerRef: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^\d{3}\/[A-Z0-9]{1,10}$/)
+    .optional(),
+  /** Accounts Office reference, e.g. 123PA00012345. */
+  accountsOfficeRef: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^\d{3}P[A-Z]\d{7}[0-9X]$/)
+    .optional(),
+});
+export type CisSettingsInput = z.infer<typeof cisSettingsInput>;
+
+/** A subcontractor's CIS details: their UTR and the status HMRC gave when you verified them. */
+export const workerCisInput = z.strictObject({
+  status: z.enum(CIS_STATUSES).optional(),
+  utr: utr.optional(),
+  verificationRef: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^V\d{10}(\/?[A-Z]{1,2})?$/)
+    .optional(),
+  verifiedOn: isoDate.optional(),
+});
+export type WorkerCisInput = z.infer<typeof workerCisInput>;
+
+// ── Support ──────────────────────────────────────────────────────────────────
+
+export const SUPPORT_TOPICS = ["Getting started", "Plans and billing", "Something isn't working", "An idea for Builder OS", "Privacy or my data", "Something else"] as const;
+/** The other marketing forms (About, Book a demo, the newsletter) send to the same inbox. */
+const FORM_TOPICS = [...SUPPORT_TOPICS, "General enquiry", "Book a demo", "Newsletter sign-up"] as const;
+
+/** The contact form on /support. `website` is a honeypot; `formToken` the signed time the page was served. */
+export const supportInput = z.strictObject({
+  name: singleLine(TEXT.name),
+  email: email,
+  company: singleLine(TEXT.name).optional(),
+  topic: z.enum(FORM_TOPICS),
+  message: multiLine(TEXT.note).pipe(z.string().min(10, "Tell us a little more")),
+  website: z.string().max(200).optional(),
+  formToken: z.string().max(120).optional(),
+});
+export type SupportInput = z.infer<typeof supportInput>;

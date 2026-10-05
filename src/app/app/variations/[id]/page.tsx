@@ -48,6 +48,7 @@ export default async function VariationPage({ params }: { params: Promise<{ id: 
           defaultMarkupBps={found.quoteMarkupBps}
           clientName={found.clientName}
           clientEmail={found.clientEmail}
+          clientPhone={found.clientPhone}
           emailEnabled={emailConfigured()}
           library={data.library}
           photos={v.photos.map((p) => ({ key: p.key, url: privateUrl(p.key) }))}
@@ -73,6 +74,7 @@ export default async function VariationPage({ params }: { params: Promise<{ id: 
         canInvoice={can(session.role, "invoices.manage")}
         bankReady={data.bankReady}
         clientName={found.clientName}
+        clientPhone={found.clientPhone}
       />
     </LiveAppShell>
   );

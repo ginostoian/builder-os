@@ -84,11 +84,18 @@ export async function spendSignInCode(tx: Tx, orgId: string, accessId: string, c
     .orderBy(desc(portalCodes.createdAt))
     .limit(1);
   if (!c || c.expiresAt.getTime() < Date.now() || c.attempts >= CODE_ATTEMPTS) return "expired";
+  // Count this try before checking it, atomically: many guesses sent at once each take one of the five
+  // tries (the row lock queues them), so parallel requests can't get extra guesses.
+  const [counted] = await tx
+    .update(portalCodes)
+    .set({ attempts: sql`${portalCodes.attempts} + 1` })
+    .where(and(eq(portalCodes.orgId, orgId), eq(portalCodes.id, c.id), isNull(portalCodes.usedAt), sql`${portalCodes.attempts} < ${CODE_ATTEMPTS}`))
+    .returning({ attempts: portalCodes.attempts });
+  if (!counted) return "expired";
   const given = Buffer.from(hash(accessId, code.replace(/\D/g, "")));
   if (!timingSafeEqual(given, Buffer.from(c.secretHash))) {
-    const attempts = c.attempts + 1;
-    await tx.update(portalCodes).set({ attempts, ...(attempts >= CODE_ATTEMPTS ? { usedAt: new Date() } : {}) }).where(and(eq(portalCodes.orgId, orgId), eq(portalCodes.id, c.id)));
-    return attempts >= CODE_ATTEMPTS ? "expired" : "wrong_code";
+    if (counted.attempts >= CODE_ATTEMPTS) await tx.update(portalCodes).set({ usedAt: new Date() }).where(and(eq(portalCodes.orgId, orgId), eq(portalCodes.id, c.id)));
+    return counted.attempts >= CODE_ATTEMPTS ? "expired" : "wrong_code";
   }
   await tx.update(portalCodes).set({ usedAt: new Date() }).where(and(eq(portalCodes.orgId, orgId), eq(portalCodes.id, c.id)));
   return "ok";

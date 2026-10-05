@@ -44,7 +44,7 @@ export function TaskBoard({
   };
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-4 gap-3 overflow-auto bg-surface-2 px-4 py-4 lg:px-6">
+    <div className="grid min-h-0 flex-1 snap-x snap-mandatory scroll-px-4 grid-cols-[repeat(4,minmax(240px,80vw))] gap-3 overflow-auto bg-surface-2 px-4 py-4 lg:snap-none lg:grid-cols-4 lg:px-6">
       {columns.map((col) => (
         <section
           key={col.status}
@@ -58,11 +58,11 @@ export function TaskBoard({
             e.preventDefault();
             drop(col.status, over?.status === col.status ? over.before : null);
           }}
-          className={cn("flex min-w-0 flex-col gap-2 rounded-xl p-1 transition-colors duration-[120ms]", dragging && over?.status === col.status && "bg-line/60")}
+          className={cn("flex min-w-0 snap-start flex-col gap-2 rounded-xl p-1 transition-colors duration-[120ms]", dragging && over?.status === col.status && "bg-line/60")}
         >
           <div className="flex items-center gap-2 px-1 pt-0.5 pb-1">
             <span className={cn("size-2 rounded-full", TASK_DOT[col.status])} />
-            <span className="font-semibold">{TASK_STATUS_LABEL[col.status]}</span>
+            <span className="font-semibold whitespace-nowrap">{TASK_STATUS_LABEL[col.status]}</span>
             <span className="text-subtle">{col.tasks.length}</span>
           </div>
           {col.tasks.map((t) => {

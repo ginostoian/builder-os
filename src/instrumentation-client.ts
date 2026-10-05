@@ -3,7 +3,7 @@
  * replay, no cookies; see src/lib/monitoring.ts for what's scrubbed.
  */
 import * as Sentry from "@sentry/nextjs";
-import { dataCollection, ignoreErrors, scrubEvent, sentryEnvironment } from "@/lib/monitoring";
+import { dataCollection, ignoreErrors, scrubEvent, scrubTransaction, sentryEnvironment } from "@/lib/monitoring";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 if (dsn) {
@@ -14,6 +14,7 @@ if (dsn) {
     tracesSampleRate: 0.02,
     ignoreErrors,
     beforeSend: scrubEvent,
+    beforeSendTransaction: scrubTransaction,
   });
 }
 

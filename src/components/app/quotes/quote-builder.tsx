@@ -112,6 +112,7 @@ export function QuoteBuilder({
   library,
   clientName,
   clientEmail,
+  clientPhone,
   emailEnabled,
   sentVersions,
 }: {
@@ -120,6 +121,7 @@ export function QuoteBuilder({
   library: LibraryOption[];
   clientName: string;
   clientEmail: string | null;
+  clientPhone: string | null;
   emailEnabled: boolean;
   /** How many versions were sent before (a revision in progress when > 0). */
   sentVersions: number;
@@ -265,6 +267,7 @@ export function QuoteBuilder({
               title={header.title}
               clientName={client?.name ?? clientName}
               clientEmail={header.clientId === initial.clientId ? clientEmail : null}
+              clientPhone={header.clientId === initial.clientId ? clientPhone : null}
               emailEnabled={emailEnabled}
               resend={sentVersions > 0}
               disabled={blocked || !sections.some((s) => s.lines.length > 0)}
@@ -998,7 +1001,7 @@ function DetailsTab({
     <fieldset disabled={disabled} className="min-h-0 flex-1 overflow-auto bg-surface-2 p-6">
       <div className="flex max-w-[640px] flex-col gap-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Title" error={errors.title} hint="What the client sees at the top, e.g. Kitchen extension." className="col-span-2">
+          <Field label="Title" error={errors.title} hint="What the client sees at the top, e.g. Kitchen extension." className="sm:col-span-2">
             <input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={commitTitle} maxLength={TEXT.name} className={control} />
           </Field>
           <Field label="Client">

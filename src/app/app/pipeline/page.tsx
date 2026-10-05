@@ -137,7 +137,7 @@ export default async function PipelinePage({ searchParams }: { searchParams: Pro
           )}
 
           <div className="flex flex-wrap items-center gap-2">
-            <nav className="flex gap-1.5" aria-label="Pipeline views">
+            <nav className="chip-row" aria-label="Pipeline views">
               {VIEWS.map((v) => (
                 <Link key={v.key} href={href({ view: v.key === "board" ? undefined : v.key })} aria-current={v.key === view ? "page" : undefined} className={cn("rounded-full px-3 py-1 text-[12.5px] font-medium", v.key === view ? "bg-ink text-white" : "bg-white text-ink-2 shadow-ring hover:text-ink")}>
                   {v.label}

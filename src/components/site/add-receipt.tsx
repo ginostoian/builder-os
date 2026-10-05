@@ -3,7 +3,9 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Receipt, X } from "lucide-react";
-import { addSiteReceiptAction, uploadSiteReceiptAction } from "@/app/m/actions";
+import { useSiteSync } from "./offline/site-sync";
+import { send } from "./offline/sync";
+import { newId, type QueuedPhoto } from "./offline/outbox";
 import { shrinkPhoto } from "@/components/app/shrink-photo";
 import { useReceiptReader } from "@/components/receipt-reader";
 import { MAX_RECEIPTS } from "@/core/costs";
@@ -15,8 +17,9 @@ const input = "h-12 w-full min-w-0 rounded-xl bg-surface px-3 text-[15px] shadow
  * Log something bought for the job, with a photo of the receipt: it goes straight into the job's costs
  * for the office. Big targets; the camera opens from the photo button.
  */
-export function AddReceipt({ projectId, photosEnabled }: { projectId: string; photosEnabled: boolean }) {
+export function AddReceipt({ projectId, projectName, photosEnabled }: { projectId: string; projectName: string; photosEnabled: boolean }) {
   const router = useRouter();
+  const sync = useSiteSync();
   const [open, setOpen] = React.useState(false);
   const [v, setV] = React.useState({ description: "", supplier: "", total: "", includesVat: true, forClient: false });
   const [photos, setPhotos] = React.useState<{ file: File; url: string }[]>([]);
@@ -40,25 +43,34 @@ export function AddReceipt({ projectId, photosEnabled }: { projectId: string; ph
       setStatus(undefined);
       const total = parsePence(v.total);
       if (total === null || total === 0) return setStatus({ ok: false, text: "Enter the total from the receipt." });
-      const r = await addSiteReceiptAction(projectId, { description: v.description, supplier: v.supplier, totalPence: total, includesVat: v.includesVat, forClient: v.forClient });
-      if (!r.ok || !r.id) return setStatus({ ok: false, text: r.ok ? "Couldn't save that. Try again." : r.message });
-      let failed = "";
-      for (const [i, p] of photos.entries()) {
-        setStatus({ ok: true, text: `Uploading photo ${i + 1} of ${photos.length}…` });
+      if (!sync) return setStatus({ ok: false, text: "Reload the page and try again." });
+      const ready: QueuedPhoto[] = [];
+      let unreadable = 0;
+      for (const p of photos) {
         try {
-          const form = new FormData();
-          form.set("expenseId", r.id);
-          form.set("file", p.file.type === "application/pdf" ? p.file : new File([await shrinkPhoto(p.file)], "receipt.jpg", { type: "image/jpeg" }));
-          const u = await uploadSiteReceiptAction(form);
-          if (!u.ok) failed = u.message;
+          ready.push(
+            p.file.type === "application/pdf"
+              ? { opId: newId(), blob: p.file, name: "receipt.pdf", type: "application/pdf" }
+              : { opId: newId(), blob: await shrinkPhoto(p.file), name: "receipt.jpg", type: "image/jpeg" },
+          );
         } catch {
-          failed = "A photo couldn't be read.";
+          unreadable++;
         }
       }
+      const r = await send(sync.memberId, {
+        kind: "receipt",
+        projectId,
+        projectName,
+        input: { description: v.description, supplier: v.supplier, totalPence: total, includesVat: v.includesVat, forClient: v.forClient },
+        photos: ready,
+      });
+      if (r.status === "failed") return setStatus({ ok: false, text: r.message });
       setV({ description: "", supplier: "", total: "", includesVat: true, forClient: false });
       setPhotos([]);
-      setStatus(failed ? { ok: false, text: `Saved ${formatGBP(total)}, but the photo didn't upload. ${failed}` } : { ok: true, text: `Saved ${formatGBP(total)} for the office.` });
       setOpen(false);
+      if (r.status === "queued") return setStatus({ ok: true, text: `No signal, so ${formatGBP(total)} is saved on this phone. It'll send by itself.` });
+      const problem = r.warning ?? (unreadable ? "A photo couldn't be read." : undefined);
+      setStatus(problem ? { ok: false, text: `Saved ${formatGBP(total)}, but the photo didn't upload. ${problem}` } : { ok: true, text: `Saved ${formatGBP(total)} for the office.` });
       router.refresh();
     });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { Honeypot, useSupportForm } from "./use-support-form";
 import * as React from "react";
 import { ArrowLeft, Calendar, CalendarCheck, ChevronLeft, ChevronRight, Clock, Globe, Video } from "lucide-react";
 import { Avatar } from "@/components/brand";
@@ -41,6 +42,7 @@ function londonZone(y: number, m: number, d: number) {
 }
 
 export function DemoBooking() {
+  const support = useSupportForm();
   const [offset, setOffset] = React.useState(0);
   const [day, setDay] = React.useState<number>(6);
   const [time, setTime] = React.useState<string | null>(null);
@@ -175,12 +177,19 @@ export function DemoBooking() {
 
       {step === "details" && (
         <form
-          className="flex flex-col gap-4 p-6"
-          onSubmit={(e) => {
+          className="relative flex flex-col gap-4 p-6"
+          onSubmit={async (e) => {
             e.preventDefault();
-            setStep("done");
+            const f = new FormData(e.currentTarget);
+            const text = (k: string) => String(f.get(k) ?? "").trim();
+            const ok = await support.send(
+              { name: text("name"), email: text("email"), company: text("company") || undefined, topic: "Book a demo", message: `Demo requested for ${dayLabel} at ${time} (UK time).\nMostly quotes: ${job}` },
+              text("website"),
+            );
+            if (ok) setStep("done");
           }}
         >
+          <Honeypot />
           <button type="button" onClick={() => setStep("pick")} className="flex items-center gap-1.5 self-start text-sm font-medium text-ink-2 hover:text-ink">
             <ArrowLeft className="size-3.5" />
             Back
@@ -214,8 +223,9 @@ export function DemoBooking() {
               ))}
             </div>
           </fieldset>
-          <Button type="submit" size="lg" className="mt-1 w-full">
-            Confirm booking
+          {support.state.status === "error" && <p className="text-[14px] text-danger">{support.state.message}</p>}
+          <Button type="submit" size="lg" className="mt-1 w-full" disabled={support.state.status === "sending"}>
+            {support.state.status === "sending" ? "Sending…" : "Request this time"}
           </Button>
         </form>
       )}
@@ -225,9 +235,9 @@ export function DemoBooking() {
           <span className="flex size-[52px] items-center justify-center rounded-full bg-success-soft text-success">
             <CalendarCheck className="size-[22px]" />
           </span>
-          <div className="text-[21px] font-semibold tracking-[-0.02em]">You&apos;re booked in.</div>
+          <div className="text-[21px] font-semibold tracking-[-0.02em]">Thanks, we&apos;ve got your request.</div>
           <div className="max-w-[340px] text-[15px] leading-[1.55] text-ink-2">
-            {dayLabel} at {time} with Marcus. A calendar invite and Meet link are on their way.
+            {dayLabel} at {time}. We&apos;ll email you to confirm the time and send a video call link.
           </div>
           <Button
             variant="outline"

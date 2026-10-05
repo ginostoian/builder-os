@@ -4,7 +4,7 @@
  * through `onRequestError`; so are our own `console.error` logs of failed emails, syncs and jobs.
  */
 import * as Sentry from "@sentry/nextjs";
-import { dataCollection, ignoreErrors, scrubEvent, sentryDsn, sentryEnvironment } from "@/lib/monitoring";
+import { dataCollection, ignoreErrors, scrubEvent, scrubTransaction, sentryDsn, sentryEnvironment } from "@/lib/monitoring";
 
 export function register() {
   const dsn = sentryDsn();
@@ -16,6 +16,7 @@ export function register() {
     tracesSampleRate: 0.05,
     ignoreErrors,
     beforeSend: scrubEvent,
+    beforeSendTransaction: scrubTransaction,
     integrations: process.env.NEXT_RUNTIME === "nodejs" ? [Sentry.captureConsoleIntegration({ levels: ["error"] })] : [],
   });
 }

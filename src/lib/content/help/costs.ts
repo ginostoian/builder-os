@@ -279,4 +279,59 @@ export const COST_ARTICLES: HelpArticle[] = [
     ],
     related: ["expenses-and-receipts", "purchase-orders", "timesheets-and-check-ins", "markups-margins-and-vat"],
   },
+  {
+    slug: "cis",
+    title: "CIS for subcontractors",
+    summary: "Work out CIS deductions when you pay subcontractors, and get the monthly figures and statements.",
+    category: "costs",
+    plan: "pro",
+    who: "Admins turn it on. Admins and the office record payments and see the figures.",
+    keywords: ["cis", "construction industry scheme", "hmrc", "deduction", "utr", "cis300", "monthly return", "subcontractor tax", "verification", "gross payment"],
+    body: [
+      { type: "p", text: "If you pay subcontractors, the Construction Industry Scheme (CIS) means you take a deduction from their labour and pay it to HMRC each month. Builder OS works out the deduction for you and adds up the figures for your monthly return. It's optional: leave it off if CIS doesn't apply to you." },
+      { type: "h", text: "Turning it on" },
+      {
+        type: "steps",
+        items: [
+          "Go to [Settings, CIS](/app/settings/cis).",
+          "Tick **We pay subcontractors under CIS**.",
+          "Add your UTR, employer reference and Accounts Office reference if you want them on the statements, then click **Save**.",
+        ],
+      },
+      { type: "h", text: "Adding each subcontractor's status" },
+      { type: "p", text: "Before you pay someone new, verify them with HMRC (online or by phone) using their UTR. HMRC tells you which rate to use. Then record it:" },
+      {
+        type: "steps",
+        items: [
+          "Open the person under [Team](/app/team). They need to be set up as a **Subcontractor**.",
+          "In the **CIS** box, choose their status: **Gross (0%)**, **Registered (20%)** or **Not registered (30%)**.",
+          "Add their UTR, and the verification number HMRC gave you, then click **Save CIS details**.",
+        ],
+      },
+      { type: "note", text: "Until you add a status, Builder OS uses the higher rate of 30%, as HMRC requires for anyone not verified." },
+      { type: "h", text: "Recording a payment" },
+      {
+        type: "steps",
+        items: [
+          "Add their invoice as an expense, as usual, with the type **Subcontractor**. See [Expenses and receipts](/help/expenses-and-receipts).",
+          "In the **CIS** box, choose the subcontractor.",
+          "Enter the materials on their invoice, before VAT. Materials aren't taxed under CIS.",
+          "Check the figures: the labour part, the deduction, and what to pay them. Then save.",
+        ],
+      },
+      { type: "p", text: "The deduction is the rate times the amount before VAT, less materials, rounded down to the penny. It's saved with the payment, so if someone's status changes later, payments you've already made don't change." },
+      { type: "h", text: "Each month" },
+      {
+        type: "list",
+        items: [
+          "Go to [Reports](/app/reports) and click **CIS monthly figures**. Tax months run from the 6th to the 5th of the next month.",
+          "You'll see each subcontractor you paid, with the gross amount, materials and deduction, and the total to pay HMRC.",
+          "Enter the figures in HMRC's CIS online service (or your payroll software) by the 19th. **Download CSV** gives you a spreadsheet of them.",
+          "Click **Open** next to each subcontractor for their payment and deduction statement. Print it or save it as a PDF, and send it to them within 14 days of the month ending.",
+        ],
+      },
+      { type: "tip", text: "Builder OS works out the figures, but it doesn't file anything with HMRC for you. If you're not sure about a rate or a return, check with your accountant." },
+    ],
+    related: ["expenses-and-receipts", "team-and-workers", "job-costing-reports"],
+  },
 ];

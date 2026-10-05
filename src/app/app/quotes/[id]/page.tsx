@@ -79,6 +79,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
           library={data.library}
           clientName={data.loaded.client?.name ?? ""}
           clientEmail={data.loaded.client?.email ?? null}
+          clientPhone={data.loaded.client?.phone ?? null}
           emailEnabled={emailConfigured()}
           sentVersions={data.sentVersions}
         />
@@ -108,6 +109,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         bankReady={data.bankReady}
         emailEnabled={emailConfigured()}
         clientEmail={data.loaded.client?.email ?? null}
+        clientPhone={data.loaded.client?.phone ?? null}
         variations={data.variations}
         billable={data.billable.map((v) => ({ id: v.id, number: v.number, title: v.title, totalPence: v.totalPence }))}
         recharges={data.recharges.map((r) => ({ id: r.id, description: r.description, supplier: r.supplier, totalPence: r.amount + applyBps(r.amount, version.snapshot.quote.vatRateBps) }))}

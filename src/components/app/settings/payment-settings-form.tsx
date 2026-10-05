@@ -46,7 +46,7 @@ export function PaymentSettingsForm({ initial, canEdit, emailEnabled }: { initia
         <Panel className="flex flex-col gap-4 p-5">
           <SectionHeading title="Bank details" hint="Printed on every invoice so clients can pay by bank transfer. Invoices keep the details they were raised with." />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Account name" error={error("bankAccountName")} className="col-span-2">
+            <Field label="Account name" error={error("bankAccountName")} className="sm:col-span-2">
               <input name="bankAccountName" value={values.bankAccountName} onChange={set("bankAccountName")} maxLength={TEXT.name} autoComplete="off" className={control} />
             </Field>
             <Field label="Sort code" error={error("bankSortCode")} hint="e.g. 12-34-56">

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WhatsAppLink } from "@/components/app/whatsapp-button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, Mail, Phone, Plus } from "lucide-react";
@@ -73,6 +74,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                 {client.phone}
               </a>
             )}
+            {client.phone && <WhatsAppLink phone={client.phone} text={`Hi ${client.name.split(" ")[0]}, `} />}
           </div>
         </div>
 

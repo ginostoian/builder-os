@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { StoredImage } from "@/components/stored-image";
 import { notFound } from "next/navigation";
-import { MapPin, Navigation, Phone } from "lucide-react";
+import { MapPin, MessageCircle, Navigation, Phone } from "lucide-react";
+import { whatsappUrl } from "@/core/whatsapp";
 import { AddReceipt } from "@/components/site/add-receipt";
 import { CheckIn } from "@/components/site/check-in";
 import { MyTasks } from "@/components/site/my-tasks";
@@ -42,7 +43,7 @@ export default async function SiteJobPage({ params }: { params: Promise<{ id: st
   const address = formatAddress(job.siteAddress);
 
   return (
-    <SiteFrame eyebrow={job.clientName} title={job.name} back="/m" office={can(session.role, "app.office")}>
+    <SiteFrame eyebrow={job.clientName} title={job.name} back="/m" office={can(session.role, "app.office")} sync={{ memberId: session.memberId }}>
       {(address || job.clientPhone) && (
         <section className="flex flex-col gap-2 rounded-2xl bg-white p-3.5 shadow-ring">
           {address && (
@@ -69,6 +70,11 @@ export default async function SiteJobPage({ params }: { params: Promise<{ id: st
                 Call {job.clientName.split(" ")[0]}
               </a>
             )}
+            {job.clientPhone && (
+              <a href={whatsappUrl(job.clientPhone, `Hi ${job.clientName.split(" ")[0]}, `)} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${job.clientName}`} className="flex size-12 flex-none items-center justify-center rounded-xl bg-surface shadow-ring">
+                <MessageCircle className="size-5 text-[#25A244]" />
+              </a>
+            )}
           </div>
         </section>
       )}
@@ -79,10 +85,10 @@ export default async function SiteJobPage({ params }: { params: Promise<{ id: st
       <MyTasks tasks={job.tasks.map((t) => toMyTask(t, today))} showJob={false} />
 
       <SiteHeading title="Post an update" />
-      <PostUpdate projectId={job.id} photosEnabled={storageConfigured()} />
+      <PostUpdate projectId={job.id} projectName={job.name} photosEnabled={storageConfigured()} />
 
       <SiteHeading title="Receipts" aside={data.receipts.length > 0 ? `${data.receipts.length} from you` : undefined} />
-      <AddReceipt projectId={job.id} photosEnabled={storageConfigured()} />
+      <AddReceipt projectId={job.id} projectName={job.name} photosEnabled={storageConfigured()} />
       {data.receipts.length > 0 && (
         <ul className="overflow-hidden rounded-2xl bg-white shadow-ring">
           {data.receipts.slice(0, 5).map((r) => (

@@ -59,6 +59,7 @@ export async function getVariation(tx: Tx, orgId: string, variationId: string) {
       quoteMarkupBps: quotes.markupBps,
       clientName: clients.name,
       clientEmail: clients.email,
+      clientPhone: clients.phone,
       invoiceNumber: invoices.number,
       invoiceStatus: invoices.status,
     })

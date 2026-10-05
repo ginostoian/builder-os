@@ -16,6 +16,8 @@ import { invoiceRef, ukToday } from "@/core/payment-plan";
 import { cn } from "@/lib/utils";
 import { Field, control } from "../form-fields";
 import type { Expense, PoOption, ProjectOption } from "./types";
+import { useCis } from "./cis-context";
+import { cisDeduction } from "@/core/cis";
 
 /** What a new expense starts with (e.g. "record the bill" on an order fills in the supplier and amount). */
 export type ExpenseDraft = Partial<Pick<Expense, "projectId" | "purchaseOrderId" | "supplier" | "description" | "totalPence" | "vatPence" | "category" | "rechargeable">>;
@@ -60,6 +62,8 @@ export function ExpenseDialog({
     rechargeable: start.rechargeable ?? false,
     markup: expense ? String(expense.rechargeMarkupBps / 100) : "0",
   }));
+  const cisList = useCis();
+  const [cis, setCis] = React.useState({ workerId: expense?.cis?.workerId ?? "", materials: pounds(expense?.cis?.materialsPence ?? 0) });
   const [files, setFiles] = React.useState<File[]>([]);
   // The first receipt fills in whatever hasn't been typed yet.
   const reader = useReceiptReader((r) =>
@@ -83,12 +87,20 @@ export function ExpenseDialog({
   const total = parsePence(v.total);
   const vat = v.vat.trim() ? parsePence(v.vat) : 0;
   const room = MAX_RECEIPTS - receipts.length - files.length;
+  // CIS: only for subcontractor payments, when the company uses it.
+  const cisOn = cisList !== null && v.category === "subcontractor";
+  const cisSub = cisOn ? cisList.find((c) => c.id === cis.workerId) : undefined;
+  const cisRate = cisSub ? (expense?.cis?.workerId === cisSub.id ? expense.cis.rateBps : cisSub.rateBps) : null;
+  const materials = cis.materials.trim() ? parsePence(cis.materials) : 0;
+  const net = total !== null && vat !== null ? total - vat : null;
+  const deduction = cisRate !== null && net !== null && materials !== null ? cisDeduction(net, materials, cisRate) : null;
 
   const save = () =>
     startTransition(async () => {
       setError(undefined);
       if (total === null) return setError("Enter the total from the receipt.");
       if (vat === null || vat > total) return setError("Check the VAT: it can't be more than the total.");
+      if (cisSub && (materials === null || (net !== null && materials > net))) return setError("Check the materials: they can't be more than the amount before VAT.");
       const markup = Math.round(Number(v.markup || "0") * 100);
       if (!Number.isFinite(markup) || markup < 0) return setError("Check the markup.");
       const r = await saveExpenseAction(expense?.id ?? null, {
@@ -102,6 +114,7 @@ export function ExpenseDialog({
         vatPence: vat,
         rechargeable: v.rechargeable,
         rechargeMarkupBps: v.rechargeable ? markup : 0,
+        cis: cisSub && materials !== null ? { workerId: cisSub.id, materialsPence: materials } : undefined,
       });
       if (!r.ok || !r.id) return setError(r.ok ? "Couldn't save that." : r.message);
       let failed = "";
@@ -171,11 +184,11 @@ export function ExpenseDialog({
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <Field label="What for" required className="col-span-2">
+            <Field label="What for" required className="sm:col-span-2">
               <input value={v.description} onChange={set("description")} maxLength={TEXT.line} required placeholder="e.g. Plasterboard and screws" className={control} autoFocus={!expense} />
             </Field>
             {!fixedProject && (
-              <Field label="Project" className="col-span-2">
+              <Field label="Project" className="sm:col-span-2">
                 <select value={v.projectId} onChange={(e) => setV((x) => ({ ...x, projectId: e.target.value, purchaseOrderId: "" }))} disabled={locked} className={control}>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -229,6 +242,42 @@ export function ExpenseDialog({
               </span>
             </Field>
           </div>
+
+          {cisOn && (
+            <div className="flex flex-col gap-3 rounded-[10px] bg-surface px-3.5 py-3">
+              <div>
+                <div className="font-medium">CIS</div>
+                <p className="text-[12.5px] text-ink-2">Choose the subcontractor and the materials on their invoice. The deduction is worked out from their status; you pay them the rest and pay the deduction to HMRC.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field label="Subcontractor">
+                  <select value={cis.workerId} onChange={(e) => setCis((x) => ({ ...x, workerId: e.target.value }))} disabled={locked} className={control}>
+                    <option value="">Not a CIS payment</option>
+                    {cisList.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.rateBps / 100}%)
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                {cisSub && (
+                  <Field label="Materials (before VAT)" hint="Not taxed under CIS.">
+                    <Money value={cis.materials} onChange={(e) => setCis((x) => ({ ...x, materials: e.target.value }))} disabled={locked} />
+                  </Field>
+                )}
+              </div>
+              {cisSub && deduction !== null && net !== null && total !== null && (
+                <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-[12.5px] tabular">
+                  <dt className="text-ink-2">Labour (before VAT, less materials)</dt>
+                  <dd className="text-right">{formatGBP(Math.max(0, net - (materials ?? 0)))}</dd>
+                  <dt className="text-ink-2">Deduction at {(cisRate ?? 0) / 100}%</dt>
+                  <dd className="text-right">−{formatGBP(deduction)}</dd>
+                  <dt className="font-medium">Pay {cisSub.name}</dt>
+                  <dd className="text-right font-medium">{formatGBP(total - deduction)}</dd>
+                </dl>
+              )}
+            </div>
+          )}
 
           <div className={cn("rounded-[10px] px-3.5 py-3", v.rechargeable ? "bg-warning-soft/60" : "bg-surface")}>
             <label className="flex items-start gap-2.5">

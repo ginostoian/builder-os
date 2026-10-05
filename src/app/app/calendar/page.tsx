@@ -35,6 +35,13 @@ function chip(item: CalendarItem) {
   return item.status === "done" ? "bg-surface text-subtle line-through" : "bg-white text-ink shadow-ring";
 }
 
+/** The same colours as a dot, for the phone's month grid. */
+function dot(item: CalendarItem) {
+  if (item.kind === "visit") return "bg-brand";
+  if (item.kind === "job_start" || item.kind === "job_end") return "bg-info";
+  return item.status ? TASK_DOT[item.status] : "bg-faint";
+}
+
 function Item({ item, full = false }: { item: CalendarItem; full?: boolean }) {
   return (
     <Link href={item.href} title={[item.title, item.detail, item.worker].filter(Boolean).join(" · ")} className={cn("flex items-start gap-1.5 rounded-[5px] px-1.5 py-[3px] text-[11.5px] leading-tight hover:brightness-95", chip(item))}>
@@ -119,7 +126,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           </div>
         </ScreenTitle>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link href={href({ d: prev })} aria-label={view === "week" ? "Previous week" : "Previous month"} className="flex size-8 items-center justify-center rounded-md shadow-ring hover:bg-accent">
             <ChevronLeft className="size-4" />
           </Link>
@@ -129,9 +136,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           <Link href={href({ d: today })} className="flex h-8 items-center rounded-md px-2.5 shadow-ring hover:bg-accent">
             Today
           </Link>
-          <h2 className="ml-1.5 text-[15px] font-semibold">{heading}</h2>
-          <div className="flex-1" />
-          <div className="flex items-center gap-3 text-[11.5px] text-subtle">
+          <h2 className="ml-1.5 text-[15px] font-semibold whitespace-nowrap">{heading}</h2>
+          <div className="hidden flex-1 lg:block" />
+          <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] whitespace-nowrap text-subtle lg:w-auto">
             {can(session.role, "leads.view") && !workerId && (
               <span className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-sm bg-brand-soft" />
@@ -165,15 +172,24 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                 const list = byDay.get(d) ?? [];
                 const shown = list.slice(0, MAX_IN_CELL);
                 return (
-                  <div key={d} className={cn("flex min-h-[112px] min-w-0 flex-col gap-1 border-hairline p-1.5", i % 7 !== 6 && "border-r", i < days.length - 7 && "border-b", d.slice(0, 7) !== month && "bg-surface/60")}>
+                  <div key={d} className={cn("flex min-h-[56px] min-w-0 flex-col gap-1 border-hairline p-1 lg:min-h-[112px] lg:p-1.5", i % 7 !== 6 && "border-r", i < days.length - 7 && "border-b", d.slice(0, 7) !== month && "bg-surface/60")}>
                     <Link href={href({ view: "week", d })} className={cn("flex size-6 items-center justify-center self-start rounded-full text-[12px] tabular hover:bg-accent", d === today ? "bg-ink font-semibold text-white hover:bg-ink" : d.slice(0, 7) !== month ? "text-faint" : "text-ink-2")}>
                       {Number(d.slice(8))}
                     </Link>
+                    {list.length > 0 && (
+                      <Link href={href({ view: "week", d })} aria-label={`${list.length} on ${fmt(d, { day: "numeric", month: "long" })}`} className="flex flex-wrap gap-[3px] px-1 lg:hidden">
+                        {list.slice(0, 6).map((item) => (
+                          <span key={item.key} className={cn("size-1.5 rounded-full", dot(item))} />
+                        ))}
+                      </Link>
+                    )}
                     {shown.map((item) => (
-                      <Item key={item.key} item={item} />
+                      <div key={item.key} className="hidden lg:block">
+                        <Item item={item} />
+                      </div>
                     ))}
                     {list.length > shown.length && (
-                      <Link href={href({ view: "week", d })} className="px-1.5 text-[11.5px] text-subtle hover:text-ink">
+                      <Link href={href({ view: "week", d })} className="hidden px-1.5 text-[11.5px] text-subtle hover:text-ink lg:block">
                         +{list.length - shown.length} more
                       </Link>
                     )}
@@ -183,11 +199,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-7 overflow-hidden rounded-[10px] shadow-card">
+          <div className="grid grid-cols-1 overflow-hidden rounded-[10px] shadow-card lg:grid-cols-7">
             {days.map((d, i) => {
               const list = byDay.get(d) ?? [];
               return (
-                <div key={d} className={cn("flex min-h-[420px] min-w-0 flex-col gap-1.5 p-2", i !== 6 && "border-r border-hairline", d === today && "bg-brand-tint")}>
+                <div key={d} className={cn("flex min-w-0 flex-col gap-1.5 p-2 lg:min-h-[420px]", i !== 6 && "border-b border-hairline lg:border-r lg:border-b-0", d === today && "bg-brand-tint")}>
                   <div className="mb-1 flex items-baseline gap-1.5">
                     <span className="text-[11.5px] font-medium text-subtle">{WEEKDAYS[i]}</span>
                     <span className={cn("text-[15px] font-semibold tabular", d === today && "text-brand")}>{Number(d.slice(8))}</span>
@@ -197,6 +213,23 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
               );
             })}
           </div>
+        )}
+
+        {view === "month" && items.length > 0 && (
+          <ol className="flex flex-col gap-3 lg:hidden" aria-label="This month, day by day">
+            {days
+              .filter((d) => d.slice(0, 7) === month && byDay.has(d))
+              .map((d) => (
+                <li key={d}>
+                  <div className={cn("mb-1 text-[12.5px] font-semibold", d === today && "text-brand")}>{fmt(d, { weekday: "long", day: "numeric", month: "long" })}</div>
+                  <div className="flex flex-col gap-1">
+                    {byDay.get(d)!.map((item) => (
+                      <Item key={item.key} item={item} full />
+                    ))}
+                  </div>
+                </li>
+              ))}
+          </ol>
         )}
 
         {items.length === 0 && (

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WhatsAppLink } from "@/components/app/whatsapp-button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin } from "lucide-react";
@@ -11,6 +12,8 @@ import { ArchiveWorker } from "@/components/app/team/archive-worker";
 import { Certificates } from "@/components/app/team/certificates";
 import { VisitPlaces, VisitTimes } from "@/components/app/team/visit-times";
 import { WorkerForm } from "@/components/app/team/worker-form";
+import { WorkerCis } from "@/components/app/team/worker-cis";
+import { cisSettings } from "@/db/cis";
 import { Badge } from "@/components/ui/badge";
 import { formatGBP } from "@/core/money";
 import { addDays, ukToday } from "@/core/payment-plan";
@@ -35,6 +38,7 @@ export default async function WorkerPage({ params }: { params: Promise<{ id: str
     return {
       ...w,
       logins: can(session.role, "team.edit") ? await unlinkedMembers(tx, session.orgId) : [],
+      cis: (await cisSettings(tx, session.orgId)).enabled,
       visits: await listVisits(tx, session.orgId, { from: addDays(today, -27), to: today, workerId }),
     };
   });
@@ -88,7 +92,17 @@ export default async function WorkerPage({ params }: { params: Promise<{ id: str
                   />
                 ) : (
                   <dl className="grid grid-cols-[140px_minmax(0,1fr)] gap-x-4 gap-y-1.5">
-                    <Detail label="Mobile" value={w.phone && <a href={`tel:${w.phone}`}>{w.phone}</a>} />
+                    <Detail
+                      label="Mobile"
+                      value={
+                        w.phone && (
+                          <span className="flex flex-wrap items-center gap-x-3">
+                            <a href={`tel:${w.phone}`}>{w.phone}</a>
+                            <WhatsAppLink phone={w.phone} />
+                          </span>
+                        )
+                      }
+                    />
                     <Detail label="Email" value={w.email} />
                     <Detail label="Started" value={w.startedOn && dayLabel(w.startedOn)} />
                     {canSeeCosts && <Detail label="Day rate" value={w.dayRatePence != null && formatGBP(w.dayRatePence)} />}
@@ -98,6 +112,15 @@ export default async function WorkerPage({ params }: { params: Promise<{ id: str
                 )}
               </div>
             </Panel>
+
+            {data.cis && w.kind === "subcontractor" && canSeeCosts && (
+              <Panel className="p-5">
+                <SectionHeading title="CIS" hint="Their verified status decides the deduction on what you pay them." />
+                <div className="mt-3">
+                  <WorkerCis workerId={w.id} initial={{ status: w.cisStatus, utr: w.utr, verificationRef: w.cisVerificationRef, verifiedOn: w.cisVerifiedOn }} canEdit={canEdit} />
+                </div>
+              </Panel>
+            )}
 
             <Panel className="p-5">
               <SectionHeading title="Certificates and cards" hint="CSCS, Gas Safe, insurance and the like. The office is emailed 30 days before one expires." />

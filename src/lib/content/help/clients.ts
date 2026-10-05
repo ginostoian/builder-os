@@ -171,4 +171,38 @@ export const CLIENT_ARTICLES: HelpArticle[] = [
     ],
     related: ["client-portal", "sending-a-quote", "revising-a-quote", "notifications"],
   },
+  {
+    slug: "whatsapp",
+    title: "Sending things on WhatsApp",
+    summary: "Send quotes, invoices, changes and booking links to clients on WhatsApp, with the message written for you.",
+    category: "clients",
+    keywords: ["whatsapp", "text", "message", "sms", "send link", "chat"],
+    body: [
+      { type: "p", text: "Lots of homeowners would rather get a WhatsApp than an email. Builder OS can open WhatsApp with the message already written, on your phone or on WhatsApp Web on a computer. It's free: the message goes from your own WhatsApp, just as if you'd typed it." },
+      { type: "h", text: "Where you'll find it" },
+      {
+        type: "list",
+        items: [
+          "**Quotes**: after you send one, and on a sent quote, click **WhatsApp**. The message has the quote's private link.",
+          "**Invoices**: on an unpaid invoice, click **WhatsApp** to send the link they can view and pay from.",
+          "**Variations**: after sending a change, and on a sent variation, to ask them to approve it.",
+          "**Leads**: next to their phone number, and **WhatsApp it** on the survey visit box, to send the booking link so they can pick a time.",
+          "**Clients and your team**: a WhatsApp link next to every mobile number.",
+          "**The site app**: the green chat button on a job messages the client.",
+        ],
+      },
+      { type: "h", text: "How it works" },
+      {
+        type: "steps",
+        items: [
+          "Click the WhatsApp button.",
+          "WhatsApp opens with a chat to the client's number and the message filled in.",
+          "Check it, change anything you like, and tap send.",
+        ],
+      },
+      { type: "p", text: "If the client has no phone number saved, WhatsApp asks you to pick who to send it to. UK numbers starting 07 are turned into the international form WhatsApp needs for you." },
+      { type: "note", text: "Builder OS can't see WhatsApp messages, so replies come to your phone, not into Builder OS. You still see when the client opens the link and anything they do in their portal." },
+    ],
+    related: ["sending-a-quote", "client-portal", "online-survey-booking"],
+  },
 ];

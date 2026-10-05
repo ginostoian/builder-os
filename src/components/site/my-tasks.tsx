@@ -4,7 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Pause, Play } from "lucide-react";
-import { setMyTaskStatusAction } from "@/app/m/actions";
+import { useSiteSync } from "./offline/site-sync";
+import { send } from "./offline/sync";
 import type { TaskStatus } from "@/core/projects";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +25,11 @@ export function MyTasks({ tasks, showJob }: { tasks: MyTask[]; showJob: boolean 
 
 function TaskRow({ task, showJob }: { task: MyTask; showJob: boolean }) {
   const router = useRouter();
-  const [status, setStatus] = React.useOptimistic(task.status);
+  const sync = useSiteSync();
+  // A change still waiting to send (no signal) shows straight away.
+  const queued = sync?.ops.filter((o) => o.kind === "task" && o.taskId === task.id && !o.failed).at(-1);
+  const [optimistic, setStatus] = React.useOptimistic(queued?.kind === "task" ? (queued.status as TaskStatus) : task.status);
+  const status = optimistic;
   const [asking, setAsking] = React.useState(false);
   const [reason, setReason] = React.useState("");
   const [error, setError] = React.useState<string>();
@@ -34,9 +39,13 @@ function TaskRow({ task, showJob }: { task: MyTask; showJob: boolean }) {
     startTransition(async () => {
       setStatus(next);
       setError(undefined);
-      const r = await setMyTaskStatusAction(task.id, next, why);
-      if (!r.ok) {
+      if (!sync) return setError("Reload the page and try again.");
+      const r = await send(sync.memberId, { kind: "task", taskId: task.id, status: next, reason: why });
+      if (r.status === "failed") {
         setError(r.message);
+      } else if (r.status === "queued") {
+        setAsking(false);
+        setReason("");
       } else {
         setAsking(false);
         setReason("");

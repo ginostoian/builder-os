@@ -38,6 +38,7 @@ import { AUTOMATION_TRIGGERS, LEAD_SOURCES, LEAD_STAGES, LOST_REASONS, MAX_AUTOM
 import { EXPENSE_CATEGORIES, MAX_PO_LINES, MAX_RECEIPTS, PO_STATUSES, type PoLine } from "../core/costs";
 import { MAX_DIARY_PHOTOS, PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "../core/projects";
 import { WORKER_KINDS } from "../core/team";
+import { CIS_STATUSES } from "../core/cis";
 import { MAX_VARIATION_PHOTOS, VARIATION_STATUSES, type VariationLine, type VariationPhoto } from "../core/variation";
 import { LINE_KINDS, QUOTE_STATUSES, ROLES, SERVICE_KINDS, type Address, type PaymentPlanInput } from "../core/schemas";
 
@@ -136,6 +137,11 @@ export const organizations = pgTable(
     remindersEnabled: boolean("reminders_enabled").notNull().default(true),
     /** Ask clients for a code sent to their email the first time they open the portal on a device. */
     portalSignIn: boolean("portal_sign_in").notNull().default(true),
+    /** The Construction Industry Scheme (migration 0022), for companies that pay subcontractors. */
+    cisEnabled: boolean("cis_enabled").notNull().default(false),
+    cisContractorUtr: text("cis_contractor_utr"),
+    cisEmployerRef: text("cis_employer_ref"),
+    cisAccountsOfficeRef: text("cis_accounts_office_ref"),
     // ── Billing (migration 0018). Only the billing functions change these. ──
     /** Pro for free until then. New companies get 14 days; existing ones were made complimentary. */
     trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }).default(sql`now() + interval '14 days'`),
@@ -705,6 +711,7 @@ export const variations = pgTable(
 // ── Team ──────────────────────────────────────────────────────────────────────
 
 export const workerKind = pgEnum("worker_kind", WORKER_KINDS);
+export const cisStatus = pgEnum("cis_status", CIS_STATUSES);
 
 /**
  * Everyone who works for the company, with or without a login. A worker linked to a member (`member_id`)
@@ -728,6 +735,11 @@ export const workers = pgTable(
     emergencyName: text("emergency_name"),
     emergencyPhone: text("emergency_phone"),
     notes: text("notes"),
+    /** CIS (subcontractors, when the company uses CIS): their UTR and HMRC's verified status. */
+    cisStatus: cisStatus("cis_status"),
+    utr: text("utr"),
+    cisVerificationRef: text("cis_verification_ref"),
+    cisVerifiedOn: date("cis_verified_on"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
   },
@@ -745,6 +757,8 @@ export const workers = pgTable(
     len("workers_emergency_phone_len", t.emergencyPhone, TEXT.phone),
     len("workers_notes_len", t.notes, TEXT.note, 0),
     between("workers_day_rate_range", t.dayRatePence, 0, MAX_RATE_PENCE),
+    check("workers_utr_format", sql`${t.utr} is null or ${t.utr} ~ '^[0-9]{10}$'`),
+    check("workers_cis_ref_format", sql`${t.cisVerificationRef} is null or ${t.cisVerificationRef} ~ '^V[0-9]{10}(/?[A-Z]{1,2})?$'`),
   ],
 ).enableRLS();
 
@@ -948,6 +962,8 @@ export const siteVisits = pgTable(
     /** When the office last corrected the times, and who (shown as "edited" on timesheets). */
     editedAt: timestamp("edited_at", { withTimezone: true }),
     editedByMemberId: uuid("edited_by_member_id"),
+    /** Recorded on the phone with no signal and sent later (the times are the phone's). */
+    recordedOffline: boolean("recorded_offline").notNull().default(false),
     ...timestamps,
   },
   (t) => [
@@ -1038,11 +1054,22 @@ export const expenses = pgTable(
     invoiceId: uuid("invoice_id"),
     recoveredOn: date("recovered_on"),
     createdByMemberId: uuid("created_by_member_id"),
+    /** CIS: the subcontractor paid, the materials part (before VAT), the rate used and the deduction. */
+    workerId: uuid("worker_id"),
+    cisMaterialsPence: integer("cis_materials_pence"),
+    cisRateBps: integer("cis_rate_bps"),
+    cisDeductionPence: integer("cis_deduction_pence"),
     ...timestamps,
   },
   (t) => [
     tenantPolicy(t.orgId),
     unique("expenses_org_id_id_key").on(t.orgId, t.id),
+    foreignKey({ name: "expenses_worker_fk", columns: [t.orgId, t.workerId], foreignColumns: [workers.orgId, workers.id] }),
+    index("expenses_worker_idx").on(t.orgId, t.workerId, t.spentOn),
+    check(
+      "expenses_cis_parts",
+      sql`(${t.cisRateBps} is null and ${t.cisDeductionPence} is null and ${t.cisMaterialsPence} is null) or (${t.workerId} is not null and ${t.cisRateBps} in (0, 2000, 3000) and ${t.cisMaterialsPence} between 0 and ${t.netPence} and ${t.cisDeductionPence} between 0 and ${t.netPence})`,
+    ),
     foreignKey({ name: "expenses_project_fk", columns: [t.orgId, t.projectId], foreignColumns: [projects.orgId, projects.id] }).onDelete("cascade"),
     foreignKey({ name: "expenses_po_fk", columns: [t.orgId, t.purchaseOrderId], foreignColumns: [purchaseOrders.orgId, purchaseOrders.id] }),
     foreignKey({ name: "expenses_invoice_fk", columns: [t.orgId, t.invoiceId], foreignColumns: [invoices.orgId, invoices.id] }),
@@ -1468,5 +1495,30 @@ export const rateLimits = pgTable(
     check("rate_limits_key_format", sql`${t.key} ~ '^[a-z_]{1,40}:[0-9a-f]{64}$'`),
     between("rate_limits_hits_range", t.hits, 0, 1000000),
     index("rate_limits_window_idx").on(t.windowStart),
+  ],
+).enableRLS();
+
+// ── Offline site app (migration 0022) ────────────────────────────────────────
+
+/**
+ * Changes made in the site app with no signal are queued on the phone and sent later, each with its own
+ * id. Recording the id here makes a resend (the phone retried, or the connection dropped mid-reply) do
+ * nothing the second time; `result_id` is what the first send created (an update or receipt), so photos
+ * still find it.
+ */
+export const siteSyncOps = pgTable(
+  "site_sync_ops",
+  {
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    id: uuid("id").notNull(),
+    memberId: uuid("member_id").notNull(),
+    resultId: uuid("result_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    primaryKey({ name: "site_sync_ops_pkey", columns: [t.orgId, t.id] }),
+    foreignKey({ name: "site_sync_ops_member_fk", columns: [t.orgId, t.memberId], foreignColumns: [members.orgId, members.id] }).onDelete("cascade"),
+    index("site_sync_ops_created_idx").on(t.createdAt),
   ],
 ).enableRLS();

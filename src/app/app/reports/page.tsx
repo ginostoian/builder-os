@@ -9,6 +9,8 @@ import { formatGBP } from "@/core/money";
 import { PROJECT_STATUS_LABEL } from "@/core/projects";
 import { formatMinutes } from "@/core/team";
 import { costingReport } from "@/db/costs";
+import { cisSettings } from "@/db/cis";
+import { Button } from "@/components/ui/button";
 import { requirePermission, withSession } from "@/auth/session";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +31,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const session = await requirePermission("costs.view");
   const raw = (await searchParams).filter;
   const filter = FILTERS.find((f) => f.key === (Array.isArray(raw) ? raw[0] : raw))?.key ?? "current";
-  const report = await withSession(session, (tx) => costingReport(tx, session.orgId));
+  const { report, cis } = await withSession(session, async (tx) => ({ report: await costingReport(tx, session.orgId), cis: (await cisSettings(tx, session.orgId)).enabled }));
   const rows = report.rows.filter((r) => (filter === "all" ? true : filter === "complete" ? r.status === "complete" : r.status !== "complete"));
   const sum = (f: (r: (typeof rows)[number]) => number) => rows.reduce((a, r) => a + f(r), 0);
   const income = sum((r) => r.incomeNet ?? 0);
@@ -39,14 +41,20 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   return (
     <LiveAppShell active="reports" crumbs={["Reports", "Job costing"]}>
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
-        <ScreenTitle title="Job costing" subtitle={`Every job's income against its costs. ${report.vatRegistered ? "All figures without VAT." : "Income without VAT; costs include VAT, as you're not VAT registered."}`} />
+        <ScreenTitle title="Job costing" subtitle={`Every job's income against its costs. ${report.vatRegistered ? "All figures without VAT." : "Income without VAT; costs include VAT, as you're not VAT registered."}`}>
+          {cis && (
+            <Button variant="secondary" asChild>
+              <Link href="/app/reports/cis">CIS monthly figures</Link>
+            </Button>
+          )}
+        </ScreenTitle>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi label="Contract value" value={formatGBP(income, 0)} sub={`${rows.length} job${rows.length === 1 ? "" : "s"}`} />
           <Kpi label="Spent so far" value={formatGBP(sum((r) => r.costs), 0)} sub={`${formatGBP(sum((r) => r.labour), 0)} of it labour`} />
           <Kpi label="Expected profit" value={formatGBP(all.profit, 0)} sub={all.percent !== null ? `${all.percent}% margin` : undefined} tone={all.profit < 0 ? "text-danger" : undefined} />
           <Kpi label="To bill back to clients" value={formatGBP(sum((r) => r.toRecharge), 0)} sub="Purchases made on their behalf" tone={sum((r) => r.toRecharge) > 0 ? "text-warning" : undefined} />
         </div>
-        <nav className="flex gap-1.5" aria-label="Filter jobs">
+        <nav className="chip-row" aria-label="Filter jobs">
           {FILTERS.map((f) => (
             <Link
               key={f.key}

@@ -45,7 +45,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
           )}
         </ScreenTitle>
 
-        <nav className="flex gap-1.5" aria-label="Filter projects">
+        <nav className="chip-row" aria-label="Filter projects">
           {FILTERS.map((f) => (
             <Link
               key={f.key}

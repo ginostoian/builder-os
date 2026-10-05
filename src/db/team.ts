@@ -306,6 +306,7 @@ export async function listVisits(tx: Tx, orgId: string, { from, to, workerId }: 
       outLng: siteVisits.outLng,
       editedAt: siteVisits.editedAt,
       editedByName: members.name,
+      recordedOffline: siteVisits.recordedOffline,
     })
     .from(siteVisits)
     .leftJoin(members, and(eq(members.orgId, siteVisits.orgId), eq(members.id, siteVisits.editedByMemberId)))

@@ -106,7 +106,7 @@ export function WorkerForm({ workerId, initial = EMPTY_WORKER, canSeeCosts, onSa
         <Field label="Emergency phone">
           <input value={v.emergencyPhone} onChange={set("emergencyPhone")} maxLength={TEXT.phone} inputMode="tel" className={control} />
         </Field>
-        <Field label="Notes" className="col-span-2">
+        <Field label="Notes" className="sm:col-span-2">
           <textarea value={v.notes} onChange={set("notes")} maxLength={TEXT.note} rows={3} className={cn(control, "h-auto resize-y py-2 leading-normal")} />
         </Field>
       </div>

@@ -87,7 +87,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
           </Panel>
         )}
 
-        <nav className="flex gap-1.5" aria-label="Team views">
+        <nav className="chip-row" aria-label="Team views">
           {VIEWS.map((v) => (
             <Link
               key={v.key}

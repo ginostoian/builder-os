@@ -61,7 +61,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
           ))}
         </div>
 
-        <nav className="flex gap-1.5" aria-label="Filter invoices">
+        <nav className="chip-row" aria-label="Filter invoices">
           {FILTERS.map((f) => (
             <Link
               key={f.key}

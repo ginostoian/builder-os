@@ -78,7 +78,7 @@ export function PipelineBoard({ leads, today, canEdit }: { leads: LeadCard[]; to
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {error && <p className="px-6 pb-2 text-danger">{error}</p>}
-      <div className="flex min-h-0 flex-1 gap-2.5 overflow-x-auto px-6 pb-4">
+      <div className="flex min-h-0 flex-1 gap-2.5 overflow-x-auto px-4 pb-4 lg:px-6">
         {OPEN_STAGES.map((s) => column(s))}
         <div className="flex w-[190px] flex-none flex-col gap-2.5">
           {column("won", true)}

@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,6 +33,7 @@ export type VariationViewProps = {
   canInvoice: boolean;
   bankReady: boolean;
   clientName: string;
+  clientPhone: string | null;
 };
 
 /** A sent variation from the team's side: what the client sees, their decision, and what to do next. */
@@ -49,13 +51,13 @@ export function VariationView(p: VariationViewProps) {
   const canRevise = p.canEdit && (p.status === "sent" || p.status === "rejected" || p.status === "withdrawn");
 
   return (
-    <div className="flex min-h-0 flex-1">
-      <div className="flex min-w-0 flex-1 flex-col overflow-auto bg-surface-2">
-        <div className="flex items-start gap-4 border-b border-hairline bg-white px-6 pt-[18px] pb-3.5">
+    <div className="flex min-h-0 flex-1 flex-col overflow-auto lg:flex-row lg:overflow-visible">
+      <div className="flex min-w-0 flex-none flex-col bg-surface-2 lg:flex-1 lg:overflow-auto">
+        <div className="flex flex-col items-stretch gap-3 border-b border-hairline bg-white px-4 pt-4 pb-3.5 lg:flex-row lg:items-start lg:gap-4 lg:px-6 lg:pt-[18px]">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
               <span className="font-mono text-[12px] text-subtle">{p.snapshot.ref}</span>
-              <h1 className="truncate text-[19px] font-semibold tracking-[-0.02em]">{p.snapshot.title}</h1>
+              <h1 className="min-w-0 text-[19px] font-semibold tracking-[-0.02em] lg:truncate">{p.snapshot.title}</h1>
               <Badge tone={s.tone}>{s.label}</Badge>
             </div>
             <div className="mt-1 text-subtle">
@@ -66,8 +68,9 @@ export function VariationView(p: VariationViewProps) {
               · sent {time(p.sentAt)}
             </div>
           </div>
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap gap-2 lg:justify-end">
             {p.link && p.status === "sent" && <CopyButton text={p.link} label="Copy client link" />}
+            {p.link && p.status === "sent" && <WhatsAppButton phone={p.clientPhone} text={`Hi ${p.clientName.split(" ")[0]}, here's a change to the job for you to approve: ${p.snapshot.title}. ${p.link}`} />}
             {canRevise && (
               <Button variant="secondary" disabled={pending} onClick={() => run(() => reviseVariationAction(p.id))}>
                 <FilePen className="text-ink-2" />
@@ -105,7 +108,7 @@ export function VariationView(p: VariationViewProps) {
         </div>
       </div>
 
-      <aside className="flex w-[320px] flex-none flex-col gap-4 overflow-auto border-l border-hairline bg-white p-[18px]">
+      <aside className="flex w-full flex-none flex-col gap-4 border-t border-hairline bg-white p-4 lg:w-[320px] lg:overflow-auto lg:border-t-0 lg:border-l lg:p-[18px]">
         <div>
           <div className="text-[12.5px] text-subtle">{p.snapshot.totals.total < 0 ? "Credit inc. VAT" : "Total inc. VAT"}</div>
           <div className="text-[24px] font-semibold tracking-[-0.02em] tabular">{formatGBP(p.snapshot.totals.total)}</div>

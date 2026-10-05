@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WhatsAppLink } from "@/components/app/whatsapp-button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Bot, CalendarClock, FileSpreadsheet, Flag, Mail, MapPin, MessageSquare, Phone, Sparkles } from "lucide-react";
@@ -79,12 +80,15 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
         <div className="mx-auto grid w-full max-w-[1160px] grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] items-start gap-4 px-4 py-5 lg:px-6">
           <div className="flex flex-col gap-4">
             <section className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 rounded-[12px] bg-white p-4 shadow-ring">
-              <Contact icon={Phone} label="Phone" value={l.phone} href={l.phone ? `tel:${l.phone}` : undefined} />
+              <div className="flex flex-col gap-1">
+                <Contact icon={Phone} label="Phone" value={l.phone} href={l.phone ? `tel:${l.phone}` : undefined} />
+                {l.phone && <WhatsAppLink phone={l.phone} text={`Hi ${l.name.split(" ")[0]}, `} className="ml-[26px]" />}
+              </div>
               <Contact icon={Mail} label="Email" value={l.email} href={l.email ? `mailto:${l.email}` : undefined} note={l.emailOptOut ? "unsubscribed from automatic emails" : undefined} />
               <Contact icon={MapPin} label="Where" value={address} href={address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` : undefined} />
               <Contact icon={CalendarClock} label="Site visit" value={l.visitAt ? `${visitWhen(l.visitAt)}${data.booking?.memberName ? `, ${data.booking.memberName}` : ""}` : null} />
               {l.budget && <Contact icon={Flag} label="Budget" value={l.budget} />}
-              {l.description && <p className="col-span-2 rounded-lg bg-surface px-3 py-2 whitespace-pre-line text-ink-2">{l.description}</p>}
+              {l.description && <p className="sm:col-span-2 rounded-lg bg-surface px-3 py-2 whitespace-pre-line text-ink-2">{l.description}</p>}
             </section>
 
             <Composer leadId={l.id} email={l.email} emailEnabled={emailConfigured()} canEdit={canEdit} />
@@ -127,6 +131,7 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
                 name={l.name}
                 canEdit={canEdit && l.stage !== "won" && l.stage !== "lost"}
                 hasEmail={Boolean(l.email)}
+                phone={l.phone}
                 visit={data.booking ? { when: visitWhen(data.booking.startsAt), who: data.booking.memberName, online: data.booking.bookedBy === "client", past: data.booking.startsAt.getTime() < Date.parse(`${today}T00:00:00Z`) } : null}
               />
             ) : null}

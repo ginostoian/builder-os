@@ -12,6 +12,9 @@ export async function appOrigin(): Promise<string> {
   // Production never trusts the request's Host for links that go out in emails: its own domain, from Vercel.
   const production = process.env.VERCEL_ENV === "production" ? process.env.VERCEL_PROJECT_PRODUCTION_URL : undefined;
   if (production) return `https://${production.replace(/^https?:\/\//, "").replace(/\/+$/, "")}`;
+  // Self-hosted production with no APP_URL: refuse rather than build emailed links from a Host header
+  // anyone can set (a portal link pointing at someone else's site).
+  if (process.env.NODE_ENV === "production" && process.env.VERCEL_ENV === undefined) throw new Error("APP_URL must be set in production.");
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");

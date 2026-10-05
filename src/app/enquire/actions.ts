@@ -14,7 +14,7 @@ import { planAllows } from "@/db/billing";
 import { runCompanyAutomations } from "@/server/automations";
 import { emailConfigured, sendEmail } from "@/server/email";
 import { appOrigin } from "@/server/origin";
-import { allow, checkFormToken, looksLikeSpam, perIp } from "@/server/rate-limit";
+import { allow, checkFormToken, looksLikeSpam, perIp, spendFormToken } from "@/server/rate-limit";
 
 /** `booking`: the page where they can book a survey straight away, when the company takes bookings online. */
 export type EnquiryResult = { ok: true; booking?: string } | { ok: false; message: string };
@@ -41,6 +41,8 @@ export async function submitEnquiry(token: string, input: unknown): Promise<Enqu
   if (form === "expired" || d.formToken === undefined) return { ok: false, message: "This page has been open a while. Please reload it and send your enquiry again." };
   // Bots: a forged or instant submission, the hidden field, or a message full of links. Told it worked.
   if (form !== "ok" || d.website || looksLikeSpam(d.name, d.description, d.projectType)) return { ok: true };
+  // Each page load sends once: a bot can't reuse one genuine token all day.
+  if (!(await spendFormToken(`enquiry:${token}`, d.formToken))) return { ok: true };
   const limits = [await perIp("enquiry_ip", 5, 600), await perIp("enquiry_ip_day", 30, 86_400), { bucket: "enquiry_email", subject: d.email, max: 3, windowSeconds: 3_600 }];
   if (!(await allow(...limits))) return { ok: false, message: "We've had several enquiries from you just now. Please try again later, or give us a call." };
   const orgId = await findEnquiryForm(token);
