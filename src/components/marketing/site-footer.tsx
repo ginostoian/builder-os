@@ -30,7 +30,7 @@ const cols = [
       ["Pricing", siteLinks.pricing],
       ["Book a demo", siteLinks.demo],
       ["Sign in", siteLinks.signIn],
-      ["Help centre", "#"],
+      ["Help centre", "/help"],
     ],
   },
 ];

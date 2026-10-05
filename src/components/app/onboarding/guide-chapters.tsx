@@ -9,6 +9,7 @@ import { PLAN_LABEL, planFor } from "@/core/plans";
 import { onboardingAction } from "@/app/onboarding-actions";
 import { cn } from "@/lib/utils";
 import { ProgressRing } from "./progress-ring";
+import { STEP_GUIDES as HELP } from "@/lib/content/help/step-guides";
 
 /**
  * The guide's chapters and steps. Each chapter is a level; the one you're on opens by default. A step
@@ -118,6 +119,11 @@ function StepItem({ step, onNavigate }: { step: StepState; onNavigate?: () => vo
                 {step.cta}
                 <ArrowRight className="size-3" />
               </Link>
+            )}
+            {HELP[step.id] && (
+              <a href={`/help/${HELP[step.id]}`} target="_blank" rel="noopener" className="inline-flex h-7 items-center rounded-md px-2 text-[12px] text-ink-2 underline-offset-2 hover:bg-surface hover:text-ink hover:underline">
+                Read the guide
+              </a>
             )}
             {(step.state === "todo" || step.state === "skipped") && (
               <button type="button" onClick={toggleSkip} disabled={pending} className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[12px] text-ink-2 hover:bg-surface hover:text-ink disabled:opacity-60">
