@@ -132,5 +132,5 @@ export const faqs: [string, string][] = [
   ["Do you handle VAT?", "Quotes and invoices handle standard and reduced VAT rates and the domestic reverse charge. Prices shown exclude VAT."],
   ["How do clients pay invoices?", "By card or bank transfer straight from the invoice link. Money lands in your account; we never hold it."],
   ["Can you move my existing price list across?", "Upload a CSV yourself, or on any paid plan send us your spreadsheet and we'll import it for you."],
-  ["What happens if I cancel?", "You can export every quote, invoice and client record as CSV or PDF. No lock-in, no exit fees."],
+  ["What happens if I cancel?", "An Admin can export everything (every client, quote, invoice and job) in one download from Settings, as spreadsheets. No lock-in, no exit fees."],
 ];

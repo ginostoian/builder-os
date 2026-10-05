@@ -6,6 +6,7 @@ import {
   ChartColumn,
   ChevronRight,
   ChevronsUpDown,
+  CircleHelp,
   Contact,
   FileDiff,
   FileSpreadsheet,
@@ -52,6 +53,9 @@ const portals = [
   { label: "Client portal", icon: Globe, href: appRoutes.clientQuote },
   { label: "Site app", icon: Smartphone, href: appRoutes.employee },
 ];
+
+/** The help centre opens in a new tab, so you keep your place in the app. */
+const help = { label: "Help centre", icon: CircleHelp, href: "/help" };
 
 const crumbs: Record<AdminScreen, [string, string]> = {
   dashboard: [company.name, "Dashboard"],
@@ -154,12 +158,19 @@ export function AppShell({
       <div className="flex flex-col gap-px">
         <div className="px-2.5 py-1 text-[11px] font-medium text-subtle">Portals</div>
         {portals.map((p) => (
-          <Link key={p.label} href={p.href} className="flex h-8 items-center gap-2.5 rounded-md px-2.5 text-ink-2 hover:bg-accent hover:text-ink">
+          <Link key={p.label} href={account && p.label === "Client portal" ? "/portal" : p.href} className="flex h-8 items-center gap-2.5 rounded-md px-2.5 text-ink-2 hover:bg-accent hover:text-ink">
             <p.icon className="size-[15px] w-4" strokeWidth={1.75} />
             <span className="flex-1">{p.label}</span>
             <ArrowUpRight className="size-3 text-faint-2" />
           </Link>
         ))}
+        {account && (
+          <a href={help.href} target="_blank" rel="noopener" className="flex h-8 items-center gap-2.5 rounded-md px-2.5 text-ink-2 hover:bg-accent hover:text-ink">
+            <help.icon className="size-[15px] w-4" strokeWidth={1.75} />
+            <span className="flex-1">{help.label}</span>
+            <ArrowUpRight className="size-3 text-faint-2" />
+          </a>
+        )}
       </div>
       <div className="mt-auto flex flex-col gap-2.5">
         {/* Marketing screenshots only, until billing exists. */}
