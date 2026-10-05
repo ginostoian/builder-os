@@ -205,7 +205,7 @@ export const PIPELINE_ARTICLES: HelpArticle[] = [
       { type: "h", text: "What the form asks" },
       {
         type: "p",
-        text: "Their name, email and phone, what the work is, the postcode of the property, a few words about the job, a rough budget and how they heard about you. Your company name or logo shows at the top.",
+        text: "Their name, email and phone, what the work is, the postcode of the property, a few words about the job, a rough budget and how they heard about you. On the link version, your company name or logo shows at the top.",
       },
       { type: "h", text: "What happens with an enquiry" },
       {
