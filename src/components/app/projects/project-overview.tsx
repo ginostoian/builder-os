@@ -48,8 +48,8 @@ export function ProjectOverview({
   const view = (v: string) => `/app/projects/${projectId}?view=${v}`;
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto bg-surface-2 px-6 py-5">
-      <div className="mx-auto grid max-w-[1160px] grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-start gap-4">
+    <div className="min-h-0 flex-1 overflow-auto bg-surface-2 px-4 py-5 lg:px-6">
+      <div className="mx-auto grid max-w-[1160px] grid-cols-1 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-start gap-4">
         <div className="flex flex-col gap-4">
           <section className="rounded-[12px] bg-white p-5 shadow-ring">
             <div className="flex items-baseline justify-between">

@@ -86,7 +86,7 @@ export function AutomationEditor({
             </div>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <Field label="Starts">
             <select value={trigger} onChange={(e) => setTrigger(e.target.value as AutomationTrigger)} className={control}>
               {AUTOMATION_TRIGGERS.map((t) => (

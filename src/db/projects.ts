@@ -497,15 +497,31 @@ export async function deleteDiaryEntry(tx: Tx, orgId: string, projectId: string,
   return rows[0].photos.map((p) => p.key);
 }
 
-export async function addDiaryPhoto(tx: Tx, orgId: string, projectId: string, entryId: string, key: string) {
+/**
+ * Add a photo to a diary entry. `onlyOwnUnshared` (the site app): only to the member's own entry the
+ * client can't see yet, so the office still decides what reaches the client.
+ */
+export async function addDiaryPhoto(tx: Tx, orgId: string, projectId: string, entryId: string, key: string, onlyOwnUnshared?: { memberId: string }) {
   const rows = await tx
     .update(projectDiary)
     .set({ photos: sql`${projectDiary.photos} || ${JSON.stringify([{ key }])}::jsonb` })
-    .where(and(eq(projectDiary.orgId, orgId), eq(projectDiary.projectId, projectId), eq(projectDiary.id, entryId), sql`jsonb_array_length(${projectDiary.photos}) < ${MAX_DIARY_PHOTOS}`))
+    .where(
+      and(
+        eq(projectDiary.orgId, orgId),
+        eq(projectDiary.projectId, projectId),
+        eq(projectDiary.id, entryId),
+        sql`jsonb_array_length(${projectDiary.photos}) < ${MAX_DIARY_PHOTOS}`,
+        onlyOwnUnshared ? and(eq(projectDiary.authorMemberId, onlyOwnUnshared.memberId), eq(projectDiary.shareWithClient, false)) : undefined,
+      ),
+    )
     .returning({ id: projectDiary.id });
   if (rows.length === 0) {
-    const [exists] = await tx.select({ id: projectDiary.id }).from(projectDiary).where(and(eq(projectDiary.orgId, orgId), eq(projectDiary.projectId, projectId), eq(projectDiary.id, entryId)));
-    throw new ProjectError(exists ? "too_many_photos" : "not_found");
+    const [entry] = await tx
+      .select({ author: projectDiary.authorMemberId, shared: projectDiary.shareWithClient })
+      .from(projectDiary)
+      .where(and(eq(projectDiary.orgId, orgId), eq(projectDiary.projectId, projectId), eq(projectDiary.id, entryId)));
+    const allowed = entry && (!onlyOwnUnshared || (entry.author === onlyOwnUnshared.memberId && !entry.shared));
+    throw new ProjectError(allowed ? "too_many_photos" : "not_found");
   }
 }
 

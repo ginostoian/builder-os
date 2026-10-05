@@ -253,7 +253,7 @@ function CommonFields({
   const suggestions = [...new Set([...categories, ...DEFAULT_CATEGORIES])].sort((a, b) => a.localeCompare(b));
   return (
     <Panel className="flex flex-col gap-4 p-5">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Name" error={error("name")} required className="col-span-2">
           <input name="name" value={values.name} onChange={set("name")} maxLength={TEXT.line} autoFocus={isNew} autoComplete="off" className={control} />
         </Field>

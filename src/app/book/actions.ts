@@ -1,5 +1,6 @@
 "use server";
 
+import { allow, perIp } from "@/server/rate-limit";
 import { after } from "next/server";
 import { clientBookingInput } from "@/core/schemas";
 import { findLeadByLink, withTenant } from "@/db";
@@ -14,7 +15,8 @@ import { emailSurveyChange } from "@/server/surveys";
 
 export type BookingResult = { ok: true } | { ok: false; message: string };
 
-const MESSAGES: Record<SurveyErrorReason | "bad_link" | "invalid", string> = {
+const MESSAGES: Record<SurveyErrorReason | "bad_link" | "invalid" | "busy", string> = {
+  busy: "That's a lot of changes in a short time. Please try again later, or contact the company.",
   bad_link: "This link no longer works. Please contact the company.",
   invalid: "Check your details and try again.",
   not_found: "This link no longer works. Please contact the company.",
@@ -28,6 +30,7 @@ const MESSAGES: Record<SurveyErrorReason | "bad_link" | "invalid", string> = {
 export async function bookVisitAction(token: string, input: unknown): Promise<BookingResult> {
   const parsed = clientBookingInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: MESSAGES.invalid };
+  if (!(await allow(await perIp("booking_ip", 20, 3_600)))) return { ok: false, message: MESSAGES.busy };
   const lead = typeof token === "string" ? await findLeadByLink(token) : null;
   if (!lead) return { ok: false, message: MESSAGES.bad_link };
   const d = parsed.data;
@@ -47,6 +50,7 @@ export async function bookVisitAction(token: string, input: unknown): Promise<Bo
 }
 
 export async function cancelVisitAction(token: string): Promise<BookingResult> {
+  if (!(await allow(await perIp("booking_ip", 20, 3_600)))) return { ok: false, message: MESSAGES.busy };
   const lead = typeof token === "string" ? await findLeadByLink(token) : null;
   if (!lead) return { ok: false, message: MESSAGES.bad_link };
   try {

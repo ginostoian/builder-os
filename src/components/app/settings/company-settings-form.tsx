@@ -99,7 +99,7 @@ export function CompanySettingsForm({ initial, canEdit, storageEnabled }: { init
       <fieldset disabled={!canEdit || pending} className="contents">
         <Panel className="flex flex-col gap-4 p-5">
           <SectionHeading title="Company" hint="Shown at the top of every quote and invoice." />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Company name" error={error("name")} required>
               <input name="name" value={values.name} onChange={set("name")} maxLength={TEXT.name} autoComplete="organization" className={control} />
             </Field>
@@ -114,7 +114,7 @@ export function CompanySettingsForm({ initial, canEdit, storageEnabled }: { init
 
         <Panel className="flex flex-col gap-4 p-5">
           <SectionHeading title="Branding" hint="Used on quotes, invoices and the client portal." />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {storageEnabled ? (
               <>
                 {/* Uploads save on their own; this keeps the current logo when the rest of the form is saved. */}
@@ -142,7 +142,7 @@ export function CompanySettingsForm({ initial, canEdit, storageEnabled }: { init
 
         <Panel className="flex flex-col gap-4 p-5">
           <SectionHeading title="Quote defaults" hint="New quotes start with these. You can change them on each quote and line." />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Default markup" error={error("defaultMarkupBps")}>
               <div className="relative">
                 <input name="defaultMarkup" inputMode="decimal" value={values.defaultMarkup} onChange={set("defaultMarkup")} className={cn(control, "pr-7 tabular")} />

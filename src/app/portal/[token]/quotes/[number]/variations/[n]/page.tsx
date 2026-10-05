@@ -1,3 +1,4 @@
+import { withFreshPhotos } from "@/server/variation-photos";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PortalVariation } from "@/components/portal/portal-variation";
@@ -34,7 +35,7 @@ export default async function PortalVariationPage({ params }: { params: Params }
   return (
     <PortalVariation
       token={data.token}
-      snapshot={v.snapshot}
+      snapshot={withFreshPhotos(v.snapshot)}
       sentAt={v.sentAt}
       status={v.status}
       decision={v.decidedAt ? { at: v.decidedAt, name: v.decisionName ?? "", signature: v.signature } : null}

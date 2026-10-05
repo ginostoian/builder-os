@@ -47,7 +47,7 @@ export default async function WorkerPage({ params }: { params: Promise<{ id: str
 
   return (
     <LiveAppShell active="people" crumbs={["Team", w.name]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <div className="flex items-center gap-3">
           <Link href="/app/team" className="rounded-md p-1 text-subtle hover:bg-accent hover:text-ink" aria-label="Back to the team">
             <ArrowLeft className="size-4" />
@@ -63,7 +63,7 @@ export default async function WorkerPage({ params }: { params: Promise<{ id: str
           {canEdit && <ArchiveWorker workerId={w.id} archived={Boolean(w.archivedAt)} openTasks={data.tasks.length} />}
         </div>
 
-        <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] items-start gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] items-start gap-4">
           <div className="flex flex-col gap-4">
             <Panel className="p-5">
               <SectionHeading title="Details" />

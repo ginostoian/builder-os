@@ -500,7 +500,10 @@ export const automationInput = z
   .refine((a) => (a.trigger === "stage_entered") === (a.stage !== undefined), { message: "Choose the stage", path: ["stage"] });
 export type AutomationInput = z.infer<typeof automationInput>;
 
-/** The public enquiry form. `website` is a honeypot: people never see it, bots fill it in. */
+/**
+ * The public enquiry form. `website` is a honeypot: people never see it, bots fill it in. `formToken` is
+ * the signed time the page was served (src/server/rate-limit.ts).
+ */
 export const enquiryInput = z.strictObject({
   name: singleLine(TEXT.name),
   email: email,
@@ -511,6 +514,8 @@ export const enquiryInput = z.strictObject({
   description: multiLine(TEXT.note).optional(),
   heardFrom: z.enum(LEAD_SOURCES).optional(),
   website: z.string().max(200).optional(),
+  formToken: z.string().max(120).optional(),
+  /** Sent by pages served before form tokens; ignored. */
   startedAt: z.int().optional(),
 });
 

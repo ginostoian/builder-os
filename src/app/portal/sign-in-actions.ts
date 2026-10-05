@@ -11,6 +11,7 @@ import { and, eq } from "drizzle-orm";
 import { emailConfigured, sendEmail } from "@/server/email";
 import { appOrigin, isBot, portalUrl } from "@/server/origin";
 import { portalCookie, startPortalSession } from "@/server/portal-auth";
+import { allow, checkFormToken, perIp } from "@/server/rate-limit";
 
 /**
  * Signing in to the client portal: a code by email, a one-time link from an email, signing out, and "find
@@ -34,6 +35,7 @@ async function clientName(orgId: string, clientId: string) {
 
 /** Email a 6-digit code to the client's address on file. */
 export async function sendPortalCodeAction(token: string): Promise<SignInResult> {
+  if (!(await allow(await perIp("portal_code_ip", 15, 3_600)))) return { ok: false, message: MESSAGES.too_many };
   const access = typeof token === "string" ? await findPortalAccess(token) : null;
   if (!access) return { ok: false, message: MESSAGES.bad_link };
   if (!emailConfigured()) return { ok: false, message: MESSAGES.email };
@@ -67,6 +69,7 @@ const codeInput = z.string().regex(/^\s*\d{3}\s*-?\s*\d{3}\s*$/);
 
 export async function verifyPortalCodeAction(token: string, code: string): Promise<SignInResult> {
   if (!codeInput.safeParse(code).success) return { ok: false, message: "Enter the 6 digits from the email." };
+  if (!(await allow(await perIp("portal_verify_ip", 30, 600)))) return { ok: false, message: MESSAGES.too_many };
   const access = typeof token === "string" ? await findPortalAccess(token) : null;
   if (!access) return { ok: false, message: MESSAGES.bad_link };
   const result = await withTenant(access.orgId, (tx) => spendSignInCode(tx, access.orgId, access.accessId, code));
@@ -78,6 +81,7 @@ export async function verifyPortalCodeAction(token: string, code: string): Promi
 /** A one-time link from an email. A button press, not the page load, spends it (mail scanners load links). */
 export async function spendSignInLinkAction(token: string, secret: string): Promise<SignInResult> {
   if (typeof secret !== "string" || !/^[A-Za-z0-9_-]{32}$/.test(secret)) return { ok: false, message: MESSAGES.expired };
+  if (!(await allow(await perIp("portal_link_ip", 30, 600)))) return { ok: false, message: MESSAGES.too_many };
   const access = typeof token === "string" ? await findPortalAccess(token) : null;
   if (!access) return { ok: false, message: MESSAGES.bad_link };
   if (await isBot()) return { ok: false, message: MESSAGES.expired };
@@ -103,10 +107,16 @@ export async function signOutPortalAction(token: string): Promise<void> {
  * "Find my portal": email a sign-in link for every company this address is a client of. Always answers the
  * same way, so it can't be used to find out who is whose client.
  */
-export async function requestPortalLinksAction(input: { email: string; website?: string }): Promise<SignInResult> {
+export async function requestPortalLinksAction(input: { email: string; website?: string; formToken?: string }): Promise<SignInResult> {
   const parsed = emailSchema.safeParse(input?.email?.trim());
   if (!parsed.success) return { ok: false, message: "Check your email address." };
-  if (input.website || (await isBot()) || !emailConfigured()) return { ok: true };
+  const form = checkFormToken("find_portal", input.formToken);
+  if (form === "expired" || input.formToken === undefined) return { ok: false, message: "This page has been open a while. Please reload it and try again." };
+  if (form !== "ok" || input.website || (await isBot()) || !emailConfigured()) return { ok: true };
+  // Nobody can flood an inbox from here: a few links per address, and per caller, an hour.
+  if (!(await allow(await perIp("find_portal_ip", 10, 3_600), { bucket: "find_portal_email", subject: parsed.data, max: 3, windowSeconds: 3_600 }))) {
+    return { ok: false, message: "That's a lot of requests in a short time. Please check your inbox, or try again in an hour." };
+  }
   const origin = await appOrigin();
   for (const access of await findPortalAccessesByEmail(parsed.data)) {
     try {

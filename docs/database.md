@@ -212,6 +212,10 @@ The test roles (`builderos_owner_test`, `builderos_app_test`) get fresh random p
 - `builderos_metrics`: a NOLOGIN, read-only role with no BYPASSRLS. It can read a handful of columns (plans, MRR, member and activity counts, quote send dates, project and lead dates, invoice paid totals) through `platform_metrics` policies and column grants. It owns four `SECURITY DEFINER` functions that return totals and per-company counts for the website owner's admin area (`/admin`): `app_platform_company_stats`, `app_platform_daily_activity`, `app_platform_subscription_events`, `app_platform_user_signups`. Pages check the signed-in Clerk user's verified email against `PLATFORM_ADMIN_EMAILS` (and two-step verification) before calling them, through `withPlatform`, a transaction with no tenant.
 - `members.onboarding_tour_at`, `onboarding_hidden` and `onboarding_seen` hold each person's tour and checklist choices. Checklist progress itself is read from the company's own data, so it can't drift.
 
+## Rate limits (migration 0020)
+
+`rate_limits` holds counters for public forms and actions: one row per key (`bucket:hmac`) and fixed window. Keys are HMACs, so no IP address or email is stored. It's visible to the app role only outside a tenant (`app.org_id` unset), through `hitRateLimit`, which runs on its own connection without `withTenant`. The daily job deletes windows that ended over a day ago.
+
 ## Still to do
 
 - A purge job for soft-deleted companies after the grace period, built with the per-company GDPR export (plan §7).

@@ -92,6 +92,39 @@ export async function withPlatform<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
   });
 }
 
+/**
+ * Count one hit against a rate limit and say whether it's still within it. `key` is `bucket:hmac` (see
+ * src/server/rate-limit.ts). Fixed windows: the count restarts once the window has passed. Runs outside any
+ * tenant, the only place the `rate_limits` table is visible.
+ */
+export async function hitRateLimit(key: string, limit: number, windowSeconds: number): Promise<{ allowed: boolean; hits: number }> {
+  const database = await checkedDb();
+  const rows = await database.execute<{ hits: number }>(sql`
+    insert into rate_limits (key, window_start, hits) values (${key}, now(), 1)
+    on conflict (key) do update set
+      hits = case when rate_limits.window_start < now() - make_interval(secs => ${windowSeconds}) then 1 else least(rate_limits.hits + 1, 1000000) end,
+      window_start = case when rate_limits.window_start < now() - make_interval(secs => ${windowSeconds}) then now() else rate_limits.window_start end
+    returning hits`);
+  const hits = Number(rows[0]?.hits ?? 0);
+  return { allowed: hits <= limit, hits };
+}
+
+/** Forget rate-limit windows that ended over a day ago (daily job). */
+export async function sweepRateLimits(): Promise<number> {
+  const database = await checkedDb();
+  const rows = await database.execute(sql`delete from rate_limits where window_start < now() - interval '1 day' returning 1`);
+  return rows.length;
+}
+
+/** For the health check: can we reach the database, as the right role, within a few seconds? */
+export async function pingDb(): Promise<void> {
+  const database = await checkedDb();
+  await database.transaction(async (tx) => {
+    await tx.execute(sql`select set_config('statement_timeout', '3s', true)`);
+    await tx.execute(sql`select 1`);
+  });
+}
+
 async function checkedDb(): Promise<Db> {
   const database = getDb();
   roleCheck ??= assertRestrictedRole(database).catch((error: unknown) => {

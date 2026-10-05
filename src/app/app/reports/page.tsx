@@ -38,9 +38,9 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
   return (
     <LiveAppShell active="reports" crumbs={["Reports", "Job costing"]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <ScreenTitle title="Job costing" subtitle={`Every job's income against its costs. ${report.vatRegistered ? "All figures without VAT." : "Income without VAT; costs include VAT, as you're not VAT registered."}`} />
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi label="Contract value" value={formatGBP(income, 0)} sub={`${rows.length} job${rows.length === 1 ? "" : "s"}`} />
           <Kpi label="Spent so far" value={formatGBP(sum((r) => r.costs), 0)} sub={`${formatGBP(sum((r) => r.labour), 0)} of it labour`} />
           <Kpi label="Expected profit" value={formatGBP(all.profit, 0)} sub={all.percent !== null ? `${all.percent}% margin` : undefined} tone={all.profit < 0 ? "text-danger" : undefined} />

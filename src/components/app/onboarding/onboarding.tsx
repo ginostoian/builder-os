@@ -86,7 +86,7 @@ export function Onboarding({ guide, autoTour }: { guide: GuideProps; autoTour: b
           aria-label={`Getting started, ${guide.percent}% done`}
         >
           <ProgressRing percent={guide.percent} className="text-brand" />
-          Getting started
+          <span className="hidden sm:inline">Getting started</span>
           <span className="text-subtle tabular">{guide.percent}%</span>
         </button>
       )}
@@ -222,13 +222,16 @@ function stops(firstName: string, next: StepState | null): Stop[] {
   ];
 }
 
+/** The target on screen now (on a phone the sidebar is hidden in the menu, so its stops are skipped). */
+const visible = (target: string) => [...document.querySelectorAll<HTMLElement>(`[data-tour="${target}"]`)].find((el) => el.getClientRects().length > 0) ?? null;
+
 const CARD_W = 340;
 const GAP = 14;
 
 function Tour({ firstName, next, onEnd }: { firstName: string; next: StepState | null; onEnd: () => void }) {
   const router = useRouter();
   // Only stops whose target is on this page (the checklist pill is hidden once it's done).
-  const [list] = React.useState(() => stops(firstName, next).filter((s) => !s.target || document.querySelector(`[data-tour="${s.target}"]`)));
+  const [list] = React.useState(() => stops(firstName, next).filter((s) => !s.target || visible(s.target)));
   const [i, setI] = React.useState(0);
   const [rect, setRect] = React.useState<DOMRect | null>(null);
   const cardRef = React.useRef<HTMLDivElement>(null);
@@ -237,10 +240,10 @@ function Tour({ firstName, next, onEnd }: { firstName: string; next: StepState |
 
   React.useLayoutEffect(() => {
     const measure = () => {
-      const el = stop.target ? document.querySelector<HTMLElement>(`[data-tour="${stop.target}"]`) : null;
+      const el = stop.target ? visible(stop.target) : null;
       setRect(el ? el.getBoundingClientRect() : null);
     };
-    if (stop.target) document.querySelector<HTMLElement>(`[data-tour="${stop.target}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    if (stop.target) visible(stop.target)?.scrollIntoView({ block: "nearest", inline: "nearest" });
     measure();
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
@@ -294,7 +297,7 @@ function Tour({ firstName, next, onEnd }: { firstName: string; next: StepState |
         aria-modal="true"
         aria-labelledby="tour-title"
         className="absolute rounded-[14px] bg-white p-4 text-[13px] text-ink shadow-pop outline-none transition-[left,top] duration-300 ease-out"
-        style={{ width: CARD_W, ...pos }}
+        style={{ width: `min(${CARD_W}px, calc(100vw - 24px))`, ...pos }}
       >
         <div className="flex items-center justify-between">
           <span className="text-[11.5px] font-medium text-brand tabular">{i === 0 ? "Tour" : last ? "Done" : `${i} of ${list.length - 2}`}</span>

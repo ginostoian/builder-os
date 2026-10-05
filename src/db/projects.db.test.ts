@@ -197,6 +197,12 @@ describe("diary, files and the client portal", () => {
       const internal = await addDiaryEntry(tx, orgId, { projectId: id, entryDate: "2026-10-05", body: "Neighbour complained about the skip.", shareWithClient: false }, memberId);
       for (let i = 0; i < 12; i++) await addDiaryPhoto(tx, orgId, id, shared, `orgs/${orgId}/photos/${"d".repeat(20)}${i}.jpg`);
       expect(await reason(addDiaryPhoto(tx, orgId, id, shared, "x"))).toBe("too_many_photos");
+      // From the site app: only the member's own entry the client can't see yet.
+      expect(await reason(addDiaryPhoto(tx, orgId, id, internal, `orgs/${orgId}/photos/${"s".repeat(20)}.jpg`, { memberId: randomUUID() }))).toBe("not_found");
+      await addDiaryPhoto(tx, orgId, id, internal, `orgs/${orgId}/photos/${"s".repeat(20)}.jpg`, { memberId });
+      await setDiaryShared(tx, orgId, id, internal, true);
+      expect(await reason(addDiaryPhoto(tx, orgId, id, internal, `orgs/${orgId}/photos/${"t".repeat(20)}.jpg`, { memberId }))).toBe("not_found");
+      await setDiaryShared(tx, orgId, id, internal, false);
       const plan = await addFile(tx, orgId, { projectId: id, name: "Kitchen plan.pdf", storageKey: `orgs/${orgId}/files/${"f".repeat(20)}.pdf`, contentType: "application/pdf", sizeBytes: 1234, memberId });
       await addFile(tx, orgId, { projectId: id, name: "Costings.pdf", storageKey: `orgs/${orgId}/files/${"g".repeat(20)}.pdf`, contentType: "application/pdf", sizeBytes: 99, memberId });
       await setFileShared(tx, orgId, id, plan, true);
@@ -225,7 +231,8 @@ describe("diary, files and the client portal", () => {
       expect((await listFiles(tx, orgId, id)).map((f) => f.name)).toEqual(["Costings.pdf"]);
       expect(await projectMoney(tx, orgId, quoteId)).toMatchObject({ agreed: 36_000, contract: 36_000, invoiced: 0, paid: 0 });
       const keys = await deleteProject(tx, orgId, id);
-      expect(keys).toHaveLength(1);
+      // Costings.pdf and the site photo on the internal entry.
+      expect(keys).toHaveLength(2);
       expect(await getProject(tx, orgId, id)).toBeUndefined();
     });
   });

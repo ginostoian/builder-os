@@ -97,9 +97,9 @@ export function VariationEditor({
   };
 
   return (
-    <div className="flex min-h-0 flex-1">
-      <div className="flex min-w-0 flex-1 flex-col overflow-auto bg-surface-2">
-        <div className="flex items-start gap-4 border-b border-hairline bg-white px-6 pt-[18px] pb-3.5">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-visible">
+      <div className="flex min-w-0 flex-1 flex-col bg-surface-2 lg:overflow-auto">
+        <div className="flex flex-wrap items-start gap-4 border-b border-hairline bg-white px-4 pt-[18px] pb-3.5 lg:px-6">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5">
               <span className="font-mono text-[12px] text-subtle">{variation.ref}</span>
@@ -133,7 +133,7 @@ export function VariationEditor({
         </div>
 
         <div className="flex max-w-[1000px] flex-col gap-5 p-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Title" hint="What the client sees, e.g. Two extra double sockets in the kitchen." className="col-span-2">
               <input value={title} maxLength={TEXT.name} onChange={(e) => (setTitle(e.target.value), setDirty(true))} className={control} />
             </Field>
@@ -142,8 +142,8 @@ export function VariationEditor({
             </Field>
           </div>
 
-          <div className="overflow-hidden rounded-[10px] bg-white shadow-ring">
-            <div className="grid grid-cols-[minmax(0,1fr)_76px_72px_100px_76px_92px_104px_36px] items-center gap-2 border-b border-hairline bg-surface-2 px-3 py-2 text-[11.5px] font-medium text-subtle">
+          <div className="overflow-x-auto rounded-[10px] bg-white shadow-ring">
+            <div className="grid min-w-[720px] grid-cols-[minmax(0,1fr)_76px_72px_100px_76px_92px_104px_36px] items-center gap-2 border-b border-hairline bg-surface-2 px-3 py-2 text-[11.5px] font-medium text-subtle">
               <span>Item</span>
               <span className="text-right">Qty</span>
               <span>Unit</span>
@@ -156,7 +156,7 @@ export function VariationEditor({
             {rows.map((r, i) => {
               const line = parsed[i];
               return (
-                <div key={r.id} className="grid grid-cols-[minmax(0,1fr)_76px_72px_100px_76px_92px_104px_36px] items-center gap-2 border-b border-hairline px-3 py-1.5 last:border-b-0">
+                <div key={r.id} className="grid min-w-[720px] grid-cols-[minmax(0,1fr)_76px_72px_100px_76px_92px_104px_36px] items-center gap-2 border-b border-hairline px-3 py-1.5 last:border-b-0">
                   <input aria-label="Item" value={r.name} maxLength={TEXT.line} placeholder="e.g. Extra double socket" onChange={(e) => edit(i, { name: e.target.value })} className={cn(control, !r.name.trim() && dirty && "shadow-[0_0_0_1.5px_var(--color-danger)]")} />
                   <input aria-label="Quantity" value={r.qty} inputMode="decimal" onChange={(e) => edit(i, { qty: e.target.value })} className={cn(control, "text-right tabular")} />
                   <input aria-label="Unit" value={r.unit} maxLength={TEXT.short} onChange={(e) => edit(i, { unit: e.target.value })} className={control} />
@@ -211,7 +211,7 @@ export function VariationEditor({
         </div>
       </div>
 
-      <aside className="flex w-[296px] flex-none flex-col gap-4 overflow-auto border-l border-hairline bg-surface-2 p-[18px]">
+      <aside className="flex w-full flex-none flex-col gap-4 overflow-auto border-t border-hairline bg-surface-2 p-[18px] lg:w-[296px] lg:border-t-0 lg:border-l">
         <div>
           <div className="mb-2.5 text-xs font-medium text-subtle">Summary</div>
           <dl className="flex flex-col gap-2 tabular">

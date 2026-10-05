@@ -19,7 +19,7 @@ import { myJob, openVisit, workerForMember } from "@/db/site";
 import { requirePermission, withSession } from "@/auth/session";
 import { hasFeature } from "@/server/plan";
 import { SiteLocked } from "@/components/site/site-locked";
-import { publicUrl, storageConfigured } from "@/server/storage";
+import { privateUrl, storageConfigured } from "@/server/storage";
 
 export const metadata: Metadata = { title: "Job" };
 
@@ -110,8 +110,8 @@ export default async function SiteJobPage({ params }: { params: Promise<{ id: st
                 {d.photos.length > 0 && (
                   <div className="mt-2 grid grid-cols-4 gap-1.5">
                     {d.photos.map((p) => (
-                      <a key={p.key} href={publicUrl(p.key)} target="_blank" rel="noreferrer" className="aspect-square overflow-hidden rounded-lg bg-muted">
-                        <StoredImage src={publicUrl(p.key)} alt="Site photo" className="size-full object-cover" />
+                      <a key={p.key} href={privateUrl(p.key)} target="_blank" rel="noreferrer" className="aspect-square overflow-hidden rounded-lg bg-muted">
+                        <StoredImage src={privateUrl(p.key)} alt="Site photo" className="size-full object-cover" />
                       </a>
                     ))}
                   </div>

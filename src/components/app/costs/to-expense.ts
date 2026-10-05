@@ -1,6 +1,6 @@
 import "server-only";
 import { isBilled, type ExpenseRow } from "@/db/costs";
-import { publicUrl } from "@/server/storage";
+import { privateUrl } from "@/server/storage";
 import type { Expense } from "./types";
 
 /** A database expense row, shaped for the client screens. */
@@ -18,7 +18,7 @@ export function toExpense(e: ExpenseRow): Expense {
     netPence: e.netPence,
     vatPence: e.vatPence,
     totalPence: e.totalPence,
-    receipts: e.receipts.map((r) => ({ ...r, url: publicUrl(r.key) })),
+    receipts: e.receipts.map((r) => ({ ...r, url: privateUrl(r.key) })),
     rechargeable: e.rechargeable,
     rechargeMarkupBps: e.rechargeMarkupBps,
     invoiceId: e.invoiceId,

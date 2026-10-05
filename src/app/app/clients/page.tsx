@@ -41,7 +41,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Sear
 
   return (
     <LiveAppShell active="crm" crumbs={["Clients", archived ? "Archived" : "All clients"]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <ScreenTitle
           title="Clients"
           subtitle={`${counts.active} ${counts.active === 1 ? "client" : "clients"}${counts.archived ? ` · ${counts.archived} archived` : ""}`}

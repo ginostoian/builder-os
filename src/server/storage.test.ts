@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { publicUrl, putObject, signedUrl, storageConfigured } from "./storage";
+import { freshFileUrl, privateUrl, publicUrl, putObject, signedUrl, storageConfigured } from "./storage";
 
 beforeEach(() => {
   vi.stubEnv("BUNNY_STORAGE_ZONE", "builderos");
@@ -56,5 +56,17 @@ describe("Bunny storage", () => {
     const expires = now / 1000 + 600;
     const token = createHash("sha256").update(`token-key/orgs/x/files/a.pdf${expires}`).digest("base64url");
     expect(signedUrl("orgs/x/files/a.pdf", 600, now)).toBe(`https://builderos.b-cdn.net/orgs/x/files/a.pdf?token=${token}&expires=${expires}`);
+  });
+
+  it("hands out private files as expiring links from the private zone, when set up", () => {
+    const now = 1_800_000_000_000;
+    vi.stubEnv("BUNNY_PRIVATE_CDN_URL", "https://builderos-private.b-cdn.net");
+    expect(privateUrl("orgs/x/photos/a.jpg", 12, now)).toMatch(/^https:\/\/builderos-private\.b-cdn\.net\/orgs\/x\/photos\/a\.jpg\?token=[\w-]+&expires=1800043200$/);
+    // A link frozen into a sent variation is re-signed; other links are left alone.
+    expect(freshFileUrl("https://builderos.b-cdn.net/orgs/x/photos/a.jpg", now)).toBe(privateUrl("orgs/x/photos/a.jpg", 12, now));
+    expect(freshFileUrl("https://elsewhere.example/a.jpg", now)).toBe("https://elsewhere.example/a.jpg");
+    vi.stubEnv("BUNNY_TOKEN_KEY", "");
+    expect(privateUrl("orgs/x/photos/a.jpg")).toBe("https://builderos.b-cdn.net/orgs/x/photos/a.jpg");
+    expect(freshFileUrl("https://builderos.b-cdn.net/orgs/x/photos/a.jpg")).toBe("https://builderos.b-cdn.net/orgs/x/photos/a.jpg");
   });
 });

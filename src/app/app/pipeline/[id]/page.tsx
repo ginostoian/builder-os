@@ -41,15 +41,15 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
   return (
     <LiveAppShell active="pipeline" crumbs={["Pipeline", l.name]}>
       <div className="flex min-h-0 flex-1 flex-col overflow-auto bg-surface-2">
-        <div className="border-b border-hairline bg-white px-6 pt-[18px] pb-4">
+        <div className="border-b border-hairline bg-white px-4 pt-[18px] pb-4 lg:px-6">
           <Link href="/app/pipeline" className="mb-2 flex items-center gap-1.5 text-[12.5px] text-ink-2 hover:text-ink">
             <ArrowLeft className="size-3.5" />
             Pipeline
           </Link>
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2.5">
-                <h1 className="truncate text-[21px] font-semibold tracking-[-0.02em]">{l.name}</h1>
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                <h1 className="min-w-0 text-[21px] font-semibold tracking-[-0.02em] break-words">{l.name}</h1>
                 <Badge tone={STAGE_TONE[l.stage]}>{LEAD_STAGE_LABEL[l.stage]}</Badge>
                 {l.valuePence ? <span className="text-[13px] font-medium tabular">{formatGBP(l.valuePence, 0)}</span> : null}
               </div>
@@ -76,9 +76,9 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
           )}
         </div>
 
-        <div className="mx-auto grid w-full max-w-[1160px] grid-cols-[minmax(0,1fr)_340px] items-start gap-4 px-6 py-5">
+        <div className="mx-auto grid w-full max-w-[1160px] grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] items-start gap-4 px-4 py-5 lg:px-6">
           <div className="flex flex-col gap-4">
-            <section className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-[12px] bg-white p-4 shadow-ring">
+            <section className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 rounded-[12px] bg-white p-4 shadow-ring">
               <Contact icon={Phone} label="Phone" value={l.phone} href={l.phone ? `tel:${l.phone}` : undefined} />
               <Contact icon={Mail} label="Email" value={l.email} href={l.email ? `mailto:${l.email}` : undefined} note={l.emailOptOut ? "unsubscribed from automatic emails" : undefined} />
               <Contact icon={MapPin} label="Where" value={address} href={address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` : undefined} />

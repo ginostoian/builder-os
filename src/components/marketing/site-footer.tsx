@@ -60,8 +60,11 @@ export function SiteFooter() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-hairline pt-6 text-[13px] text-subtle">
           <span>© 2026 Builder OS Ltd · Registered in England &amp; Wales</span>
           <div className="flex gap-5">
-            {["Privacy", "Terms", "Cookies", "Status"].map((l) => (
-              <Link key={l} href="#" className="text-subtle hover:text-ink-2">
+            {[
+              ["Privacy", "/privacy"],
+              ["Cookies", "/cookies"],
+            ].map(([l, href]) => (
+              <Link key={l} href={href} className="text-subtle hover:text-ink-2">
                 {l}
               </Link>
             ))}

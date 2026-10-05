@@ -99,7 +99,7 @@ export function VariationView(p: VariationViewProps) {
           </div>
         </div>
         {error && <p className="mx-6 mt-3 rounded-lg bg-danger-soft px-3.5 py-2.5 text-danger">{error}</p>}
-        <div className="mx-auto w-full max-w-[820px] px-6 py-5">
+        <div className="mx-auto w-full max-w-[820px] px-4 py-5 lg:px-6">
           <p className="mb-3 text-[12.5px] text-subtle">This is exactly what {p.clientName} sees. Costs and markups aren&apos;t shown to clients.</p>
           <VariationDocument snapshot={p.snapshot} sentAt={p.sentAt} />
         </div>

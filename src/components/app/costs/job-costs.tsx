@@ -45,9 +45,9 @@ export function JobCosts({
   const vatNote = c.vatRegistered ? "Costs are shown without VAT (you reclaim it)." : "Costs include VAT, as you're not VAT registered (add a VAT number in Settings if you are).";
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto bg-surface-2 px-6 py-5">
+    <div className="min-h-0 flex-1 overflow-auto bg-surface-2 px-4 py-5 lg:px-6">
       <div className="mx-auto flex max-w-[1160px] flex-col gap-4">
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi label="Contract (ex VAT)" value={income !== null ? formatGBP(income, 0) : "–"} sub={c.quote ? (c.quote.variationsNet ? `incl. ${formatGBP(c.quote.variationsNet, 0)} variations` : "From the accepted quote") : "No accepted quote"} />
           <Kpi label="Estimated cost" value={estimate !== null ? formatGBP(estimate, 0) : "–"} sub={estimate !== null && income ? `${margin(income, estimate).percent}% margin at quote` : "From the quote's cost prices"} />
           <Kpi label="Spent so far" value={formatGBP(spent, 0)} sub={c.committed ? `+ ${formatGBP(c.committed, 0)} ordered, not billed` : `${formatGBP(c.expensesTotal, 0)} bills · ${formatGBP(c.labourTotal, 0)} labour`} />
@@ -67,7 +67,7 @@ export function JobCosts({
           </div>
         )}
 
-        <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start gap-4">
           <section className="rounded-[12px] bg-white p-5 shadow-ring">
             <h2 className="mb-2 font-semibold">Where the money&apos;s gone</h2>
             <dl className="flex flex-col gap-1.5 tabular">

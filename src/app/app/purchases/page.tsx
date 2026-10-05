@@ -44,7 +44,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
 
   return (
     <LiveAppShell active="purchases" crumbs={["Purchases", label]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         <ScreenTitle title="Purchases" subtitle="Receipts, supplier bills and orders for every job. Each one goes into its job's costs.">
           {canEdit && projects.length > 0 && (
             <Button asChild variant="secondary">

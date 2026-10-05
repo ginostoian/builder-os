@@ -17,7 +17,7 @@ export default async function NewPurchaseOrderPage({ searchParams }: { searchPar
   const projectId = asked && uuid.safeParse(asked).success && projects.some((p) => p.id === asked) ? asked : (projects[0]?.id ?? "");
   return (
     <LiveAppShell active="purchases" crumbs={["Purchases", "New purchase order"]}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-[18px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-[18px] lg:px-6">
         {projects.length === 0 ? (
           <Panel className="px-6 py-12 text-center text-subtle">Orders belong to a job. Start a project first.</Panel>
         ) : (

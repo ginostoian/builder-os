@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
+import { sweepRateLimits } from "@/db";
 import { appOrigin } from "@/server/origin";
 import { runAutomations } from "@/server/automations";
 import { runCertificateReminders, runReminders } from "@/server/reminders";
@@ -23,5 +24,22 @@ export async function GET(request: Request) {
   const certificates = await runCertificateReminders(origin);
   const automations = await runAutomations(origin);
   const surveys = await runSurveyReminders(origin);
-  return Response.json({ ...payments, certificates, automations, surveys });
+  const rateLimitsSwept = await sweepRateLimits().catch(() => 0);
+  const result = { ...payments, certificates, automations, surveys, rateLimitsSwept };
+  await heartbeat(result);
+  return Response.json(result);
+}
+
+/**
+ * Tell the uptime monitor the daily job ran (CRON_HEARTBEAT_URL, e.g. a Better Stack heartbeat or a
+ * healthchecks.io check). If it doesn't hear from us by its deadline, it alerts: the job stopped running.
+ */
+async function heartbeat(result: object) {
+  const url = process.env.CRON_HEARTBEAT_URL?.trim();
+  if (!url?.startsWith("https://")) return;
+  try {
+    await fetch(url, { method: "POST", body: JSON.stringify(result), headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(5_000) });
+  } catch (error) {
+    console.error("Cron heartbeat failed", error instanceof Error ? error.message : error);
+  }
 }

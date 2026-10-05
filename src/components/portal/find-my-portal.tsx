@@ -6,7 +6,7 @@ import { requestPortalLinksAction } from "@/app/portal/sign-in-actions";
 
 const field = "h-12 w-full rounded-xl bg-surface px-3.5 text-[15px] shadow-ring-input outline-none focus-visible:shadow-[0_0_0_1.5px_var(--color-ink)]";
 
-export function FindMyPortal() {
+export function FindMyPortal({ formToken }: { formToken: string }) {
   const [email, setEmail] = React.useState("");
   const [website, setWebsite] = React.useState("");
   const [sent, setSent] = React.useState(false);
@@ -33,7 +33,7 @@ export function FindMyPortal() {
         e.preventDefault();
         startTransition(async () => {
           setError(undefined);
-          const r = await requestPortalLinksAction({ email: email.trim().toLowerCase(), website: website || undefined });
+          const r = await requestPortalLinksAction({ email: email.trim().toLowerCase(), website: website || undefined, formToken });
           if (r.ok) setSent(true);
           else setError(r.message);
         });

@@ -78,7 +78,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Sear
           )}
         </nav>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-6 py-5">
+        <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-auto bg-surface-2 px-4 py-5 lg:px-6">
           <ScreenTitle
             title={archived ? "Archived" : current.category || "Service library"}
             subtitle={archived ? "Hidden from new quotes. Restore anything you still need." : "Priced services and bundles. Add them to a quote and adjust."}
@@ -178,7 +178,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Sear
               )}
             </Panel>
           ) : (
-            <div className="grid grid-cols-3 gap-3" aria-label={`${services.length - bundles} services, ${bundles} bundles`}>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label={`${services.length - bundles} services, ${bundles} bundles`}>
               {services.map((s) => (
                 <Link
                   key={s.id}

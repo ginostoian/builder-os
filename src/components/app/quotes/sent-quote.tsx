@@ -168,7 +168,7 @@ export function SentQuote({
             )}
           </div>
         </div>
-        <div className="mx-auto w-full max-w-[820px] px-6 py-5">
+        <div className="mx-auto w-full max-w-[820px] px-4 py-5 lg:px-6">
           <p className="mb-3 text-[12.5px] text-subtle">This is exactly what {clientName} sees. Costs and markups aren&apos;t shown to clients.</p>
           <QuoteDocument snapshot={snapshot} sentAt={version.sentAt} commentCounts={counts} />
         </div>

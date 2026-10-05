@@ -8,8 +8,7 @@ import { BUDGETS, LEAD_SOURCES, LEAD_SOURCE_LABEL, PROJECT_TYPES } from "@/core/
 const field = "h-12 w-full rounded-xl bg-surface px-3.5 text-[15px] shadow-ring-input outline-none focus-visible:shadow-[0_0_0_1.5px_var(--color-ink)]";
 
 /** The enquiry form people fill in on a company's website. Big, plain, works on a phone. */
-export function EnquiryForm({ token, company }: { token: string; company: string }) {
-  const [startedAt] = React.useState(() => Date.now());
+export function EnquiryForm({ token, company, formToken }: { token: string; company: string; formToken: string }) {
   const [v, setV] = React.useState({ name: "", email: "", phone: "", postcode: "", projectType: "", budget: "", description: "", heardFrom: "", website: "" });
   const [error, setError] = React.useState<string>();
   const [done, setDone] = React.useState(false);
@@ -51,7 +50,7 @@ export function EnquiryForm({ token, company }: { token: string; company: string
             description: opt(v.description),
             heardFrom: (opt(v.heardFrom) as (typeof LEAD_SOURCES)[number] | undefined) ?? undefined,
             website: v.website || undefined,
-            startedAt,
+            formToken,
           });
           if (r.ok) {
             setBooking(r.booking);
@@ -122,6 +121,13 @@ export function EnquiryForm({ token, company }: { token: string; company: string
       <button type="submit" disabled={pending} className="mt-1 h-12 rounded-xl bg-ink text-[15px] font-semibold text-white disabled:opacity-60">
         {pending ? "Sending…" : "Send enquiry"}
       </button>
+      <p className="text-center text-[12.5px] text-subtle">
+        {company} uses your details only to reply to your enquiry. The form is run by Builder OS:{" "}
+        <a href="/privacy" target="_blank" rel="noopener" className="underline underline-offset-2">
+          privacy policy
+        </a>
+        .
+      </p>
     </form>
   );
 }

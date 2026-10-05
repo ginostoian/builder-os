@@ -65,7 +65,7 @@ export function WorkerForm({ workerId, initial = EMPTY_WORKER, canSeeCosts, onSa
         submit();
       }}
     >
-      <div className="grid grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <Field label="Name" required>
           <input value={v.name} onChange={set("name")} maxLength={TEXT.name} required className={control} />
         </Field>
@@ -99,7 +99,7 @@ export function WorkerForm({ workerId, initial = EMPTY_WORKER, canSeeCosts, onSa
           </Field>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <Field label="Emergency contact">
           <input value={v.emergencyName} onChange={set("emergencyName")} maxLength={TEXT.name} className={control} />
         </Field>
