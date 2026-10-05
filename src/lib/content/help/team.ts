@@ -148,8 +148,8 @@ export const TEAM_ARTICLES: HelpArticle[] = [
       {
         type: "list",
         items: [
-          "The time is recorded when they tap, so it can't be typed in differently.",
-          "If they allow it, their phone's location is saved with the time.",
+          "The time is recorded when they tap, so they can't type in a different one.",
+          "If they allow it, their phone's location is saved with the time. Click **In** or **Out** next to a visit to see it on a map.",
           "Checked in at one job and tap **Check in here instead** on another? The first visit is closed and a new one starts.",
           "They can only check in to jobs they're working on (they have a task there, or they run it).",
         ],
@@ -161,13 +161,32 @@ export const TEAM_ARTICLES: HelpArticle[] = [
         items: [
           "A table of hours per person for each day of the week, with a total for the week and a total row along the bottom.",
           "**on site now** next to anyone who's checked in at the moment.",
-          "A **Check-ins** list underneath: day, person, job, time in and out, and how long.",
+          "A **Check-ins** list underneath: day, person, job, time in and out, where they checked in and out, and how long.",
         ],
       },
       { type: "p", text: "Use the arrows to move between weeks. Hours count on the day the person checked in. Each person's page also shows their hours for the last 7 days and last 4 weeks." },
       { type: "h", text: "Hours and job costs" },
       { type: "p", text: "If a person has a day rate, their time on site is costed against the job (a day rate covers 8 hours). You'll see it in the job's costs. See [Job costing reports](/help/job-costing-reports)." },
-      { type: "note", text: "If someone forgets to check out, their visit keeps counting until they do. Remind the team to tap **Check out** before they leave site." },
+      { type: "h", text: "Correcting times" },
+      { type: "p", text: "Someone forgot to check out, or their phone died? Admins and the office can fix it." },
+      {
+        type: "steps",
+        items: [
+          "Find the visit in the **Check-ins** list, or on the person's page.",
+          "Click the pencil next to the times.",
+          "Change the day, the time they arrived and the time they left, then click **Save times**.",
+        ],
+      },
+      {
+        type: "list",
+        items: [
+          "Times are in UK time. A leaving time earlier than the arrival counts as the next morning, for night work.",
+          "A visit can't be in the future, longer than 16 hours, or overlap another of their visits.",
+          "Corrected visits show an **edited** tag. Hover over it to see who changed it and when.",
+          "If someone's still checked in, you can leave the leaving time empty to keep them on site, or fill it in to check them out.",
+        ],
+      },
+      { type: "note", text: "If someone forgets to check out, their visit keeps counting until they do, or until you correct it. Remind the team to tap **Check out** before they leave site." },
       { type: "tip", text: "Your subcontractors and labourers need a login to check in. See [Logins and roles](/help/logins-and-roles)." },
     ],
     related: ["site-app", "team-and-workers", "job-costing-reports", "logins-and-roles"],
@@ -245,6 +264,7 @@ export const TEAM_ARTICLES: HelpArticle[] = [
         ],
       },
       { type: "p", text: "You can change someone's role or remove them from the same page. Only Admins can invite people or change roles. Everyone else can see who's in the company and is asked to speak to an Admin." },
+      { type: "note", text: "The Free plan includes one login, for the company's Admin. Anyone else you invite can accept, but sees a page asking them to speak to you until you [choose a plan](/help/plans-and-pricing). Trials, Essentials and Pro have no limit on logins." },
       { type: "h", text: "Logins and the team list" },
       { type: "p", text: "When someone joins, they're added to your [Team](/help/team-and-workers) list automatically. If you've already added them on the Team page with the same email, the two link up. If they don't, open the person on the Team page and use **Link to an existing login** under **Site app**." },
       { type: "h", text: "Good to know" },

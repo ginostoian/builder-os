@@ -9,6 +9,7 @@ import { TASK_TONE, dayLabel, initials, shortDay } from "@/components/app/projec
 import { AppAccess } from "@/components/app/team/app-access";
 import { ArchiveWorker } from "@/components/app/team/archive-worker";
 import { Certificates } from "@/components/app/team/certificates";
+import { VisitPlaces, VisitTimes } from "@/components/app/team/visit-times";
 import { WorkerForm } from "@/components/app/team/worker-form";
 import { Badge } from "@/components/ui/badge";
 import { formatGBP } from "@/core/money";
@@ -16,7 +17,7 @@ import { addDays, ukToday } from "@/core/payment-plan";
 import { TASK_STATUS_LABEL, isLate } from "@/core/projects";
 import { can } from "@/core/roles";
 import { id as uuid } from "@/core/schemas";
-import { WORKER_KIND_LABEL, formatMinutes, londonDay, londonTime, visitMinutes } from "@/core/team";
+import { WORKER_KIND_LABEL, formatMinutes, londonDay, visitMinutes } from "@/core/team";
 import { getWorker, listVisits, unlinkedMembers } from "@/db/team";
 import { requirePermission, withSession } from "@/auth/session";
 
@@ -167,16 +168,15 @@ export default async function WorkerPage({ params }: { params: Promise<{ id: str
               ) : (
                 <ul className="mt-3 flex flex-col">
                   {data.visits.slice(0, 12).map((v) => (
-                    <li key={v.id} className="grid grid-cols-[96px_minmax(0,1fr)_96px_56px] items-center gap-2 border-b border-muted py-1.5 text-[12.5px] last:border-0">
+                    <li key={v.id} className="grid grid-cols-[88px_minmax(0,1fr)_auto_52px] items-center gap-x-2 gap-y-0.5 border-b border-muted py-1.5 text-[12.5px] last:border-0">
                       <span className="text-ink-2">{dayLabel(londonDay(v.checkedInAt))}</span>
                       <Link href={`/app/projects/${v.projectId}`} className="flex min-w-0 items-center gap-1 truncate hover:underline">
                         <MapPin className="size-3 flex-none text-subtle" />
                         <span className="truncate">{v.projectName}</span>
                       </Link>
-                      <span className="text-ink-2 tabular">
-                        {londonTime(v.checkedInAt)} – {v.checkedOutAt ? londonTime(v.checkedOutAt) : <span className="text-success">now</span>}
-                      </span>
+                      <VisitTimes visit={v} canEdit={canEdit} />
                       <span className="text-right tabular">{formatMinutes(visitMinutes(v.checkedInAt, v.checkedOutAt, now))}</span>
+                      <VisitPlaces visit={v} className="col-start-2 col-span-3" />
                     </li>
                   ))}
                 </ul>

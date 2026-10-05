@@ -128,12 +128,17 @@ describe("portal", () => {
     const lineId = sent.snapshot.sections[0].lines[0].id;
     await withTenant(orgId, async (tx) => {
       await addClientComment(tx, orgId, clientId, number, { name: "Sarah", body: "Can we use oak?", lineId });
-      await addStaffReply(tx, orgId, { quoteId, body: "Yes, +£200.", memberId, memberName: "Jo" });
+      await tx.execute(sql`update clients set email = 'sarah@example.com' where id = ${clientId}`);
+      // The reply says who to email and which link to send them.
+      expect(await addStaffReply(tx, orgId, { quoteId, body: "Yes, +£200.", memberId, memberName: "Jo" })).toMatchObject({ to: "sarah@example.com", token: sent.token, number });
       const p = (await portalQuote(tx, orgId, clientId, number))!;
       expect(p.comments.map((c) => [c.authorKind, c.authorName, c.body, c.lineId])).toEqual([
         ["client", "Sarah", "Can we use oak?", lineId],
         ["staff", "Jo", "Yes, +£200.", null],
       ]);
+      // No email address, nobody to email.
+      await tx.execute(sql`update clients set email = null where id = ${clientId}`);
+      expect(await addStaffReply(tx, orgId, { quoteId, body: "And the handles?", memberId, memberName: "Jo" })).toMatchObject({ to: null });
     });
     expect(await reason(withTenant(orgId, (tx) => addClientComment(tx, orgId, clientId, number, { name: "S", body: "x", lineId: randomUUID() })))).toBe("unknown_line");
     await withTenant(orgId, async (tx) => {

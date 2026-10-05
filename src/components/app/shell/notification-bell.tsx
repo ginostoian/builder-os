@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Popover } from "radix-ui";
-import { Bell, BadgeCheck, CalendarCheck2, CalendarX2, PoundSterling, CheckCheck, CircleX, ClipboardList, Eye, FileCheck2, Inbox, MessageSquare, Receipt, ShieldAlert, UserPlus } from "lucide-react";
+import { Bell, BadgeCheck, CalendarCheck2, CalendarX2, PoundSterling, CheckCheck, CircleX, ClipboardList, Eye, FileCheck2, Inbox, MessageSquare, Receipt, ShieldAlert, Undo2, UserPlus } from "lucide-react";
 import { bellAction, markReadAction, type BellItem } from "@/app/shell-actions";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +24,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   survey_booked: CalendarCheck2,
   survey_cancelled: CalendarX2,
   invoice_paid: PoundSterling,
+  invoice_refunded: Undo2,
 };
 
 function ago(iso: string, now: number) {

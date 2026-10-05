@@ -4,6 +4,7 @@
  * become timesheets. Pure rules shared by the office screens, the site app and the reminder job.
  */
 import { addDays } from "./payment-plan";
+import { londonToUtc } from "./surveys";
 
 export const WORKER_KINDS = ["employee", "subcontractor"] as const;
 export type WorkerKind = (typeof WORKER_KINDS)[number];
@@ -84,3 +85,30 @@ export function timesheet(
   }
   return out;
 }
+
+/** A corrected visit can't run longer than this (a missed check-out is usually the reason for editing). */
+export const MAX_VISIT_HOURS = 16;
+
+const minuteOf = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+
+/**
+ * Turns the office's corrected day and times (UK time) into the visit's instants. A leaving time before
+ * the arrival is the next day. Refuses times in the future and visits longer than MAX_VISIT_HOURS.
+ */
+export function visitTimes(
+  input: { day: string; start: string; end?: string },
+  now = new Date(),
+): { ok: true; checkedInAt: Date; checkedOutAt: Date | null } | { ok: false; reason: "future" | "too_long" } {
+  const checkedInAt = londonToUtc(input.day, minuteOf(input.start));
+  let checkedOutAt: Date | null = null;
+  if (input.end !== undefined) {
+    const endMinute = minuteOf(input.end);
+    checkedOutAt = londonToUtc(endMinute < minuteOf(input.start) ? addDays(input.day, 1) : input.day, endMinute);
+  }
+  if (checkedInAt > now || (checkedOutAt && checkedOutAt > now)) return { ok: false, reason: "future" };
+  if (checkedOutAt && checkedOutAt.getTime() - checkedInAt.getTime() > MAX_VISIT_HOURS * 3_600_000) return { ok: false, reason: "too_long" };
+  return { ok: true, checkedInAt, checkedOutAt };
+}
+
+/** A link that opens a check-in location on a map. */
+export const mapLink = (lat: string | number, lng: string | number) => `https://www.google.com/maps?q=${Number(lat)},${Number(lng)}`;

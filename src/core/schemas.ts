@@ -413,6 +413,16 @@ export const certificateInput = z.strictObject({
 });
 export type CertificateInput = z.infer<typeof certificateInput>;
 
+/** A time of day, "HH:MM" (24 hour). */
+export const timeOfDay = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+
+/**
+ * The office correcting a check-in: the UK day they arrived, the time, and when they left (if they have).
+ * A leaving time earlier than the arrival means they left after midnight.
+ */
+export const visitTimesInput = z.strictObject({ day: isoDate, start: timeOfDay, end: timeOfDay.optional() });
+export type VisitTimesInput = z.infer<typeof visitTimesInput>;
+
 /** A site check-in or check-out location, when the phone shares it. */
 export const geoInput = z.strictObject({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).optional();
 

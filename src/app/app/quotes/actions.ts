@@ -186,13 +186,40 @@ export async function replyToClient(input: unknown): Promise<RecordActionResult>
   if (!session) return { ok: false, message: NOT_ALLOWED };
   const parsed = staffReplyInput.safeParse(input);
   if (!parsed.success) return { ok: false, message: "Write a reply first (up to 2,000 characters)." };
+  let reply: Awaited<ReturnType<typeof addStaffReply>>;
+  let senderEmail: string | null;
   try {
-    await withSession(session, (tx) => addStaffReply(tx, session.orgId, { ...parsed.data, memberId: session.memberId, memberName: session.memberName }));
+    ({ reply, senderEmail } = await withSession(session, async (tx) => ({
+      reply: await addStaffReply(tx, session.orgId, { ...parsed.data, memberId: session.memberId, memberName: session.memberName }),
+      senderEmail: await memberEmail(tx, session.orgId, session.memberId),
+    })));
   } catch (error) {
     if (error instanceof QuoteError) return { ok: false, message: MESSAGES[error.reason] };
     throw error;
   }
   revalidatePath(`/app/quotes/${parsed.data.quoteId}`);
+  // Let the client know, with a link that signs them straight in to the conversation.
+  if (reply.to && reply.token && emailConfigured()) {
+    const { to, token } = reply;
+    const link = portalUrl(await appOrigin(), token, reply.number);
+    const body = parsed.data.body;
+    after(async () => {
+      const result = await sendEmail({
+        to,
+        replyTo: senderEmail,
+        subject: `${reply.company.name} replied about your quote: ${reply.title}`,
+        content: {
+          company: reply.company,
+          preheader: body.slice(0, 120),
+          heading: `${session.memberName} replied to your question`,
+          paragraphs: [`Hi ${reply.clientName},`, `${session.memberName} from ${reply.company.name} has replied on your quote ${reply.ref}:`, `“${body}”`],
+          button: { label: "See the conversation", href: await withSignIn(session.orgId, token, link) },
+          footer: `${session.memberName}, ${reply.company.name}. You can reply on the quote page or to this email.`,
+        },
+      });
+      if (!result.ok) console.error("Couldn't email the client about a reply:", result.message);
+    });
+  }
   return { ok: true };
 }
 

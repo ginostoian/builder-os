@@ -154,14 +154,14 @@ export const CLIENT_ARTICLES: HelpArticle[] = [
         items: [
           "Open the quote. The **Conversation with** panel on the right shows every comment, including which line it's about.",
           "Type your answer in the reply box.",
-          "Click **Reply**. Your client sees it on the quote in their portal, with your name and company.",
+          "Click **Reply**. Your client sees it on the quote in their portal, with your name and company, and gets an email to say you've answered.",
         ],
       },
       { type: "h", text: "Good to know" },
       {
         type: "list",
         items: [
-          "Clients aren't emailed when you reply. If it's urgent, give them a ring or drop them a message too.",
+          "When you reply, your client gets an email with your answer and a button that takes them straight back to the conversation. If they have no email address on their record, they'll only see it next time they open the quote.",
           "Comments stay with the quote across every version, so nothing is lost when you send an update.",
           "Clients can comment after accepting or declining. A client who declined is invited to leave a comment if they change their mind.",
           "When you use **Preview as client**, nothing you do is recorded and it doesn't count as an open.",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { certState, formatMinutes, londonDay, taskOnDay, timesheet, visitMinutes } from "./team";
+import { certState, formatMinutes, londonDay, mapLink, taskOnDay, timesheet, visitMinutes, visitTimes } from "./team";
 
 describe("team", () => {
   it("flags certificates expiring within 30 days, and expired ones", () => {
@@ -39,5 +39,17 @@ describe("team", () => {
       now,
     );
     expect(sheet.get("a")).toEqual({ byDay: [480, 120], total: 600, open: true });
+  });
+
+  it("turns corrected UK times into a visit, rolling past midnight and refusing nonsense", () => {
+    const now = new Date("2026-10-05T12:00:00Z");
+    // Summer time: 07:30 in London is 06:30 UTC.
+    expect(visitTimes({ day: "2026-09-01", start: "07:30", end: "16:15" }, now)).toEqual({ ok: true, checkedInAt: new Date("2026-09-01T06:30:00Z"), checkedOutAt: new Date("2026-09-01T15:15:00Z") });
+    // Winter time, and leaving after midnight counts as the next morning.
+    expect(visitTimes({ day: "2026-01-10", start: "18:00", end: "01:00" }, now)).toEqual({ ok: true, checkedInAt: new Date("2026-01-10T18:00:00Z"), checkedOutAt: new Date("2026-01-11T01:00:00Z") });
+    expect(visitTimes({ day: "2026-09-01", start: "07:30" }, now)).toMatchObject({ ok: true, checkedOutAt: null });
+    expect(visitTimes({ day: "2026-10-05", start: "14:00" }, now)).toEqual({ ok: false, reason: "future" });
+    expect(visitTimes({ day: "2026-09-01", start: "06:00", end: "23:00" }, now)).toEqual({ ok: false, reason: "too_long" });
+    expect(mapLink("51.538600", "-0.102800")).toBe("https://www.google.com/maps?q=51.5386,-0.1028");
   });
 });

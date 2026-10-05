@@ -277,7 +277,7 @@ export const GETTING_PAID_ARTICLES: HelpArticle[] = [
         type: "list",
         items: [
           "Clients pay the whole invoice online. Cancelled and paid invoices can't be paid.",
-          "Refunds are done in your Stripe dashboard. Builder OS doesn't change the invoice when you refund, so [mark it as unpaid](/help/marking-invoices-paid) yourself if needed.",
+          "Refunds are done in your Stripe dashboard. Refund the whole payment and the invoice goes back to unpaid by itself, and Admins and the office get a notification. Refund part of it and the invoice stays paid, but you're still told about it.",
           "Only an Admin can set up online payments or open the Stripe dashboard.",
         ],
       },
@@ -310,7 +310,7 @@ export const GETTING_PAID_ARTICLES: HelpArticle[] = [
       },
       {
         type: "p",
-        text: "The invoice now shows as Paid, in your system and in the client's portal. Payments made online through [Stripe](/help/taking-payments-online) are marked paid for you.",
+        text: "The invoice now shows as Paid, in your system and in the client's portal. Payments made online through [Stripe](/help/taking-payments-online) are marked paid for you, and marked unpaid again if you refund them in full.",
       },
       { type: "h", text: "Made a mistake?" },
       {

@@ -23,6 +23,8 @@ export const PLAN_LOOKUP_KEY: Record<Exclude<Plan, "free">, string> = { essentia
 export const TRIAL_DAYS = 14;
 export const FREE_QUOTES_PER_MONTH = 3;
 export const FREE_LIBRARY_ITEMS = 25;
+/** Logins on Free: the company's first Admin (then the earliest member) keeps theirs; others wait for an upgrade. */
+export const FREE_USERS = 1;
 
 /** Feature → the cheapest plan that has it. */
 export const FEATURES = {

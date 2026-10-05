@@ -4,8 +4,9 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { entitlement } from "@/core/plans";
 import type { QuoteLineInput } from "@/core/schemas";
-import { appUrl } from "@/test/db-urls";
-import { activeServiceCount, applySubscription, billingFacts, firstSendsSince, markPaidOnline, platformCompanies, setComped, setConnectAccount, setStripeCustomer } from "./billing";
+import postgres from "postgres";
+import { adminUrl, appUrl } from "@/test/db-urls";
+import { activeServiceCount, applySubscription, billingFacts, hasSeat, seatHolderName, firstSendsSince, markPaidOnline, refundOnline, platformCompanies, setComped, setConnectAccount, setStripeCustomer } from "./billing";
 import { invoicePaid } from "@/server/stripe-events";
 import { createClient } from "./clients";
 import { listNotifications } from "./notifications";
@@ -132,6 +133,15 @@ describe("billing", () => {
     expect(await withTenant(orgId, (tx) => markPaidOnline(tx, orgId, invoiceId, "pi_123", "2026-10-05", total))).toEqual({ marked: false, reason: "already paid" });
     const [row] = await withTenant(orgId, (tx) => tx.execute<{ status: string; stripe_payment_id: string }>(sql`select status, stripe_payment_id from invoices where id = ${invoiceId}`));
     expect(row).toEqual({ status: "paid", stripe_payment_id: "pi_123" });
+
+    // Refunds: another payment's refund, or a partial one, leaves it paid; a full refund reopens it, once.
+    expect(await withTenant(orgId, (tx) => refundOnline(tx, orgId, invoiceId, "pi_other", true))).toEqual({ changed: false });
+    expect(await withTenant(orgId, (tx) => refundOnline(tx, orgId, invoiceId, "pi_123", false))).toMatchObject({ changed: true, reopened: false });
+    expect((await withTenant(orgId, (tx) => tx.execute<{ status: string }>(sql`select status from invoices where id = ${invoiceId}`)))[0].status).toBe("paid");
+    expect(await withTenant(orgId, (tx) => refundOnline(tx, orgId, invoiceId, "pi_123", true))).toMatchObject({ changed: true, reopened: true, totalPence: total });
+    expect(await withTenant(orgId, (tx) => refundOnline(tx, orgId, invoiceId, "pi_123", true))).toEqual({ changed: false });
+    const [reopened] = await withTenant(orgId, (tx) => tx.execute(sql`select status, paid_on, paid_reference, stripe_payment_id from invoices where id = ${invoiceId}`));
+    expect(reopened).toEqual({ status: "issued", paid_on: null, paid_reference: null, stripe_payment_id: null });
   });
 
   it("marks an invoice paid from a Stripe payment only on the company's own account", async () => {
@@ -165,5 +175,27 @@ describe("billing", () => {
     expect(await invoicePaid(acct, session())).toBe("already paid");
     const told = await withTenant(orgId, (tx) => listNotifications(tx, orgId, memberId));
     expect(told.items.filter((n) => n.kind === "invoice_paid")).toHaveLength(1);
+  });
+
+  it("gives Free one login: the first Admin; trials and paid plans have no limit", async () => {
+    const { orgId, memberId: jo } = await newOrg("Billing seats");
+    const add = async (role: string) =>
+      (await withTenant(orgId, (tx) => tx.execute<{ id: string }>(sql`insert into members (org_id, clerk_user_id, role, name) values (${orgId}, ${"user_" + randomUUID().slice(0, 8)}, ${role}, 'Someone') returning id`)))[0].id;
+    const office = await add("office");
+    // In the trial: everyone.
+    expect(await withTenant(orgId, (tx) => hasSeat(tx, orgId, office))).toBe(true);
+    // Trial over, nothing paid: only the first Admin.
+    const admin = postgres(adminUrl(), { max: 1, onnotice: () => {} });
+    try {
+      await admin`update organizations set trial_ends_at = now() - interval '1 day' where id = ${orgId}`;
+    } finally {
+      await admin.end();
+    }
+    expect(await withTenant(orgId, (tx) => hasSeat(tx, orgId, jo))).toBe(true);
+    expect(await withTenant(orgId, (tx) => hasSeat(tx, orgId, office))).toBe(false);
+    expect(await withTenant(orgId, (tx) => seatHolderName(tx, orgId))).toBe("Jo");
+    // Complimentary (or paying): back in.
+    await withTenant(orgId, (tx) => setComped(tx, orgId, true));
+    expect(await withTenant(orgId, (tx) => hasSeat(tx, orgId, office))).toBe(true);
   });
 });

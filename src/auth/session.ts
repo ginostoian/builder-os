@@ -14,7 +14,8 @@ import { can, roleFromClerk, type Permission, type Role } from "@/core/roles";
 import { findOrgByClerkId, withTenant, type Tx } from "@/db";
 import { members, organizations } from "@/db/schema";
 import { FILL_ONLY, syncMember, syncOrganization } from "./clerk-sync";
-import { SELECT_COMPANY_PATH } from "./paths";
+import { PLAN_LIMIT_PATH, SELECT_COMPANY_PATH } from "./paths";
+import { hasSeat } from "@/db/billing";
 
 export type Session = {
   /** Our tenant id (`organizations.id`). */
@@ -65,6 +66,8 @@ export const getSession = cache(async (): Promise<Session> => {
   // Clerk session tokens live up to 60 s, so a just-removed member can still present one. The database
   // (updated by the membership.deleted webhook) has the final word.
   if (!found?.active) redirect(SELECT_COMPANY_PATH);
+  // Free includes one login (src/core/plans.ts): everyone else is asked to have the company upgrade.
+  if (!(await withTenant(orgId, (tx) => hasSeat(tx, orgId, found.id)))) redirect(PLAN_LIMIT_PATH);
 
   return { orgId, orgName: member.orgName, clerkOrgId, clerkUserId: userId, memberId: found.id, memberName: found.name, role };
 });

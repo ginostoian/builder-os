@@ -14,6 +14,7 @@ import {
   certificateReminderContext,
   certificatesToRemind,
   createWorker,
+  editVisit,
   ensureWorkerForMember,
   getWorker,
   linkWorker,
@@ -188,6 +189,32 @@ describe("the site app", () => {
       const visits = await listVisits(tx, orgId, { from: today, to: today, workerId: me });
       expect(visits.map((v) => v.projectName).sort()).toEqual(["Job A", "Job B"]);
       expect(visits.every((v) => v.checkedOutAt)).toBe(true);
+      expect(visits.find((v) => v.projectName === "Job A")).toMatchObject({ inLat: "51.538600", inLng: "-0.102800", editedAt: null });
+    });
+  });
+
+  it("lets the office correct a visit's times, without overlaps, and marks it edited", async () => {
+    const orgId = await newOrg("Visit edits");
+    const office = await member(orgId, "Olive", null, "office");
+    const a = await project(orgId, "Job A");
+    await withTenant(orgId, async (tx) => {
+      const me = await createWorker(tx, orgId, { name: "Pat", kind: "employee" });
+      const at = (iso: string) => new Date(iso);
+      const [v1] = await tx.execute<{ id: string }>(sql`insert into site_visits (org_id, worker_id, project_id, checked_in_at, checked_out_at) values (${orgId}, ${me}, ${a}, ${"2026-09-01T07:00:00Z"}, ${"2026-09-01T15:00:00Z"}) returning id`);
+      const [v2] = await tx.execute<{ id: string }>(sql`insert into site_visits (org_id, worker_id, project_id, checked_in_at) values (${orgId}, ${me}, ${a}, ${"2026-09-02T07:00:00Z"}) returning id`);
+      // A finished visit keeps a leaving time; overlapping another visit is refused.
+      expect(await reason(editVisit(tx, orgId, v1.id, office, { checkedInAt: at("2026-09-01T06:30:00Z"), checkedOutAt: null }))).toBe("visit_end");
+      expect(await reason(editVisit(tx, orgId, v1.id, office, { checkedInAt: at("2026-09-01T06:30:00Z"), checkedOutAt: at("2026-09-02T08:00:00Z") }))).toBe("visit_overlap");
+      expect(await reason(editVisit(tx, orgId, randomUUID(), office, { checkedInAt: at("2026-09-01T06:30:00Z"), checkedOutAt: null }))).toBe("not_found");
+      await editVisit(tx, orgId, v1.id, office, { checkedInAt: at("2026-09-01T06:30:00Z"), checkedOutAt: at("2026-09-01T15:30:00Z") });
+      // The forgotten check-out: the open visit is closed by the office.
+      await editVisit(tx, orgId, v2.id, office, { checkedInAt: at("2026-09-02T07:00:00Z"), checkedOutAt: at("2026-09-02T16:00:00Z") });
+      const visits = await listVisits(tx, orgId, { from: "2026-09-01", to: "2026-09-02", workerId: me });
+      expect(visits.map((v) => [v.checkedInAt.toISOString(), v.checkedOutAt?.toISOString(), v.editedByName])).toEqual([
+        ["2026-09-02T07:00:00.000Z", "2026-09-02T16:00:00.000Z", "Olive"],
+        ["2026-09-01T06:30:00.000Z", "2026-09-01T15:30:00.000Z", "Olive"],
+      ]);
+      expect(visits.every((v) => v.editedAt)).toBe(true);
     });
   });
 });
