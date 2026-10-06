@@ -181,12 +181,12 @@ export async function clientBookSurvey(tx: Tx, orgId: string, leadId: string, st
 /**
  * Cancel the live visit. When the client cancels, the lead gets a follow-up for today so someone rebooks it.
  */
-export async function cancelSurvey(tx: Tx, orgId: string, leadId: string, by: "client" | "office", actor: string | null, today = londonDay(new Date())) {
+export async function cancelSurvey(tx: Tx, orgId: string, leadId: string, by: "client" | "office", actor: string | null, today = londonDay(new Date()), now = new Date()) {
   const [l] = await tx.select({ name: leads.name }).from(leads).where(and(eq(leads.orgId, orgId), eq(leads.id, leadId)));
   if (!l) throw new SurveyError("not_found");
   const b = await currentBooking(tx, orgId, leadId);
   // Clients can only cancel visits still to come.
-  if (!b || (by === "client" && b.startsAt.getTime() <= Date.now())) throw new SurveyError("no_booking");
+  if (!b || (by === "client" && b.startsAt.getTime() <= now.getTime())) throw new SurveyError("no_booking");
   await tx.update(surveyBookings).set({ status: "cancelled", cancelledAt: new Date() }).where(and(eq(surveyBookings.orgId, orgId), eq(surveyBookings.id, b.id)));
   await tx.update(leads).set({ visitAt: null }).where(and(eq(leads.orgId, orgId), eq(leads.id, leadId)));
   await logLeadActivity(tx, orgId, leadId, "visit", by === "client" ? "The client cancelled the site visit" : "Site visit cancelled", actor);
