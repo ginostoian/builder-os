@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import { StoredImage } from "@/components/stored-image";
 import * as React from "react";
 import Link from "next/link";
@@ -49,6 +50,7 @@ export function VariationEditor({
   defaultMarkupBps,
   clientName,
   clientEmail,
+  clientPhone,
   emailEnabled,
   library,
   photos,
@@ -58,6 +60,7 @@ export function VariationEditor({
   defaultMarkupBps: number;
   clientName: string;
   clientEmail: string | null;
+  clientPhone: string | null;
   emailEnabled: boolean;
   library: LibraryPickOption[];
   photos: { key: string; url: string }[];
@@ -123,6 +126,8 @@ export function VariationEditor({
               disabled={pending || valid.length === 0 || !allValid}
               clientName={clientName}
               clientEmail={clientEmail}
+              clientPhone={clientPhone}
+              title={variation.title}
               emailEnabled={emailEnabled}
               total={totals.total}
               beforeSend={save}
@@ -134,10 +139,10 @@ export function VariationEditor({
 
         <div className="flex max-w-[1000px] flex-col gap-5 p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Title" hint="What the client sees, e.g. Two extra double sockets in the kitchen." className="col-span-2">
+            <Field label="Title" hint="What the client sees, e.g. Two extra double sockets in the kitchen." className="sm:col-span-2">
               <input value={title} maxLength={TEXT.name} onChange={(e) => (setTitle(e.target.value), setDirty(true))} className={control} />
             </Field>
-            <Field label="Why it's needed" hint="Optional. Shown to the client, e.g. what they asked for or what was found on site." className="col-span-2">
+            <Field label="Why it's needed" hint="Optional. Shown to the client, e.g. what they asked for or what was found on site." className="sm:col-span-2">
               <textarea value={reason} maxLength={TEXT.note} rows={3} onChange={(e) => (setReason(e.target.value), setDirty(true))} className={cn(control, "h-auto resize-y py-2 leading-normal")} />
             </Field>
           </div>
@@ -257,6 +262,8 @@ function SendVariationDialog({
   disabled,
   clientName,
   clientEmail,
+  clientPhone,
+  title,
   emailEnabled,
   total,
   beforeSend,
@@ -266,6 +273,8 @@ function SendVariationDialog({
   disabled: boolean;
   clientName: string;
   clientEmail: string | null;
+  clientPhone: string | null;
+  title: string;
   emailEnabled: boolean;
   total: number;
   beforeSend: () => Promise<boolean>;
@@ -301,6 +310,9 @@ function SendVariationDialog({
             <div className="mt-4 flex items-center gap-2">
               <input readOnly value={result.link} className={cn(control, "font-mono text-[12px]")} onFocus={(e) => e.currentTarget.select()} />
               <CopyButton text={result.link} />
+            </div>
+            <div className="mt-2">
+              <WhatsAppButton phone={clientPhone} text={`Hi ${clientName.split(" ")[0]}, here's a change to the job for you to approve: ${title}. ${result.link}`} label="Send on WhatsApp" />
             </div>
             <div className="mt-5 flex justify-end">
               <DialogClose asChild>

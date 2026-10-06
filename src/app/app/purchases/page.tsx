@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cisOptions } from "@/db/cis";
+import { CisProvider } from "@/components/app/costs/cis-context";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { LiveAppShell } from "@/components/app/live-app-shell";
@@ -37,6 +39,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
     projects: await costProjects(tx, session.orgId),
     expenses: view === "orders" ? [] : await listExpenses(tx, session.orgId, { filter: view as ExpenseFilter, limit: 500 }),
     orders: await listPurchaseOrders(tx, session.orgId),
+    cis: await cisOptions(tx, session.orgId),
   }));
   const projects = data.projects.map((p) => ({ id: p.id, name: p.name }));
   const orders = data.orders.map((o) => ({ id: o.id, number: o.number, projectId: o.projectId, supplierName: o.supplierName, netPence: o.netPence, vatRateBps: o.vatRateBps }));
@@ -55,7 +58,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
             </Button>
           )}
         </ScreenTitle>
-        <nav className="flex gap-1.5" aria-label="Purchases views">
+        <nav className="chip-row" aria-label="Purchases views">
           {VIEWS.map((v) => (
             <Link
               key={v.key}
@@ -108,7 +111,8 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
             )}
           </Panel>
         ) : (
-          <ExpensesPanel
+          <CisProvider subcontractors={data.cis}>
+            <ExpensesPanel
             title={label}
             expenses={data.expenses.map(toExpense)}
             projects={projects}
@@ -122,7 +126,8 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
                   ? "Every expense has its receipt."
                   : undefined
             }
-          />
+            />
+          </CisProvider>
         )}
       </div>
     </LiveAppShell>

@@ -82,7 +82,7 @@ export function TasksWorkspace({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {(canEdit || error) && (
-        <div className="flex flex-none items-center gap-3 border-b border-hairline bg-white px-6 py-2">
+        <div className="flex flex-none items-center gap-3 border-b border-hairline bg-white px-4 py-2 lg:px-6">
           {error ? (
             <p role="alert" className="flex-1 text-[12.5px] text-danger">
               {error}{" "}
@@ -91,7 +91,12 @@ export function TasksWorkspace({
               </button>
             </p>
           ) : (
-            <p className="flex-1 text-[12.5px] text-subtle">{view === "board" ? "Drag cards between columns, or click one to change it." : view === "list" ? "Tick tasks off as they're done. Click one to add who and when." : "Tasks with a start or due date, week by week. Click one to change its dates."}</p>
+            <p className="flex-1 text-[12.5px] text-subtle">{view === "board" ? (
+                <>
+                  <span className="lg:hidden">Swipe across for each column. Tap a card to change it.</span>
+                  <span className="hidden lg:inline">Drag cards between columns, or click one to change it.</span>
+                </>
+              ) : view === "list" ? "Tick tasks off as they're done. Click one to add who and when." : "Tasks with a start or due date, week by week. Click one to change its dates."}</p>
           )}
           {canEdit && (
             <Button onClick={() => setEditing({ status: "todo" })}>

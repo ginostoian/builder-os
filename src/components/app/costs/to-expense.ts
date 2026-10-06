@@ -26,5 +26,6 @@ export function toExpense(e: ExpenseRow): Expense {
     billed: isBilled(e),
     recoveredOn: e.recoveredOn,
     createdByName: e.createdByName,
+    cis: e.workerId && e.cisRateBps !== null ? { workerId: e.workerId, materialsPence: e.cisMaterialsPence ?? 0, rateBps: e.cisRateBps, deductionPence: e.cisDeductionPence ?? 0 } : null,
   };
 }

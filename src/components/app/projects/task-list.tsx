@@ -14,6 +14,10 @@ import { TASK_DOT, shortDay, type Phase, type Task } from "./types";
  * Tasks grouped by stage, in order: the checklist view. Tick to finish, change status inline, click a task
  * to edit it. Stages can be added, renamed, reordered and removed here.
  */
+/** "3 Oct – 9 Oct", "9 Oct" or "from 3 Oct". */
+const when = (t: { startDate: string | null; dueDate: string | null }) =>
+  t.startDate && t.dueDate && t.startDate !== t.dueDate ? `${shortDay(t.startDate)} – ${shortDay(t.dueDate)}` : t.dueDate ? shortDay(t.dueDate) : t.startDate ? `from ${shortDay(t.startDate)}` : "";
+
 export function TaskList({
   tasks,
   phases,
@@ -180,12 +184,13 @@ function PhaseGroup({
               <button type="button" onClick={() => onOpen(t)} className="min-w-0 flex-1 text-left">
                 <span className={cn("block truncate", t.status === "done" && "text-subtle line-through decoration-faint-2")}>{t.title}</span>
                 {(t.workerName || t.trade) && <span className="block truncate text-[11.5px] text-subtle">{[t.workerName, t.trade].filter(Boolean).join(" · ")}</span>}
+                {when(t) && <span className={cn("block truncate text-[11.5px] tabular sm:hidden", late ? "font-medium text-danger" : "text-subtle")}>{when(t)}{late && " · late"}</span>}
               </button>
-              <span className={cn("w-[120px] flex-none text-right text-[12px] tabular", late ? "font-medium text-danger" : "text-subtle")}>
-                {t.startDate && t.dueDate && t.startDate !== t.dueDate ? `${shortDay(t.startDate)} – ${shortDay(t.dueDate)}` : t.dueDate ? shortDay(t.dueDate) : t.startDate ? `from ${shortDay(t.startDate)}` : ""}
+              <span className={cn("hidden w-[120px] flex-none text-right text-[12px] tabular sm:block", late ? "font-medium text-danger" : "text-subtle")}>
+                {when(t)}
                 {late && " · late"}
               </span>
-              <div className="relative w-[124px] flex-none">
+              <div className="relative w-[112px] flex-none sm:w-[124px]">
                 <span className={cn("pointer-events-none absolute top-1/2 left-2.5 size-2 -translate-y-1/2 rounded-full", TASK_DOT[t.status])} />
                 <select aria-label="Status" value={t.status} disabled={!canEdit} onChange={(e) => onStatus(t, e.target.value as TaskStatus)} className={cn(control, "h-7 pl-6 text-[12.5px]")}>
                   {TASK_STATUSES.map((s) => (

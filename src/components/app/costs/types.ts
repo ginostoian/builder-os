@@ -24,6 +24,8 @@ export type Expense = {
   billed: boolean;
   recoveredOn: string | null;
   createdByName: string | null;
+  /** A CIS payment to a subcontractor: materials part, rate and deduction. */
+  cis: { workerId: string; materialsPence: number; rateBps: number; deductionPence: number } | null;
 };
 
 export type ProjectOption = { id: string; name: string };

@@ -6,7 +6,7 @@ import { appUrl } from "@/test/db-urls";
 import { createClient } from "./clients";
 import { closeDb, findOrgsWithExpiringCertificates, withTenant } from "./index";
 import { addTask, createProject, getProject } from "./projects";
-import { SiteError, checkIn, checkOut, isMyJob, myJob, myJobs, myTasks, openVisit, setMyTaskStatus, workerForMember } from "./site";
+import { SiteError, checkIn, checkOut, claimSyncOp, isMyJob, myJob, myJobs, myTasks, openVisit, recordSyncResult, setMyTaskStatus, workerForMember } from "./site";
 import {
   TeamError,
   addCertificate,
@@ -190,6 +190,36 @@ describe("the site app", () => {
       expect(visits.map((v) => v.projectName).sort()).toEqual(["Job A", "Job B"]);
       expect(visits.every((v) => v.checkedOutAt)).toBe(true);
       expect(visits.find((v) => v.projectName === "Job A")).toMatchObject({ inLat: "51.538600", inLng: "-0.102800", editedAt: null });
+    });
+  });
+
+  it("takes check-ins sent late from a phone with no signal, at the phone's times, once", async () => {
+    const orgId = await newOrg("Offline");
+    const login = await member(orgId, "Sam", null);
+    const other = await member(orgId, "Ola", null);
+    const a = await project(orgId, "Job A");
+    await withTenant(orgId, async (tx) => {
+      const me = (await ensureWorkerForMember(tx, orgId, { id: login, name: "Sam", email: null }))!;
+      const by = (await getProject(tx, orgId, a))!.project.createdByMemberId!;
+      await addTask(tx, orgId, { projectId: a, title: "A", status: "todo", workerId: me }, by);
+      const ref = { workerId: me, memberId: login };
+      const inAt = new Date(Date.now() - 5 * 3_600_000);
+      const outAt = new Date(Date.now() - 3_600_000);
+      const op = randomUUID();
+      expect(await claimSyncOp(tx, orgId, login, op)).toBeNull();
+      await checkIn(tx, orgId, ref, a, undefined, { at: inAt, queued: true });
+      await recordSyncResult(tx, orgId, op, a);
+      // The resend is recognised (and says what the first one made); someone else can't use the id.
+      expect(await claimSyncOp(tx, orgId, login, op)).toEqual({ resultId: a });
+      expect(await reason(claimSyncOp(tx, orgId, other, op))).toBe("not_found");
+      await checkOut(tx, orgId, me, undefined, { at: outAt, queued: true });
+      const [v] = await listVisits(tx, orgId, { from: "2000-01-01", to: "2100-01-01", workerId: me });
+      expect([v.checkedInAt.getTime(), v.checkedOutAt?.getTime(), v.recordedOffline]).toEqual([inAt.getTime(), outAt.getTime(), true]);
+      // A check-out time before the check-in (phone clock wrong) can't make a negative visit.
+      await checkIn(tx, orgId, ref, a, undefined);
+      await checkOut(tx, orgId, me, undefined, { at: new Date(Date.now() - 86_400_000), queued: true });
+      const visits = await listVisits(tx, orgId, { from: "2000-01-01", to: "2100-01-01", workerId: me });
+      expect(visits.every((x) => x.checkedOutAt! >= x.checkedInAt)).toBe(true);
     });
   });
 

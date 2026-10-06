@@ -6,6 +6,8 @@ import "server-only";
 import { and, asc, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { LABOUR_DAY_MINUTES, MAX_RECEIPTS, costOf, poTotals, rechargeNet, type ExpenseCategory, type PoStatus } from "@/core/costs";
 import { applyBps } from "@/core/money";
+import { cisDeduction } from "@/core/cis";
+import { cisRateFor, cisSettings } from "./cis";
 import { lineCost } from "@/core/quote";
 import type { QuoteSnapshot } from "@/core/quote-snapshot";
 import type { ExpenseInput, PurchaseOrderInput } from "@/core/schemas";
@@ -29,7 +31,7 @@ import {
   type Receipt,
 } from "./schema";
 
-export type CostErrorReason = "not_found" | "unknown_project" | "unknown_po" | "too_many_receipts" | "invoiced" | "not_editable";
+export type CostErrorReason = "not_found" | "unknown_project" | "unknown_po" | "too_many_receipts" | "invoiced" | "not_editable" | "unknown_subcontractor";
 
 export class CostError extends Error {
   constructor(readonly reason: CostErrorReason) {
@@ -95,6 +97,10 @@ export async function listExpenses(tx: Tx, orgId: string, opts: { projectId?: st
       recoveredOn: expenses.recoveredOn,
       createdByName: members.name,
       createdAt: expenses.createdAt,
+      workerId: expenses.workerId,
+      cisMaterialsPence: expenses.cisMaterialsPence,
+      cisRateBps: expenses.cisRateBps,
+      cisDeductionPence: expenses.cisDeductionPence,
     })
     .from(expenses)
     .innerJoin(projects, and(eq(projects.orgId, expenses.orgId), eq(projects.id, expenses.projectId)))
@@ -128,9 +134,24 @@ async function loadForChange(tx: Tx, orgId: string, expenseId: string) {
   return e;
 }
 
+/**
+ * The CIS columns for a payment: the subcontractor, materials, the rate from their verified status, and
+ * the deduction. Editing a payment to the same subcontractor keeps the rate it was made at.
+ */
+async function cisValues(tx: Tx, orgId: string, input: ExpenseInput, previous?: { workerId: string | null; rateBps: number | null }) {
+  const none = { workerId: null, cisMaterialsPence: null, cisRateBps: null, cisDeductionPence: null };
+  if (!input.cis || !(await cisSettings(tx, orgId)).enabled) return none;
+  const current = await cisRateFor(tx, orgId, input.cis.workerId);
+  if (current === null) throw new CostError("unknown_subcontractor");
+  const rateBps = previous?.workerId === input.cis.workerId && previous.rateBps !== null ? previous.rateBps : current;
+  const net = input.totalPence - input.vatPence;
+  return { workerId: input.cis.workerId, cisMaterialsPence: input.cis.materialsPence, cisRateBps: rateBps, cisDeductionPence: cisDeduction(net, input.cis.materialsPence, rateBps) };
+}
+
 export async function createExpense(tx: Tx, orgId: string, input: ExpenseInput, memberId: string): Promise<string> {
   await assertProject(tx, orgId, input.projectId);
   await assertPo(tx, orgId, input.projectId, input.purchaseOrderId);
+  const cis = await cisValues(tx, orgId, input);
   const [row] = await tx
     .insert(expenses)
     .values({
@@ -147,6 +168,7 @@ export async function createExpense(tx: Tx, orgId: string, input: ExpenseInput, 
       rechargeable: input.rechargeable,
       rechargeMarkupBps: input.rechargeable ? input.rechargeMarkupBps : 0,
       createdByMemberId: memberId,
+      ...cis,
     })
     .returning({ id: expenses.id });
   return row.id;
@@ -157,6 +179,8 @@ export async function updateExpense(tx: Tx, orgId: string, expenseId: string, in
   if (isBilled(e)) throw new CostError("invoiced");
   await assertProject(tx, orgId, input.projectId);
   await assertPo(tx, orgId, input.projectId, input.purchaseOrderId);
+  const [prev] = await tx.select({ workerId: expenses.workerId, rateBps: expenses.cisRateBps }).from(expenses).where(and(eq(expenses.orgId, orgId), eq(expenses.id, expenseId)));
+  const cis = await cisValues(tx, orgId, input, prev);
   await tx
     .update(expenses)
     .set({
@@ -171,6 +195,7 @@ export async function updateExpense(tx: Tx, orgId: string, expenseId: string, in
       totalPence: input.totalPence,
       rechargeable: input.rechargeable,
       rechargeMarkupBps: input.rechargeable ? input.rechargeMarkupBps : 0,
+      ...cis,
       // A cancelled invoice no longer counts; not rechargeable any more means nothing to recover.
       invoiceId: null,
       ...(input.rechargeable ? {} : { recoveredOn: null }),

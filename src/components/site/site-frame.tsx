@@ -1,12 +1,28 @@
 import Link from "next/link";
 import { ArrowLeft, LayoutDashboard } from "lucide-react";
 import { NotificationBell } from "@/components/app/shell/notification-bell";
+import { SiteSync } from "./offline/site-sync";
 
 /**
  * The site app's page frame. Built for phones (big targets, often used with gloves on); on a desktop it
  * sits in a narrow column so the office can see what the team sees.
  */
-export function SiteFrame({ title, eyebrow, back, office, children }: { title: string; eyebrow?: string; back?: string; office?: boolean; children: React.ReactNode }) {
+export function SiteFrame({
+  title,
+  eyebrow,
+  back,
+  office,
+  sync,
+  children,
+}: {
+  title: string;
+  eyebrow?: string;
+  back?: string;
+  office?: boolean;
+  /** Offline support: who's signed in, and (on Today) the jobs to save on the phone. */
+  sync?: { memberId: string; jobIds?: string[] };
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex min-h-dvh justify-center bg-[#EDECE8] font-sans text-sm leading-[1.4] text-ink antialiased">
       <div className="flex w-full max-w-[460px] flex-col bg-surface sm:my-6 sm:min-h-[calc(100dvh-48px)] sm:rounded-[28px] sm:shadow-ring">
@@ -28,7 +44,15 @@ export function SiteFrame({ title, eyebrow, back, office, children }: { title: s
             </Link>
           )}
         </header>
-        <main className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-[max(24px,env(safe-area-inset-bottom))]">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-[max(24px,env(safe-area-inset-bottom))]">
+          {sync ? (
+            <SiteSync memberId={sync.memberId} jobIds={sync.jobIds}>
+              {children}
+            </SiteSync>
+          ) : (
+            children
+          )}
+        </main>
       </div>
     </div>
   );

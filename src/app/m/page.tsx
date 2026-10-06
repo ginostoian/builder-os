@@ -66,7 +66,7 @@ export default async function SiteTodayPage() {
   const done = todays.filter((t) => t.status === "done").length;
 
   return (
-    <SiteFrame eyebrow={longToday(today)} title={`${greeting()}, ${firstName}`} office={office}>
+    <SiteFrame eyebrow={longToday(today)} title={`${greeting()}, ${firstName}`} office={office} sync={{ memberId: session.memberId, jobIds: data.jobs.map((j) => j.id) }}>
       {(data.open || data.jobs.length > 0) && (
         <CheckIn open={data.open ? { projectId: data.open.projectId, projectName: data.open.projectName, checkedInAt: data.open.checkedInAt.toISOString() } : null} jobs={data.jobs.map((j) => ({ id: j.id, name: j.name }))} />
       )}

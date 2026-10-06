@@ -11,7 +11,7 @@ Used for quote and invoice emails to clients (with their portal link), automatic
 3. In Vercel (Production, and Preview if you want previews to send real email):
    - `RESEND_API_KEY`: the key.
    - `EMAIL_FROM`: a verified address, e.g. `Builder OS <quotes@yourdomain.co.uk>`.
-   - Optionally `APP_URL`: your production URL (links in emails). It defaults to the request's host.
+   - Optionally `APP_URL`: your production URL (links in emails). On Vercel it defaults to the production domain; anywhere else it must be set in production.
 
 How messages look:
 - Every message uses one template (`src/core/email-template.ts`): the company's name and brand colour, a heading, a button, and a plain-text version.

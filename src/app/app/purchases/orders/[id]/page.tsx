@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cisOptions } from "@/db/cis";
+import { CisProvider } from "@/components/app/costs/cis-context";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -18,7 +20,7 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
   const session = await requirePermission("costs.view");
   const poId = (await params).id;
   if (!uuid.safeParse(poId).success) notFound();
-  const data = await withSession(session, async (tx) => ({ found: await getPurchaseOrder(tx, session.orgId, poId), projects: await costProjects(tx, session.orgId) }));
+  const data = await withSession(session, async (tx) => ({ found: await getPurchaseOrder(tx, session.orgId, poId), projects: await costProjects(tx, session.orgId), cis: await cisOptions(tx, session.orgId) }));
   if (!data.found) notFound();
   const { po, projectName } = data.found;
   return (
@@ -28,6 +30,7 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
           <ArrowLeft className="size-3.5" />
           {projectName}
         </Link>
+        <CisProvider subcontractors={data.cis}>
         <PoEditor
           key={po.updatedAt.toISOString()}
           initial={{ id: po.id, number: po.number, status: po.status, projectId: po.projectId, supplierName: po.supplierName, supplierEmail: po.supplierEmail, neededBy: po.neededBy, deliveryNotes: po.deliveryNotes, vatRateBps: po.vatRateBps, lines: po.lines, orderedOn: po.orderedOn }}
@@ -37,6 +40,7 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
           storageEnabled={storageConfigured()}
           bills={data.found.bills.map((b) => ({ id: b.id, description: b.description, spentOn: b.spentOn, totalPence: b.totalPence }))}
         />
+        </CisProvider>
       </div>
     </LiveAppShell>
   );

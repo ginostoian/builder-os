@@ -6,7 +6,8 @@ import { InvoiceActions } from "@/components/app/invoices/invoice-actions";
 import { INVOICE_STATE, shortDate } from "@/components/app/invoices/status";
 import { InvoiceDocument } from "@/components/portal/invoice-document";
 import { Badge } from "@/components/ui/badge";
-import { invoiceState, ukToday, type ReminderKind } from "@/core/payment-plan";
+import { invoiceRef, invoiceState, ukToday, type ReminderKind } from "@/core/payment-plan";
+import { formatGBP } from "@/core/money";
 import { id as uuid } from "@/core/schemas";
 import { getInvoice, paymentSettings } from "@/db/invoices";
 import { clientContact, currentPortalToken } from "@/db/sending";
@@ -45,13 +46,13 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
 
   return (
     <LiveAppShell active="invoices" crumbs={["Payments", invoice.snapshot.ref]}>
-      <div className="flex min-h-0 flex-1">
-        <div className="flex min-w-0 flex-1 flex-col overflow-auto bg-surface-2">
-          <div className="flex items-start gap-4 border-b border-hairline bg-white px-6 pt-[18px] pb-3.5 print:hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto lg:flex-row lg:overflow-visible">
+        <div className="flex min-w-0 flex-none flex-col bg-surface-2 lg:flex-1 lg:overflow-auto">
+          <div className="flex flex-col items-stretch gap-3 border-b border-hairline bg-white px-4 pt-4 pb-3.5 lg:flex-row lg:items-start lg:gap-4 lg:px-6 lg:pt-[18px] print:hidden">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                 <span className="font-mono text-[12px] text-subtle">{invoice.snapshot.ref}</span>
-                <h1 className="truncate text-[19px] font-semibold tracking-[-0.02em]">{invoice.snapshot.description}</h1>
+                <h1 className="min-w-0 text-[19px] font-semibold tracking-[-0.02em] lg:truncate">{invoice.snapshot.description}</h1>
                 <Badge tone={state.tone}>{state.label}</Badge>
               </div>
               <div className="mt-1 flex flex-wrap gap-x-3.5 text-subtle">
@@ -65,7 +66,14 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                 )}
               </div>
             </div>
-            <InvoiceActions invoiceId={invoice.id} status={invoice.status} link={link} canEmail={emailConfigured() && Boolean(client?.email)} sent={invoice.sentAt !== null} />
+            <InvoiceActions
+              invoiceId={invoice.id}
+              status={invoice.status}
+              link={link}
+              canEmail={emailConfigured() && Boolean(client?.email)}
+              sent={invoice.sentAt !== null}
+              whatsapp={link && invoice.status === "issued" ? { phone: client?.phone ?? null, text: `Hi ${(client?.name ?? invoice.snapshot.client.name).split(" ")[0]}, here's your invoice ${invoiceRef(invoice.number)} for ${formatGBP(invoice.totalPence)}. You can see it and pay here: ${link}` } : null}
+            />
           </div>
           <div className="mx-auto w-full max-w-[760px] px-4 py-5 lg:px-6">
             <p className="mb-3 text-[12.5px] text-subtle print:hidden">This is what {client?.name ?? "the client"} sees in their portal.</p>
@@ -73,7 +81,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <aside className="flex w-[300px] flex-none flex-col gap-4 overflow-auto border-l border-hairline bg-white p-[18px] print:hidden">
+        <aside className="flex w-full flex-none flex-col gap-4 border-t border-hairline bg-white p-4 lg:w-[300px] lg:overflow-auto lg:border-t-0 lg:border-l lg:p-[18px] print:hidden">
           <div>
             <div className="mb-2 text-xs font-medium text-subtle">History</div>
             <ol className="flex flex-col gap-2 text-[12.5px]">

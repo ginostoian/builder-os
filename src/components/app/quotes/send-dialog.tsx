@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Copy, Mail, Send } from "lucide-react";
 import { sendQuoteToClient, type SendQuoteResult } from "@/app/app/quotes/actions";
 import { Button } from "@/components/ui/button";
+import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { TEXT } from "@/core/limits";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ export function SendDialog({
   title,
   clientName,
   clientEmail,
+  clientPhone,
   emailEnabled,
   resend,
   disabled,
@@ -54,6 +56,7 @@ export function SendDialog({
   title: string;
   clientName: string;
   clientEmail: string | null;
+  clientPhone: string | null;
   emailEnabled: boolean;
   /** Sent before: this sends a new version. */
   resend: boolean;
@@ -115,6 +118,7 @@ export function SendDialog({
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <CopyButton text={sent.link} />
+              <WhatsAppButton phone={clientPhone} text={`Hi ${clientName.split(" ")[0]}, here's your ${sent.versionNo > 1 ? "updated quote" : "quote"} for ${title}. You can read it, ask questions and accept it here: ${sent.link}`} />
               {!sent.emailed && mailto && (
                 <Button variant="secondary" asChild>
                   <a href={mailto}>

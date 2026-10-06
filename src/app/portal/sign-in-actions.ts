@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { z } from "zod";
 import { firstName } from "@/core/pipeline";
 import { email as emailSchema } from "@/core/schemas";
@@ -11,7 +12,7 @@ import { and, eq } from "drizzle-orm";
 import { emailConfigured, sendEmail } from "@/server/email";
 import { appOrigin, isBot, portalUrl } from "@/server/origin";
 import { portalCookie, startPortalSession } from "@/server/portal-auth";
-import { allow, checkFormToken, perIp } from "@/server/rate-limit";
+import { allow, checkFormToken, perIp, spendFormToken } from "@/server/rate-limit";
 
 /**
  * Signing in to the client portal: a code by email, a one-time link from an email, signing out, and "find
@@ -72,6 +73,8 @@ export async function verifyPortalCodeAction(token: string, code: string): Promi
   if (!(await allow(await perIp("portal_verify_ip", 30, 600)))) return { ok: false, message: MESSAGES.too_many };
   const access = typeof token === "string" ? await findPortalAccess(token) : null;
   if (!access) return { ok: false, message: MESSAGES.bad_link };
+  // Per link too, so guesses spread over many IP addresses still hit a wall.
+  if (!(await allow({ bucket: "portal_verify_access", subject: access.accessId, max: 15, windowSeconds: 600 }))) return { ok: false, message: MESSAGES.too_many };
   const result = await withTenant(access.orgId, (tx) => spendSignInCode(tx, access.orgId, access.accessId, code));
   if (result !== "ok") return { ok: false, message: MESSAGES[result] };
   await startPortalSession(token, access);
@@ -113,12 +116,20 @@ export async function requestPortalLinksAction(input: { email: string; website?:
   const form = checkFormToken("find_portal", input.formToken);
   if (form === "expired" || input.formToken === undefined) return { ok: false, message: "This page has been open a while. Please reload it and try again." };
   if (form !== "ok" || input.website || (await isBot()) || !emailConfigured()) return { ok: true };
+  if (!(await spendFormToken("find_portal", input.formToken!))) return { ok: true };
   // Nobody can flood an inbox from here: a few links per address, and per caller, an hour.
   if (!(await allow(await perIp("find_portal_ip", 10, 3_600), { bucket: "find_portal_email", subject: parsed.data, max: 3, windowSeconds: 3_600 }))) {
     return { ok: false, message: "That's a lot of requests in a short time. Please check your inbox, or try again in an hour." };
   }
   const origin = await appOrigin();
-  for (const access of await findPortalAccessesByEmail(parsed.data)) {
+  // The lookup and emails happen after replying: the answer takes the same time whether or not the
+  // address belongs to anyone's client.
+  after(() => emailPortalLinks(parsed.data, origin));
+  return { ok: true };
+}
+
+async function emailPortalLinks(address: string, origin: string) {
+  for (const access of await findPortalAccessesByEmail(address)) {
     try {
       const prepared = await withTenant(access.orgId, async (tx) => {
         const state = await portalSignInState(tx, access.orgId, access.clientId);
@@ -146,5 +157,4 @@ export async function requestPortalLinksAction(input: { email: string; website?:
       if (!(error instanceof PortalAuthError)) console.error("Portal link email failed", error instanceof Error ? error.message : error);
     }
   }
-  return { ok: true };
 }

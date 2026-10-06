@@ -254,7 +254,7 @@ function CommonFields({
   return (
     <Panel className="flex flex-col gap-4 p-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="Name" error={error("name")} required className="col-span-2">
+        <Field label="Name" error={error("name")} required className="sm:col-span-2">
           <input name="name" value={values.name} onChange={set("name")} maxLength={TEXT.line} autoFocus={isNew} autoComplete="off" className={control} />
         </Field>
         <Field label="Category" hint="Pick one or type a new one." error={error("category")} required>
@@ -280,7 +280,7 @@ function CommonFields({
             <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-subtle">%</span>
           </div>
         </Field>
-        <Field label="Description" hint="Shown to the client under the line on a quote." error={error("description")} className="col-span-2">
+        <Field label="Description" hint="Shown to the client under the line on a quote." error={error("description")} className="sm:col-span-2">
           <textarea name="description" value={values.description} onChange={set("description")} maxLength={TEXT.description} rows={3} className={cn(control, "h-auto resize-y py-2 leading-normal")} />
         </Field>
       </div>

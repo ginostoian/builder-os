@@ -7,32 +7,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleChip } from "@/components/ui/toggle-chip";
+import { Honeypot, useSupportForm } from "./use-support-form";
 
 const sizes = ["Just me", "2–5", "6–15", "16–50", "50+"];
 
 export function ContactForm() {
   const [size, setSize] = React.useState("6–15");
-  const [sent, setSent] = React.useState(false);
+  const { state, send } = useSupportForm();
 
-  if (sent)
+  if (state.status === "sent")
     return (
       <div role="status" className="flex flex-col items-center gap-3 px-3 py-12 text-center">
         <span className="flex size-12 items-center justify-center rounded-full bg-success-soft text-success">
           <Check className="size-[22px]" />
         </span>
-        <div className="text-xl font-semibold tracking-[-0.015em]">Thanks — message received.</div>
-        <div className="max-w-[320px] text-[15px] leading-normal text-ink-2">One of us will be in touch shortly. Usually within the hour on weekdays.</div>
+        <div className="text-xl font-semibold tracking-[-0.015em]">Thanks, message received.</div>
+        <div className="max-w-[320px] text-[15px] leading-normal text-ink-2">One of us will reply by email, usually within one working day.</div>
       </div>
     );
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="relative flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        setSent(true);
+        const f = new FormData(e.currentTarget);
+        const text = (k: string) => String(f.get(k) ?? "").trim();
+        void send({ name: text("name"), email: text("email"), company: text("company") || undefined, topic: "General enquiry", message: `${text("message") || "(No message.)"}\n\nTeam size: ${size}` }, text("website"));
       }}
     >
+      <Honeypot />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
         <Label>
           Your name
@@ -61,8 +65,9 @@ export function ContactForm() {
         How can we help?
         <Textarea name="message" placeholder="We're a 12-person firm doing mostly extensions…" />
       </Label>
-      <Button type="submit" size="lg" className="w-full">
-        Send message
+      {state.status === "error" && <p className="text-[14px] text-danger">{state.message}</p>}
+      <Button type="submit" size="lg" className="w-full" disabled={state.status === "sending"}>
+        {state.status === "sending" ? "Sending…" : "Send message"}
         <ArrowRight />
       </Button>
     </form>

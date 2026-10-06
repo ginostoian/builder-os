@@ -5,7 +5,7 @@
  * query strings are dropped (portal and sign-in links carry secrets), and portal/booking/unsubscribe tokens
  * in paths are masked. What's left is the error, the stack and the page it happened on.
  */
-import type { ErrorEvent, EventHint } from "@sentry/nextjs";
+import type { ErrorEvent, Event, EventHint } from "@sentry/nextjs";
 
 export const sentryDsn = () => process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN || undefined;
 
@@ -30,6 +30,24 @@ export function scrubEvent(event: ErrorEvent, _hint?: EventHint): ErrorEvent | n
       if (typeof b.data?.from === "string") b.data.from = maskPath(b.data.from);
     }
   }
+  return event;
+}
+
+/** Span and transaction attributes that can hold a URL (and so a portal or booking token). */
+const URL_KEYS = ["url", "http.url", "url.full", "url.path", "http.target", "http.route", "next.route", "next.span_name"];
+
+/** The same scrubbing for performance traces: page names, request URLs and every span's URL attributes. */
+export function scrubTransaction<T extends Event>(event: T, _hint?: EventHint): T | null {
+  delete event.user;
+  if (event.request) event.request = { url: event.request.url ? maskPath(event.request.url) : undefined, method: event.request.method };
+  if (event.transaction) event.transaction = maskPath(event.transaction);
+  for (const span of event.spans ?? []) {
+    if (span.description) span.description = maskPath(span.description);
+    const data = span.data as Record<string, unknown> | undefined;
+    if (data) for (const k of URL_KEYS) if (typeof data[k] === "string") data[k] = maskPath(data[k] as string);
+  }
+  const trace = event.contexts?.trace?.data as Record<string, unknown> | undefined;
+  if (trace) for (const k of URL_KEYS) if (typeof trace[k] === "string") trace[k] = maskPath(trace[k] as string);
   return event;
 }
 

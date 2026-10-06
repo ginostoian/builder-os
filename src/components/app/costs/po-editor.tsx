@@ -175,7 +175,7 @@ export function PoEditor({
               <Field label="Needed by">
                 <input type="date" value={v.neededBy} onChange={set("neededBy")} disabled={!editable} className={control} />
               </Field>
-              <Field label="Delivery notes" className="col-span-2" hint="Goes on the order with the site address, e.g. access, timing, who to call.">
+              <Field label="Delivery notes" className="sm:col-span-2" hint="Goes on the order with the site address, e.g. access, timing, who to call.">
                 <textarea value={v.deliveryNotes} onChange={set("deliveryNotes")} maxLength={TEXT.note} rows={2} disabled={!editable} className={cn(control, "h-auto resize-y py-2 leading-normal")} />
               </Field>
             </div>

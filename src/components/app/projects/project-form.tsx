@@ -77,7 +77,7 @@ export function ProjectForm({
       }}
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-        <Field label="Project name" className="col-span-2" hint="e.g. Kitchen extension, 14 Elm Road">
+        <Field label="Project name" className="sm:col-span-2" hint="e.g. Kitchen extension, 14 Elm Road">
           <input value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} maxLength={TEXT.name} required className={control} />
         </Field>
         <Field label="Client">
@@ -107,7 +107,7 @@ export function ProjectForm({
         <Field label="Planned finish" error={v.startDate && v.endDate && v.endDate < v.startDate ? "Before the start date" : undefined}>
           <input type="date" value={v.endDate ?? ""} min={v.startDate ?? undefined} onChange={(e) => setV({ ...v, endDate: e.target.value || null })} className={control} />
         </Field>
-        <Field label="Runs the job" className="col-span-2" hint="Usually the site lead. They see the job on their dashboard.">
+        <Field label="Runs the job" className="sm:col-span-2" hint="Usually the site lead. They see the job on their dashboard.">
           <select value={v.managerMemberId ?? ""} onChange={(e) => setV({ ...v, managerMemberId: e.target.value || null })} className={control}>
             <option value="">Nobody yet</option>
             {members.map((m) => (

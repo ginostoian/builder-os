@@ -12,7 +12,7 @@ import type { Tx } from "./index";
 import * as schema from "./schema";
 
 /** Tables that hold credentials or platform data, not the company's records. */
-const SKIP = new Set(["portal_codes", "portal_sessions", "rate_limits", "subscription_events"]);
+const SKIP = new Set(["portal_codes", "portal_sessions", "rate_limits", "subscription_events", "site_sync_ops"]);
 const SECRET_COLUMN = /token|secret|hash/i;
 const MAX_ROWS = 200_000;
 

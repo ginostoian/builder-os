@@ -31,6 +31,7 @@ const cols = [
       ["Book a demo", siteLinks.demo],
       ["Sign in", siteLinks.signIn],
       ["Help centre", "/help"],
+      ["Support", "/support"],
     ],
   },
 ];
@@ -61,8 +62,10 @@ export function SiteFooter() {
           <span>© 2026 Builder OS Ltd · Registered in England &amp; Wales</span>
           <div className="flex gap-5">
             {[
+              ["Terms", "/terms"],
               ["Privacy", "/privacy"],
               ["Cookies", "/cookies"],
+              ["Support", "/support"],
             ].map(([l, href]) => (
               <Link key={l} href={href} className="text-subtle hover:text-ink-2">
                 {l}

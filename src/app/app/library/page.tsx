@@ -50,7 +50,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Sear
   return (
     <LiveAppShell active="templates" crumbs={["Quotes", "Service library"]}>
       <div className="flex min-h-0 flex-1">
-        <nav aria-label="Categories" className="flex w-[200px] flex-none flex-col gap-px overflow-auto border-r border-hairline px-2.5 py-[18px]">
+        <nav aria-label="Categories" className="hidden w-[200px] flex-none flex-col gap-px overflow-auto border-r border-hairline px-2.5 py-[18px] lg:flex">
           <div className="px-2.5 pb-2 text-[11px] font-medium text-subtle">Categories</div>
           {[{ category: "", label: "All services", n: counts.active }, ...counts.categories.map((c) => ({ category: c.category, label: c.category, n: c.n }))].map((c) => {
             const active = current.category.toLowerCase() === c.category.toLowerCase();
@@ -107,9 +107,25 @@ export default async function LibraryPage({ searchParams }: { searchParams: Sear
             )}
           </ScreenTitle>
 
-          <div className="flex items-center gap-2">
+          <nav aria-label="Categories" className="chip-row lg:hidden">
+            {[{ category: "", label: "All", n: counts.active }, ...counts.categories.map((c) => ({ category: c.category, label: c.category, n: c.n }))].map((c) => {
+              const active = !archived && current.category.toLowerCase() === c.category.toLowerCase();
+              return (
+                <Link key={c.label} href={href({ category: c.category, view: "" })} aria-current={active ? "page" : undefined} className={cn("rounded-full px-3 py-1 text-[12.5px] font-medium", active ? "bg-ink text-white" : "bg-white text-ink-2 shadow-ring")}>
+                  {c.label} <span className={active ? "text-white/70" : "text-subtle"}>{c.n}</span>
+                </Link>
+              );
+            })}
+            {counts.archived > 0 && (
+              <Link href={href({ view: "archived", category: "" })} aria-current={archived ? "page" : undefined} className={cn("rounded-full px-3 py-1 text-[12.5px] font-medium", archived ? "bg-ink text-white" : "bg-white text-ink-2 shadow-ring")}>
+                Archived <span className={archived ? "text-white/70" : "text-subtle"}>{counts.archived}</span>
+              </Link>
+            )}
+          </nav>
+
+          <div className="flex flex-wrap items-center gap-2">
             {/* GET form: works without JavaScript, and the URL keeps the filters. */}
-            <form action="/app/library" role="search" className="relative max-w-[360px] flex-1">
+            <form action="/app/library" role="search" className="relative basis-full sm:max-w-[360px] sm:flex-1 sm:basis-0">
               {Object.entries({ category: current.category, kind: kind === "all" ? "" : kind, view: current.view }).map(
                 ([k, v]) => v && <input key={k} type="hidden" name={k} value={v} />,
               )}
@@ -137,7 +153,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Sear
               ))}
             </div>
             <div className="flex-1" />
-            {services.length > 0 && <span className="text-xs text-subtle">Most used first</span>}
+            {services.length > 0 && <span className="hidden text-xs text-subtle sm:inline">Most used first</span>}
           </div>
 
           {services.length === 0 ? (

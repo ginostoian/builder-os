@@ -5,7 +5,7 @@
  */
 import "server-only";
 import { orgFileKey } from "@/core/files";
-import { deleteObject, publicUrl, putObject, randomName, storageConfigured } from "./storage";
+import { deleteObject, privateUrl, publicUrl, putObject, randomName, storageConfigured } from "./storage";
 
 /** A valid 1×1 JPEG. */
 const TEST_JPEG = Buffer.from(
@@ -32,7 +32,10 @@ export async function checkStorage(orgId: string): Promise<StorageCheck> {
     };
   }
 
-  const key = orgFileKey(orgId, "photos", `check${randomName()}`, "jpg");
+  // With signed links on, photos are private: the public check uses a logo, and photos are checked apart.
+  const signing = Boolean(process.env.BUNNY_TOKEN_KEY?.trim());
+  const key = orgFileKey(orgId, signing ? "logo" : "photos", `check${randomName()}`, "jpg");
+  const photoKey = signing ? orgFileKey(orgId, "photos", `check${randomName()}`, "jpg") : null;
   const stored = await putObject(key, TEST_JPEG, "image/jpeg");
   if (!stored.ok) return { ok: false, summary: `Uploading failed: ${stored.message}`, fix: "See the storage error codes in the setup guide (401: password or region; 404: zone name).", steps };
   steps.push("Uploaded a test photo to storage.");
@@ -41,6 +44,8 @@ export async function checkStorage(orgId: string): Promise<StorageCheck> {
   let status = 0;
   let type = "";
   let firstFail = 0;
+  let signedStatus: number | null = null;
+  let leakStatus: number | null = null;
   try {
     for (const wait of [0, 2_000, 5_000]) {
       if (wait) await pause(wait);
@@ -57,10 +62,40 @@ export async function checkStorage(orgId: string): Promise<StorageCheck> {
       if (status === 200 && type.startsWith("image/")) break;
       if (!firstFail) firstFail = status;
     }
+    // Private files (photos, documents, receipts) should open only through signed, expiring links.
+    if (status === 200 && photoKey && (await putObject(photoKey, TEST_JPEG, "image/jpeg")).ok) {
+      const probe = async (u: string) => {
+        try {
+          const res = await fetch(`${u}${u.includes("?") ? "&" : "?"}check=${Date.now()}`, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
+          await res.arrayBuffer().catch(() => undefined);
+          return res.status;
+        } catch {
+          return -1;
+        }
+      };
+      await pause(2_000);
+      signedStatus = await probe(privateUrl(photoKey, 1));
+      leakStatus = await probe(publicUrl(photoKey));
+      steps.push(signedStatus === 200 ? "A signed link to a private photo works." : `A signed link to a private photo answered ${signedStatus}.`);
+      steps.push(leakStatus === 200 ? "The same photo also opens without signing." : "Without signing, the photo is refused, as it should be.");
+    }
   } finally {
+    if (photoKey) await deleteObject(photoKey);
     await deleteObject(key);
   }
 
+  if (status === 200 && type.startsWith("image/") && signedStatus !== null) {
+    if (signedStatus !== 200) {
+      return { ok: false, summary: "Signed links for private files don't work.", fix: "Check BUNNY_PRIVATE_CDN_URL points at a pull zone with Token Authentication on, and that BUNNY_TOKEN_KEY is that zone's token key.", steps };
+    }
+    if (leakStatus !== 200) return { ok: true, summary: "Storage works: photos upload, logos are public, and private files open only through signed links.", steps };
+    return {
+      ok: false,
+      summary: "Private files can also be opened through the public link, without signing.",
+      fix: "Anyone with an old link can still open photos, documents and receipts. In Bunny, on the public pull zone, add an Edge Rule that blocks every request whose path doesn't match /orgs/*/logo/* (see the setup guide, \"Private files\").",
+      steps,
+    };
+  }
   if (status === 200 && type.startsWith("image/")) {
     return firstFail
       ? { ok: true, summary: "Storage works, but new photos take a few seconds to reach the CDN.", fix: "Nothing to change: straight after an upload the app shows your own copy and retries until the CDN has it.", steps }

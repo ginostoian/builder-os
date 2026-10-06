@@ -201,7 +201,7 @@ export async function addStaffReply(tx: Tx, orgId: string, input: { quoteId: str
 
 /** The client's email and name, for the send dialog. */
 export async function clientContact(tx: Tx, orgId: string, clientId: string) {
-  const [c] = await tx.select({ name: clients.name, email: clients.email }).from(clients).where(and(eq(clients.orgId, orgId), eq(clients.id, clientId)));
+  const [c] = await tx.select({ name: clients.name, email: clients.email, phone: clients.phone }).from(clients).where(and(eq(clients.orgId, orgId), eq(clients.id, clientId)));
   return c;
 }
 

@@ -39,6 +39,7 @@ const MESSAGES: Record<CostErrorReason, string> = {
   too_many_receipts: "An expense can have up to 6 receipts.",
   invoiced: "This is on an invoice to the client. Cancel that invoice first to change it.",
   not_editable: "This can't be changed any more (cancelled or already sent).",
+  unknown_subcontractor: "Choose one of your subcontractors for CIS (add them under Team as a subcontractor).",
 };
 
 async function editor(): Promise<Session | null> {
@@ -81,6 +82,7 @@ const firstIssue = (e: { issues: { message: string; path: PropertyKey[] }[] }) =
     supplierName: "Enter the supplier.",
     supplierEmail: "Check the supplier's email address.",
     lines: "Check the lines: each needs a description and a quantity.",
+    cis: i?.message ?? "Check the CIS details.",
   };
   return labels[field] ?? "Check what you've entered.";
 };

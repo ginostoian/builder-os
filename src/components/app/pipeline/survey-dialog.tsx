@@ -1,8 +1,9 @@
 "use client";
 
+import { whatsappUrl } from "@/core/whatsapp";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { CalendarCheck2, Copy, Link2, Loader2 } from "lucide-react";
+import { CalendarCheck2, Copy, Link2, Loader2, MessageCircle } from "lucide-react";
 import { setStageAction } from "@/app/app/pipeline/actions";
 import { bookSurveyAction, bookingLinkAction, cancelSurveyAction, surveyOptionsAction } from "@/app/app/pipeline/survey-actions";
 import { Button } from "@/components/ui/button";
@@ -162,12 +163,14 @@ export function SurveyCard({
   visit,
   canEdit,
   hasEmail,
+  phone,
 }: {
   leadId: string;
   name: string;
   visit: { when: string; who: string | null; online: boolean; past: boolean } | null;
   canEdit: boolean;
   hasEmail: boolean;
+  phone: string | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
@@ -191,6 +194,21 @@ export function SurveyCard({
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2_000);
     });
+
+  // The tab opens straight away (phones block pop-ups opened after a wait), then gets the link.
+  const whatsapp = () => {
+    const tab = window.open("about:blank", "_blank");
+    startTransition(async () => {
+      const r = await bookingLinkAction(leadId);
+      if (!r.ok) {
+        tab?.close();
+        return setError(r.message);
+      }
+      const url = whatsappUrl(phone, `Hi ${name.split(" ")[0]}, pick a time that suits you for us to come and see the job: ${r.link}`);
+      if (tab) tab.location.href = url;
+      else window.location.href = url;
+    });
+  };
 
   return (
     <section className="rounded-[12px] bg-white p-4 shadow-ring">
@@ -221,6 +239,10 @@ export function SurveyCard({
           <Button variant="secondary" onClick={copy} disabled={pending} title="So they can pick a time themselves">
             {copied ? <Copy /> : <Link2 />}
             {copied ? "Copied" : "Booking link"}
+          </Button>
+          <Button variant="secondary" onClick={whatsapp} disabled={pending} title="Send them the booking link on WhatsApp">
+            <MessageCircle className="text-[#25A244]" />
+            WhatsApp it
           </Button>
         </div>
       )}

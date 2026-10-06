@@ -89,7 +89,7 @@ export function LeadDialog({ open, onOpenChange, leadId, initial = EMPTY_LEAD, o
                 <input value={v.value} onChange={set("value")} inputMode="decimal" className={cn(control, "pl-6 tabular")} />
               </span>
             </Field>
-            <Field label="Details" className="col-span-2">
+            <Field label="Details" className="sm:col-span-2">
               <textarea value={v.description} onChange={set("description")} maxLength={TEXT.note} rows={3} className={cn(control, "h-auto resize-y py-2 leading-normal")} />
             </Field>
             <Field label="Where they came from">

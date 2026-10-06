@@ -86,3 +86,11 @@ export function looksLikeSpam(...texts: (string | null | undefined)[]): boolean 
   const links = all.match(/https?:\/\/|www\./gi)?.length ?? 0;
   return links >= 3 || /\[url=|<a\s+href=/i.test(all);
 }
+
+/**
+ * Spends a form token: a genuine token works once, so a bot can't load the page once and post the form
+ * all day with the same token. False if it was already used.
+ */
+export async function spendFormToken(form: string, token: string): Promise<boolean> {
+  return allow({ bucket: "form_once", subject: `${form}\n${token}`, max: 1, windowSeconds: 25 * 3_600 });
+}

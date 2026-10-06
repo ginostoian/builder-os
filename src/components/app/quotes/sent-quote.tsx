@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -57,6 +58,7 @@ export function SentQuote({
   bankReady,
   emailEnabled,
   clientEmail,
+  clientPhone,
   variations,
   billable,
   recharges = [],
@@ -81,6 +83,7 @@ export function SentQuote({
   bankReady: boolean;
   emailEnabled: boolean;
   clientEmail: string | null;
+  clientPhone: string | null;
   variations: VariationRow[] | null;
   billable: BillableVariation[];
   recharges?: BillableRecharge[];
@@ -96,13 +99,13 @@ export function SentQuote({
   for (const c of comments) if (c.lineId) counts.set(c.lineId, (counts.get(c.lineId) ?? 0) + 1);
 
   return (
-    <div className="flex min-h-0 flex-1">
-      <div className="flex min-w-0 flex-1 flex-col overflow-auto bg-surface-2">
-        <div className="flex items-start gap-4 border-b border-hairline bg-white px-6 pt-[18px] pb-3.5">
+    <div className="flex min-h-0 flex-1 flex-col overflow-auto lg:flex-row lg:overflow-visible">
+      <div className="flex min-w-0 flex-none flex-col bg-surface-2 lg:flex-1 lg:overflow-auto">
+        <div className="flex flex-col items-stretch gap-3 border-b border-hairline bg-white px-4 pt-4 pb-3.5 lg:flex-row lg:items-start lg:gap-4 lg:px-6 lg:pt-[18px]">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
               <span className="font-mono text-[12px] text-subtle">{snapshot.quote.ref}</span>
-              <h1 className="truncate text-[19px] font-semibold tracking-[-0.02em]">{snapshot.quote.title}</h1>
+              <h1 className="min-w-0 text-[19px] font-semibold tracking-[-0.02em] lg:truncate">{snapshot.quote.title}</h1>
               <Badge tone={s.tone}>{s.label}</Badge>
             </div>
             <div className="mt-1 flex flex-wrap gap-x-3.5 gap-y-1 text-subtle">
@@ -120,8 +123,9 @@ export function SentQuote({
               </span>
             </div>
           </div>
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap gap-2 lg:justify-end">
             {link && <CopyButton text={link} label="Copy client link" />}
+            {link && <WhatsAppButton phone={clientPhone} text={`Hi ${clientName.split(" ")[0]}, here's your quote for ${snapshot.quote.title}: ${link}`} />}
             {status === "accepted" && project && (project.id || project.canStart) && (
               <StartProject quoteId={quoteId} projectId={project.id} sections={snapshot.sections.length} lines={snapshot.sections.reduce((a, s) => a + s.lines.length, 0)} />
             )}
@@ -174,7 +178,7 @@ export function SentQuote({
         </div>
       </div>
 
-      <aside className="flex w-[340px] flex-none flex-col gap-4 overflow-auto border-l border-hairline bg-white p-[18px]">
+      <aside className="flex w-full flex-none flex-col gap-4 border-t border-hairline bg-white p-4 lg:w-[340px] lg:overflow-auto lg:border-t-0 lg:border-l lg:p-[18px]">
         <div>
           <div className="text-[12.5px] text-subtle">Total inc. VAT</div>
           <div className="text-[24px] font-semibold tracking-[-0.02em] tabular">{formatGBP(snapshot.totals.total)}</div>

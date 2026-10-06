@@ -3,15 +3,18 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Camera, X } from "lucide-react";
-import { postSiteUpdateAction, uploadSitePhoto } from "@/app/m/actions";
+import { useSiteSync } from "./offline/site-sync";
+import { send } from "./offline/sync";
+import { newId, type QueuedPhoto } from "./offline/outbox";
 import { shrinkPhoto } from "@/components/app/shrink-photo";
 import { MAX_DIARY_PHOTOS } from "@/core/projects";
 
 type Picked = { file: File; url: string };
 
 /** Post a site update (what got done, any problems) with photos. It goes into the job's site diary. */
-export function PostUpdate({ projectId, photosEnabled }: { projectId: string; photosEnabled: boolean }) {
+export function PostUpdate({ projectId, projectName, photosEnabled }: { projectId: string; projectName: string; photosEnabled: boolean }) {
   const router = useRouter();
+  const sync = useSiteSync();
   const [body, setBody] = React.useState("");
   const [photos, setPhotos] = React.useState<Picked[]>([]);
   const [status, setStatus] = React.useState<{ ok: boolean; text: string }>();
@@ -32,30 +35,25 @@ export function PostUpdate({ projectId, photosEnabled }: { projectId: string; ph
   const submit = () =>
     startTransition(async () => {
       setStatus(undefined);
-      const r = await postSiteUpdateAction(projectId, body);
-      if (!r.ok || !r.id) return setStatus({ ok: false, text: r.ok ? "Couldn't post that. Try again." : r.message });
-      let failed = 0;
-      let lastError = "";
-      for (const [i, p] of photos.entries()) {
-        setStatus({ ok: true, text: `Uploading photo ${i + 1} of ${photos.length}…` });
+      if (!sync) return setStatus({ ok: false, text: "Reload the page and try again." });
+      // Shrink the photos now, on the phone: they may have to wait in the outbox for a while.
+      setStatus({ ok: true, text: photos.length ? "Getting the photos ready…" : "Posting…" });
+      const ready: QueuedPhoto[] = [];
+      let unreadable = 0;
+      for (const p of photos) {
         try {
-          const form = new FormData();
-          form.set("projectId", projectId);
-          form.set("entryId", r.id);
-          form.set("photo", new File([await shrinkPhoto(p.file)], "photo.jpg", { type: "image/jpeg" }));
-          const u = await uploadSitePhoto(form);
-          if (!u.ok) {
-            failed++;
-            lastError = u.message;
-          }
+          ready.push({ opId: newId(), blob: await shrinkPhoto(p.file), name: "photo.jpg", type: "image/jpeg" });
         } catch {
-          failed++;
-          lastError = "A photo couldn't be read.";
+          unreadable++;
         }
       }
+      const r = await send(sync.memberId, { kind: "update", projectId, projectName, body, photos: ready });
+      if (r.status === "failed") return setStatus({ ok: false, text: r.message });
       setBody("");
       setPhotos([]);
-      setStatus(failed ? { ok: false, text: `Posted, but ${failed} photo${failed > 1 ? "s" : ""} didn't upload. ${lastError}` } : { ok: true, text: "Posted to the site diary." });
+      if (r.status === "queued") return setStatus({ ok: true, text: "No signal, so it's saved on this phone. It'll post by itself when you're back online." });
+      const problem = r.warning ?? (unreadable ? "A photo couldn't be read." : undefined);
+      setStatus(problem ? { ok: false, text: `Posted, but not every photo went up. ${problem}` } : { ok: true, text: "Posted to the site diary." });
       router.refresh();
     });
 

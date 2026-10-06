@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Ban, CheckCircle2, Mail, Printer, Undo2 } from "lucide-react";
@@ -12,7 +13,21 @@ import { ukToday } from "@/core/payment-plan";
 import { Field, control } from "../form-fields";
 
 /** The team's buttons on an invoice: record payment, undo it, cancel, email it, copy the client's link. */
-export function InvoiceActions({ invoiceId, status, link, canEmail, sent }: { invoiceId: string; status: string; link: string | null; canEmail: boolean; sent: boolean }) {
+export function InvoiceActions({
+  invoiceId,
+  status,
+  link,
+  canEmail,
+  sent,
+  whatsapp,
+}: {
+  invoiceId: string;
+  status: string;
+  link: string | null;
+  canEmail: boolean;
+  sent: boolean;
+  whatsapp: { phone: string | null; text: string } | null;
+}) {
   const router = useRouter();
   const [pending, startTransition] = React.useTransition();
   const [message, setMessage] = React.useState<{ ok: boolean; text: string }>();
@@ -28,6 +43,7 @@ export function InvoiceActions({ invoiceId, status, link, canEmail, sent }: { in
     <div className="flex flex-col items-end gap-1.5">
       <div className="flex flex-wrap justify-end gap-2">
         {link && <CopyButton text={link} label="Copy client link" />}
+        {whatsapp && <WhatsAppButton phone={whatsapp.phone} text={whatsapp.text} />}
         <Button variant="secondary" onClick={() => window.print()}>
           <Printer className="text-ink-2" />
           Print

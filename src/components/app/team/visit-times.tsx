@@ -23,6 +23,7 @@ export type VisitRow = {
   outLng: string | null;
   editedAt: Date | null;
   editedByName: string | null;
+  recordedOffline: boolean;
 };
 
 const stamp = (at: Date) => new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(at);
@@ -38,6 +39,11 @@ export function VisitTimes({ visit, canEdit }: { visit: VisitRow; canEdit: boole
       <span>
         {londonTime(visit.checkedInAt)} – {visit.checkedOutAt ? londonTime(visit.checkedOutAt) : <span className="text-success">now</span>}
       </span>
+      {visit.recordedOffline && !visit.editedAt && (
+        <span title="Recorded on their phone with no signal and sent later. The times are from the phone." className="rounded-full bg-surface px-1.5 py-px text-[10.5px] font-medium text-subtle">
+          no signal
+        </span>
+      )}
       {visit.editedAt && (
         <span title={`Corrected${visit.editedByName ? ` by ${visit.editedByName}` : ""} on ${stamp(visit.editedAt)}`} className="rounded-full bg-surface px-1.5 py-px text-[10.5px] font-medium text-subtle">
           edited

@@ -71,7 +71,7 @@ export function ClientForm({ clientId, initial, canEdit }: { clientId?: string; 
         <Panel className="flex flex-col gap-4 p-5">
           <SectionHeading title="Contact" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Name" hint="A person or a company." error={error("name")} required className="col-span-2">
+            <Field label="Name" hint="A person or a company." error={error("name")} required className="sm:col-span-2">
               <input name="name" value={values.name} onChange={set("name")} maxLength={TEXT.name} autoFocus={isNew} autoComplete="off" className={control} />
             </Field>
             <Field label="Email" error={error("email")}>

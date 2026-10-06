@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cisOptions } from "@/db/cis";
+import { CisProvider } from "@/components/app/costs/cis-context";
 import { notFound } from "next/navigation";
 import { LiveAppShell } from "@/components/app/live-app-shell";
 import { JobCosts } from "@/components/app/costs/job-costs";
@@ -48,6 +50,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       money: q && seesMoney ? await projectMoney(tx, session.orgId, q) : null,
       costing: view === "costs" ? await jobCosting(tx, session.orgId, id) : null,
       costProjects: view === "costs" ? await costProjects(tx, session.orgId) : [],
+      cis: view === "costs" ? await cisOptions(tx, session.orgId) : null,
     };
   });
   if (!data) notFound();
@@ -106,6 +109,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
         />
       )}
       {view === "costs" && data.costing && (
+        <CisProvider subcontractors={data.cis}>
         <JobCosts
           projectId={p.id}
           quoteId={p.quoteId}
@@ -115,6 +119,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           canEdit={can(session.role, "costs.edit")}
           storageEnabled={storageConfigured()}
         />
+        </CisProvider>
       )}
     </LiveAppShell>
   );

@@ -49,11 +49,15 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Content companies add</strong>: clients and leads (names, contact details, addresses), quotes, invoices, projects, site diaries, photos, files, receipts, team members and
-            their certificates, timesheets, and messages.
+            their certificates, timesheets (with the phone&apos;s location at check-in and check-out, if the person allows it), messages and, for companies that use CIS, subcontractors&apos; tax
+            references (UTR and HMRC verification number).
           </li>
           <li>
             <strong>Client portal and forms</strong>: what clients enter (comments, e-signatures with the name typed, time, IP address and browser, survey bookings, website enquiries), and
             a one-time code or link when they sign in.
+          </li>
+          <li>
+            <strong>Messages to us</strong>: what you send through our support page or other forms (name, email, company and your message), to reply to you.
           </li>
           <li>
             <strong>Usage and technical data</strong>: how many pages each signed-in person views each day (counts only, not which pages), server logs, and error reports with personal details
@@ -97,6 +101,7 @@ export default function PrivacyPage() {
           <li>Invoices and billing records are kept for six years, as UK tax law requires.</li>
           <li>Sign-in codes and links expire within a week; device sign-ins last 90 days unless signed out sooner.</li>
           <li>Rate-limit counters are kept for a day, error reports for up to 90 days, and server logs for no more than 30 days.</li>
+          <li>Messages to our support inbox are kept as long as we need them to help you, and no more than two years.</li>
         </ul>
       </div>
 
@@ -118,6 +123,19 @@ export default function PrivacyPage() {
         <p>
           If you&apos;re unhappy with how we&apos;ve handled your data, you can complain to the Information Commissioner&apos;s Office at <a href="https://ico.org.uk/make-a-complaint/">ico.org.uk</a>
           , though we&apos;d appreciate the chance to put it right first.
+        </p>
+      </div>
+
+      <div>
+        <h2>On your phone</h2>
+        <p>
+          So the site app works with no signal, it keeps a copy of your jobs and anything you do offline (check-ins, task updates, site updates with photos, receipts) on your phone until it
+          can be sent. That copy is deleted from the phone once it&apos;s sent, and the saved pages are cleared when someone else signs in on the same phone. Clearing the browser&apos;s site
+          data removes everything.
+        </p>
+        <p>
+          WhatsApp buttons open WhatsApp on your own device with a message ready to send. We don&apos;t send any data to WhatsApp ourselves; what you send there is between you and
+          WhatsApp.
         </p>
       </div>
 
