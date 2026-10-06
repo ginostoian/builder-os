@@ -97,14 +97,14 @@ describe("survey booking", () => {
     const o = await newOrg("Surveys cancel");
     const a = await lead(o.orgId, "Cath Cole");
     await withTenant(o.orgId, (tx) => clientBookSurvey(tx, o.orgId, a, at("2026-10-06", 11), NOW));
-    await withTenant(o.orgId, (tx) => cancelSurvey(tx, o.orgId, a, "client", null, "2026-10-05"));
+    await withTenant(o.orgId, (tx) => cancelSurvey(tx, o.orgId, a, "client", null, "2026-10-05", NOW));
     await withTenant(o.orgId, async (tx) => {
       const l = (await getLead(tx, o.orgId, a))!;
       expect(l.lead.visitAt).toBeNull();
       expect(l.lead).toMatchObject({ nextActionOn: "2026-10-05", nextAction: "Rebook the site visit" });
       expect(await currentBooking(tx, o.orgId, a)).toBeNull();
     });
-    expect(await reason(withTenant(o.orgId, (tx) => cancelSurvey(tx, o.orgId, a, "client", null)))).toBe("no_booking");
+    expect(await reason(withTenant(o.orgId, (tx) => cancelSurvey(tx, o.orgId, a, "client", null, "2026-10-05", NOW)))).toBe("no_booking");
 
     // Stage dialog with a date books it (lead's owner goes); losing the lead frees the time.
     const b = await lead(o.orgId, "Dan Dee", o.jo);
