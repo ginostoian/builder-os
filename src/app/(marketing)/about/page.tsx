@@ -3,11 +3,9 @@ import { Mail, MapPin, Phone } from "lucide-react";
 import { Eyebrow, Placeholder } from "@/components/brand";
 import { ContactForm } from "@/components/marketing/contact-form";
 import { Container, H1, H2 } from "@/components/marketing/pieces";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "About & contact",
-  description: "Builder OS started in a site office in Bristol. Talk to a human about pricing, moving your data across, or whether it suits your firm.",
-};
+export const metadata: Metadata = pageMetadata({ title: "About & contact", description: "Builder OS started in a site office in Bristol. Talk to a human about pricing, moving your data across, or whether it suits your firm.", path: "/about" });
 
 const values = [
   ["01", "Faster than a spreadsheet", "If it takes longer in Builder OS than in Excel, that's a bug. Speed in the van matters more than features in a demo."],

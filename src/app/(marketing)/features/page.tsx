@@ -21,11 +21,9 @@ import type { ScreenId } from "@/components/app/routes";
 import { siteLinks } from "@/components/marketing/links";
 import { CheckItem, Container, H1, H2, LightCtaCard, PrimaryCta, SecondaryCta } from "@/components/marketing/pieces";
 import { Badge } from "@/components/ui/badge";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Features",
-  description: "Quoting, variations, client portal, payment plans, invoicing, projects, team app, CRM and reporting for UK renovation companies.",
-};
+export const metadata: Metadata = pageMetadata({ title: "Features: quoting, invoicing, projects and CRM for builders", description: "Quoting, variations, client portal, payment plans, invoicing, projects, team app, CRM and reporting for UK renovation companies.", path: "/features" });
 
 type Module = {
   id: string;

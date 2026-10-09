@@ -7,11 +7,10 @@ import { Container, DarkCtaBand, H1, H2 } from "@/components/marketing/pieces";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { comparison, faqs, plans, type Cell } from "@/lib/content/pricing";
 import { cn } from "@/lib/utils";
+import { breadcrumbSchema, faqSchema, graph, pageMetadata, softwareSchema, webPageSchema } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/json-ld";
 
-export const metadata: Metadata = {
-  title: "Pricing",
-  description: "One price for the whole company. Free, Essentials £49 and Pro £119 a month, plus VAT. No per-seat maths.",
-};
+export const metadata: Metadata = pageMetadata({ title: "Pricing: one price for the whole company", description: "One price for the whole company. Free, Essentials £49 and Pro £119 a month, plus VAT. No per-seat maths.", path: "/pricing" });
 
 function CompareCell({ value }: { value: Cell }) {
   if (value === true)
@@ -32,6 +31,17 @@ function CompareCell({ value }: { value: Cell }) {
 export default function PricingPage() {
   return (
     <>
+      <JsonLd
+        data={graph(
+          webPageSchema({ path: "/pricing", name: "Builder OS pricing", description: "Free, Essentials and Pro plans, priced per company per month." }),
+          softwareSchema(),
+          faqSchema(faqs.map(([q, a]) => ({ q, a }))),
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Pricing", path: "/pricing" },
+          ]),
+        )}
+      />
       <section className="px-6 pt-[88px] text-center">
         <div className="mx-auto flex max-w-[760px] flex-col items-center gap-[18px]">
           <Eyebrow>Pricing</Eyebrow>

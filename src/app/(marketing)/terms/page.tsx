@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage } from "@/components/marketing/legal-page";
 import { LEGAL, SUBPROCESSORS } from "@/lib/content/legal";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Terms of service", description: "The terms for using Builder OS, including how we look after the data you keep in it." };
+export const metadata: Metadata = pageMetadata({ title: "Terms of service", description: "The terms for using Builder OS, including how we look after the data you keep in it.", path: "/terms" });
 
 /**
  * The agreement between Builder OS and the companies that use it, written to be read. The data processing

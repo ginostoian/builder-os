@@ -2,11 +2,9 @@ import type { Metadata } from "next";
 import { Avatar, Eyebrow } from "@/components/brand";
 import { DemoBooking } from "@/components/marketing/demo-booking";
 import { CheckItem, Container, H1 } from "@/components/marketing/pieces";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Book a demo",
-  description: "Twenty minutes on video. Bring an old quote or spreadsheet and we'll rebuild it in Builder OS live.",
-};
+export const metadata: Metadata = pageMetadata({ title: "Book a demo", description: "Twenty minutes on video. Bring an old quote or spreadsheet and we'll rebuild it in Builder OS live.", path: "/demo" });
 
 const cover = [
   "Rebuild one of your real quotes, live",

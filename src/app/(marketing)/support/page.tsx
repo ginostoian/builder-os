@@ -5,11 +5,9 @@ import { Eyebrow } from "@/components/brand";
 import { Container, H1 } from "@/components/marketing/pieces";
 import { SupportForm } from "@/components/marketing/support-form";
 import { LEGAL } from "@/lib/content/legal";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Support",
-  description: "Get help with Builder OS: guides to every part of the app, or send us a message and a person will reply.",
-};
+export const metadata: Metadata = pageMetadata({ title: "Support", description: "Get help with Builder OS: guides to every part of the app, or send us a message and a person will reply.", path: "/support" });
 
 const ways = [
   { icon: BookOpen, title: "Read the guides", body: "Step-by-step help for every part of Builder OS, from your first quote to CIS.", href: "/help", cta: "Open the help centre" },

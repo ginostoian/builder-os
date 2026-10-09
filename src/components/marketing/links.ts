@@ -4,6 +4,7 @@ export const siteLinks = {
   pricing: "/pricing",
   customers: "/customers",
   blog: "/blog",
+  tools: "/tools",
   article: "/blog/how-to-quote-a-kitchen-extension",
   about: "/about",
   contact: "/about#contact",

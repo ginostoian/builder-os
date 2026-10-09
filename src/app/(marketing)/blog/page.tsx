@@ -2,11 +2,9 @@ import type { Metadata } from "next";
 import { BlogIndex } from "@/components/marketing/blog-index";
 import { NewsletterSignup } from "@/components/marketing/newsletter";
 import { Container, H2 } from "@/components/marketing/pieces";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Blog",
-  description: "Practical guides on pricing, cash flow and running a renovation firm, plus what's new in Builder OS.",
-};
+export const metadata: Metadata = pageMetadata({ title: "Blog: guides for UK renovation firms", description: "Practical guides on pricing, cash flow and running a renovation firm, plus what's new in Builder OS.", path: "/blog" });
 
 export default function BlogPage() {
   return (

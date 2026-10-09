@@ -6,16 +6,24 @@ import { HelpSearch } from "@/components/help/help-search";
 import { Container, H1 } from "@/components/marketing/pieces";
 import { ARTICLES, CATEGORIES, articlesIn, categoryOf, searchText } from "@/lib/content/help";
 import { LEGAL } from "@/lib/content/legal";
+import { breadcrumbSchema, graph, pageMetadata, webPageSchema } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/json-ld";
 
-export const metadata: Metadata = {
-  title: "Help centre",
-  description: "Friendly guides to everything in Builder OS: quotes, the client portal, invoices, projects, your team, job costs and winning more work.",
-};
+export const metadata: Metadata = pageMetadata({ title: "Help centre", description: "Friendly guides to everything in Builder OS: quotes, the client portal, invoices, projects, your team, job costs and winning more work.", path: "/help" });
 
 export default function HelpPage() {
   const entries = ARTICLES.map((a) => ({ slug: a.slug, title: a.title, summary: a.summary, category: categoryOf(a.category).title, text: searchText(a) }));
   return (
     <>
+      <JsonLd
+        data={graph(
+          webPageSchema({ path: "/help", name: "Builder OS help centre", description: "Guides to everything in Builder OS.", type: "CollectionPage" }),
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Help centre", path: "/help" },
+          ]),
+        )}
+      />
       <section className="px-6 pt-[72px] pb-12 text-center">
         <Container className="flex flex-col items-center gap-4">
           <Eyebrow>Help centre</Eyebrow>

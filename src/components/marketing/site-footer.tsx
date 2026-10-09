@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand";
+import { TOOLS, toolPath } from "@/lib/content/tools";
 import { siteLinks } from "./links";
 
 const cols = [
@@ -14,6 +15,10 @@ const cols = [
       ["Team app", "/features#team"],
       ["CRM & reporting", "/features#crm"],
     ],
+  },
+  {
+    title: "Free tools",
+    links: [...TOOLS.map((t) => [t.name, toolPath(t.slug)]), ["All free tools", siteLinks.tools]],
   },
   {
     title: "Company",
@@ -38,7 +43,7 @@ const cols = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-hairline bg-surface text-ink">
+    <footer className="border-t border-hairline bg-surface text-ink print:hidden">
       <div className="mx-auto flex max-w-[1200px] flex-col gap-14 px-6 pt-16 pb-8">
         <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-10">
           <div className="flex min-w-[220px] flex-col gap-3.5">
