@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, Building2, Gauge, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Building2, Gauge, Lock, ShieldCheck } from "lucide-react";
+import { lockAdminAction } from "@/app/admin/two-step/actions";
 import { LogoMark } from "@/components/brand";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +48,12 @@ export function AdminShell({ active, who, children }: { active: AdminSection; wh
             <ArrowLeft className="size-3" />
             Back to the app
           </Link>
+          <form action={lockAdminAction}>
+            <button type="submit" title="Ask for a code again before anyone opens the admin area on this browser" className="flex items-center gap-1.5 text-white/80 hover:text-white">
+              <Lock className="size-3" />
+              Lock admin
+            </button>
+          </form>
         </div>
       </aside>
       <div className="min-w-0 flex-1">
@@ -56,6 +63,12 @@ export function AdminShell({ active, who, children }: { active: AdminSection; wh
               {n.label}
             </Link>
           ))}
+          <form action={lockAdminAction} className="ml-auto">
+            <button type="submit" className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-ink-2">
+              <Lock className="size-3.5" />
+              Lock
+            </button>
+          </form>
         </nav>
         <main className="mx-auto flex max-w-[1400px] flex-col gap-4 px-4 py-5 md:px-6">{children}</main>
       </div>
