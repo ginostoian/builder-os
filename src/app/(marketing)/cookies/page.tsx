@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage } from "@/components/marketing/legal-page";
 import { LEGAL } from "@/lib/content/legal";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Cookie policy", description: "The cookies Builder OS uses: only the ones the site needs to work." };
+export const metadata: Metadata = pageMetadata({ title: "Cookie policy", description: "The cookies Builder OS uses: only the ones the site needs to work.", path: "/cookies" });
 
 const cookies: [string, string, string, string][] = [
   ["__session, __client_uat", "Clerk (our sign-in provider)", "Keeps you signed in to the Builder OS app", "While you're signed in"],

@@ -11,15 +11,17 @@ import { featuredPost, posts } from "@/lib/content/blog";
 import { quoteSections, VAT_RATE } from "@/lib/demo-data";
 import { formatGBP } from "@/core/money";
 import { quoteTotals, sectionTotal } from "@/core/quote";
+import { JsonLd } from "@/components/seo/json-ld";
+import { articleSchema, breadcrumbSchema, graph, pageMetadata } from "@/lib/seo";
 
 export function generateStaticParams() {
   return [{ slug: featuredPost.slug }];
 }
 
-export const metadata: Metadata = {
-  title: featuredPost.title,
-  description: featuredPost.excerpt,
-};
+const POST_PATH = `/blog/${featuredPost.slug}`;
+const isoDay = (text: string) => new Date(`${text} 12:00 UTC`).toISOString().slice(0, 10);
+
+export const metadata: Metadata = pageMetadata({ title: featuredPost.title, description: featuredPost.excerpt, path: POST_PATH, type: "article" });
 
 const toc = [
   { id: "structure", label: "Structure it the way it'll be built" },
@@ -79,6 +81,16 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   return (
     <>
+      <JsonLd
+        data={graph(
+          articleSchema({ path: POST_PATH, headline: featuredPost.title, description: featuredPost.excerpt, datePublished: isoDay(featuredPost.longDate), type: "BlogPosting" }),
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Blog", path: "/blog" },
+            { name: featuredPost.title, path: POST_PATH },
+          ]),
+        )}
+      />
       <article>
         <header className="px-6 pt-16">
           <div className="mx-auto flex max-w-[880px] flex-col gap-5">

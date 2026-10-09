@@ -6,6 +6,8 @@ import { ArticleBody } from "@/components/help/article-body";
 import { ARTICLES, articleBySlug, articlesIn, categoryOf, readingMinutes } from "@/lib/content/help";
 import { LEGAL } from "@/lib/content/legal";
 import { cn } from "@/lib/utils";
+import { JsonLd } from "@/components/seo/json-ld";
+import { articleSchema, breadcrumbSchema, graph, pageMetadata } from "@/lib/seo";
 
 export function generateStaticParams() {
   return ARTICLES.map((a) => ({ slug: a.slug }));
@@ -13,7 +15,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const a = articleBySlug((await params).slug);
-  return a ? { title: `${a.title} · Help`, description: a.summary } : {};
+  return a ? pageMetadata({ title: `${a.title} · Help`, description: a.summary, path: `/help/${a.slug}`, type: "article" }) : {};
 }
 
 const PLAN_NOTE = { essentials: "On the Essentials and Pro plans", pro: "On the Pro plan" } as const;
@@ -29,6 +31,16 @@ export default async function HelpArticlePage({ params }: { params: Promise<{ sl
   const related = (a.related ?? []).map(articleBySlug).filter((r): r is NonNullable<typeof r> => Boolean(r));
   return (
     <section className="px-6 pt-10 pb-24">
+      <JsonLd
+        data={graph(
+          articleSchema({ path: `/help/${a.slug}`, headline: a.title, description: a.summary, type: "TechArticle" }),
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Help centre", path: "/help" },
+            { name: a.title, path: `/help/${a.slug}` },
+          ]),
+        )}
+      />
       <div className="mx-auto grid max-w-[1120px] grid-cols-1 gap-10 lg:grid-cols-[240px_minmax(0,1fr)]">
         <nav aria-label={category.title} className="hidden lg:block">
           <div className="sticky top-24">

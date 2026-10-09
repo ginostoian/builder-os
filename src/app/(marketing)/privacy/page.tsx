@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage } from "@/components/marketing/legal-page";
 import { LEGAL, SUBPROCESSORS } from "@/lib/content/legal";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Privacy policy", description: "How Builder OS collects, uses and protects personal data, and your rights under UK GDPR." };
+export const metadata: Metadata = pageMetadata({ title: "Privacy policy", description: "How Builder OS collects, uses and protects personal data, and your rights under UK GDPR.", path: "/privacy" });
 
 export default function PrivacyPage() {
   return (

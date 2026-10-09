@@ -12,6 +12,7 @@ const links = [
   { label: "Features", href: siteLinks.features },
   { label: "Pricing", href: siteLinks.pricing },
   { label: "Customers", href: siteLinks.customers },
+  { label: "Free tools", href: siteLinks.tools },
   { label: "Blog", href: siteLinks.blog },
   { label: "About", href: siteLinks.about },
 ];
@@ -23,12 +24,12 @@ export function SiteNav() {
   const open = openOn === pathname;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-ink/[0.06] bg-surface/[0.82] backdrop-blur-[14px] backdrop-saturate-[1.6]">
+    <header className="sticky top-0 z-50 print:hidden border-b border-ink/[0.06] bg-surface/[0.82] backdrop-blur-[14px] backdrop-saturate-[1.6]">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-7 px-6">
         <Link href={siteLinks.home} className="flex-none text-ink hover:text-ink" aria-label="Builder OS home">
           <Logo />
         </Link>
-        <nav className="hidden flex-1 gap-1 min-[900px]:flex" aria-label="Main">
+        <nav className="hidden flex-1 gap-1 min-[1024px]:flex" aria-label="Main">
           {links.map((l) => {
             const active = pathname === l.href || pathname.startsWith(`${l.href}/`);
             return (
@@ -46,7 +47,7 @@ export function SiteNav() {
             );
           })}
         </nav>
-        <div className="hidden items-center gap-2 min-[900px]:flex">
+        <div className="hidden items-center gap-2 min-[1024px]:flex">
           <Link href={siteLinks.signIn} className="px-[11px] py-[7px] text-sm font-medium text-ink-2 hover:text-ink">
             Sign in
           </Link>
@@ -57,7 +58,7 @@ export function SiteNav() {
             <Link href={siteLinks.pricing}>Start free</Link>
           </Button>
         </div>
-        <div className="flex flex-1 justify-end gap-2 min-[900px]:hidden">
+        <div className="flex flex-1 justify-end gap-2 min-[1024px]:hidden">
           <Button asChild size="nav" className="hover:text-white">
             <Link href={siteLinks.pricing}>Start free</Link>
           </Button>
@@ -74,7 +75,7 @@ export function SiteNav() {
         </div>
       </div>
       {open && (
-        <div className="flex flex-col gap-0.5 border-t border-hairline bg-surface px-6 pt-3 pb-5 min-[900px]:hidden">
+        <div className="flex flex-col gap-0.5 border-t border-hairline bg-surface px-6 pt-3 pb-5 min-[1024px]:hidden">
           {links.map((l) => (
             <Link key={l.href} href={l.href} className="border-b border-line px-1 py-3 text-base font-medium text-ink">
               {l.label}

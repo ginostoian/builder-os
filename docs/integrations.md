@@ -175,6 +175,18 @@ No personal data is sent: no user details, cookies, headers, request bodies or q
 - **Daily job heartbeat.** Create a heartbeat check in the same monitor (expect one ping a day, with a few hours' grace) and set `CRON_HEARTBEAT_URL` to its URL. The daily job pings it when it finishes, so you hear if reminders stop going out.
 - **Free backstop.** The GitHub workflow `.github/workflows/uptime.yml` checks `/api/health` and the home page every 10 minutes. Set the repository variable `PRODUCTION_URL` (Settings → Secrets and variables → Actions → Variables). A failed run emails whoever last changed the workflow.
 
+## Search engines (SEO)
+
+The public website is set up for Google with nothing to install:
+
+- `/sitemap.xml` lists every public page (home, features, pricing, free tools, help articles, blog, legal pages). `/robots.txt` keeps crawlers out of the app, site app, admin, client portal and other private links, and points them at the sitemap. Preview deployments ask not to be crawled at all.
+- Every public page has a title, description, canonical link (always the live address) and a share card (`opengraph-image` files: a default one, plus one for the tools hub and each tool). The favicon is `src/app/icon.tsx`.
+- Structured data (schema.org JSON-LD, built in `src/lib/seo.ts`): Organization, WebSite and SoftwareApplication with each plan as an offer on the home page; FAQ and offers on pricing; TechArticle and breadcrumbs on help articles; BlogPosting on the blog; WebApplication, breadcrumbs and FAQ on every free tool.
+- Optional `NEXT_PUBLIC_SITE_URL` changes the address used in all of the above (it defaults to `https://builder-os.co.uk`).
+- Google Search Console: add the domain (the DNS method needs no code), then submit `https://builder-os.co.uk/sitemap.xml`. To use the HTML tag method instead, set `GOOGLE_SITE_VERIFICATION` to the tag's content value and redeploy.
+
+Free tools live at `/tools` (`src/lib/content/tools.ts` lists them; the sums are in `src/core/tools`, with tests). To add one: add it to `TOOLS`, write its sums in `src/core/tools` with tests, its calculator in `src/components/tools`, and a page plus `opengraph-image.tsx` under `src/app/(marketing)/tools/<slug>`. It then appears in the hub, footer, sitemap and "more free tools" automatically. Tax figures (CIS rates, the reverse charge rules, the £90,000 VAT threshold) are as of October 2026: check them when HMRC changes the rules and update each tool's `updated` date.
+
 ## Security settings
 
 - `APP_SECRET`: a long random value (`openssl rand -hex 32`) that signs public form tokens and keys the rate-limit counters. Without it, one is derived from `CLERK_SECRET_KEY`. If you set it later, open forms need a reload.

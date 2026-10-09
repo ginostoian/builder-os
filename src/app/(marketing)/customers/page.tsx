@@ -3,11 +3,9 @@ import { Eyebrow, Placeholder } from "@/components/brand";
 import { CustomerStories } from "@/components/marketing/customer-stories";
 import { siteLinks } from "@/components/marketing/links";
 import { ArrowLink, Container, H1, H2, LightCtaCard, PrimaryCta, SecondaryCta } from "@/components/marketing/pieces";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Customers",
-  description: "From two-person bathroom fitters to fifty-strong design-and-build firms, here's how they run on Builder OS.",
-};
+export const metadata: Metadata = pageMetadata({ title: "Customers", description: "From two-person bathroom fitters to fifty-strong design-and-build firms, here's how they run on Builder OS.", path: "/customers" });
 
 const stats = [
   ["25 min", "to build a quote, down from 3 hours"],

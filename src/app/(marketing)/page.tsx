@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -24,6 +25,8 @@ import { ProductTour } from "@/components/marketing/product-tour";
 import { Button } from "@/components/ui/button";
 import { plans } from "@/lib/content/pricing";
 import { cn } from "@/lib/utils";
+import { JsonLd } from "@/components/seo/json-ld";
+import { graph, organizationSchema, pageMetadata, softwareSchema, webPageSchema, websiteSchema } from "@/lib/seo";
 
 const library = [
   { name: "Plaster skim, walls", unit: "m²", rate: "£14.00", selected: true },
@@ -110,9 +113,16 @@ function MiniGridRow({ code, item, qty, rate, total, selected }: { code: string;
   );
 }
 
+const HOME_TITLE = "Builder OS: quoting and job software for UK renovation firms";
+const HOME_DESCRIPTION =
+  "Quote in minutes, get clients to sign online, take stage payments and run every job from one place. Software built for UK renovation and building firms. Start free.";
+
+export const metadata: Metadata = pageMetadata({ title: HOME_TITLE, description: HOME_DESCRIPTION, path: "/", absoluteTitle: true });
+
 export default function HomePage() {
   return (
     <>
+      <JsonLd data={graph(organizationSchema(), websiteSchema(), softwareSchema(), webPageSchema({ path: "/", name: HOME_TITLE, description: HOME_DESCRIPTION }))} />
       {/* Hero */}
       <section className="relative px-6 pt-[88px]">
         <div
