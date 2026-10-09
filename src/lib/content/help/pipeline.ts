@@ -443,4 +443,48 @@ export const PIPELINE_ARTICLES: HelpArticle[] = [
     ],
     related: ["pipeline", "leads", "job-costing-reports"],
   },
+  {
+    slug: "website-estimator",
+    title: "Put a cost estimator on your website",
+    summary: "Homeowners get a guide price for their project on your website, then ask you for a proper quote.",
+    category: "pipeline",
+    who: "Admins",
+    keywords: ["calculator", "price calculator", "cost calculator", "estimate", "website", "embed", "widget", "leads"],
+    body: [
+      {
+        type: "p",
+        text: "The website estimator is a cost calculator for your own website. A homeowner picks their project (an extension, loft conversion, kitchen and so on), its size and finish, and sees your guide price straight away. If they like the sound of it, they leave their details and ask you for a proper quote, with their estimate included.",
+      },
+      { type: "h", text: "Setting it up" },
+      {
+        type: "steps",
+        items: [
+          "Go to [Settings](/app/settings) and click **Website estimator**.",
+          "Tick the projects you do and choose your area.",
+          "Set **Your prices vs typical** if you're dearer or cheaper than most firms near you, or open **Use your own prices** and type in your usual prices for a standard finish.",
+          "Tick **We're VAT registered** if you charge VAT, so homeowners see prices with VAT.",
+          "Click **Save**, and check the **Preview** looks right.",
+          "Click **Turn on the estimator**, then copy the embed code into your website, or share the link.",
+        ],
+      },
+      {
+        type: "tip",
+        text: "The embed code grows to fit the estimator, so there's no scrollbar inside your page. Paste all three lines together. Your website needs to use https, as almost all do.",
+      },
+      { type: "h", text: "When someone asks for a quote" },
+      {
+        type: "list",
+        items: [
+          "Admins and the office get an email with their name, contact details, project and the estimate they saw. Reply to it to answer them.",
+          "On the Pro plan, they also land in your [pipeline](/help/pipeline) as a new lead, with the estimate in its notes.",
+          "The estimate is worked out again on our side from your settings, so nobody can send you a made-up price.",
+        ],
+      },
+      {
+        type: "note",
+        text: "Estimates are guide prices to help homeowners plan, not quotes. The estimator says so, and tells them you'll confirm the real price after seeing the job.",
+      },
+    ],
+    related: ["web-enquiry-form", "pipeline", "leads"],
+  },
 ];

@@ -39,6 +39,7 @@ import { EXPENSE_CATEGORIES, MAX_PO_LINES, MAX_RECEIPTS, PO_STATUSES, type PoLin
 import { MAX_DIARY_PHOTOS, PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "../core/projects";
 import { WORKER_KINDS } from "../core/team";
 import { CIS_STATUSES } from "../core/cis";
+import type { EstimatorSettings } from "../core/estimator";
 import { MAX_VARIATION_PHOTOS, VARIATION_STATUSES, type VariationLine, type VariationPhoto } from "../core/variation";
 import { LINE_KINDS, QUOTE_STATUSES, ROLES, SERVICE_KINDS, type Address, type PaymentPlanInput } from "../core/schemas";
 
@@ -142,6 +143,9 @@ export const organizations = pgTable(
     cisContractorUtr: text("cis_contractor_utr"),
     cisEmployerRef: text("cis_employer_ref"),
     cisAccountsOfficeRef: text("cis_accounts_office_ref"),
+    /** The cost estimator for the company's own website (/estimate/{token}); null until it's turned on. Migration 0023. */
+    estimatorToken: text("estimator_token").unique("organizations_estimator_token_key"),
+    estimator: jsonb("estimator").$type<EstimatorSettings>(),
     // ── Billing (migration 0018). Only the billing functions change these. ──
     /** Pro for free until then. New companies get 14 days; existing ones were made complimentary. */
     trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }).default(sql`now() + interval '14 days'`),

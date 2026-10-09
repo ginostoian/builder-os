@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, CalendarClock, Calculator, FileText, Hammer, Percent, PiggyBank, ReceiptText, TrendingUp } from "lucide-react";
+import { ArrowRight, CalendarClock, Calculator, FileText, Hammer, Home, Percent, PiggyBank, ReceiptText, TrendingUp } from "lucide-react";
 import { Eyebrow } from "@/components/brand";
 import { Container, DarkCtaBand, H1 } from "@/components/marketing/pieces";
 import { siteLinks } from "@/components/marketing/links";
@@ -14,6 +14,7 @@ const DESCRIPTION = "Free tools for UK builders: a CIS deduction calculator, a V
 export const metadata: Metadata = pageMetadata({ title: TITLE, description: DESCRIPTION, path: siteLinks.tools });
 
 const ICONS: Record<string, typeof Calculator> = {
+  "renovation-cost-calculator": Home,
   "cis-calculator": Calculator,
   "reverse-charge-vat-checker": Percent,
   "markup-margin-calculator": Calculator,

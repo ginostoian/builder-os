@@ -7,6 +7,7 @@ const tabs = [
   { id: "company", label: "Company", href: appRoutes.settings },
   { id: "payments", label: "Payments", href: appRoutes.paymentSettings },
   { id: "cis", label: "CIS", href: "/app/settings/cis" },
+  { id: "estimator", label: "Website estimator", href: "/app/settings/estimator" },
   { id: "billing", label: "Plan & billing", href: "/app/settings/billing" },
   { id: "team", label: "Team", href: appRoutes.team },
   { id: "guide", label: "Getting started", href: "/app/settings/getting-started" },

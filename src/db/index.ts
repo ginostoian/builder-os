@@ -218,6 +218,15 @@ export async function findEnquiryForm(token: string): Promise<string | null> {
   return rows[0]?.org_id ?? null;
 }
 
+/** The company whose website cost estimator this token opens, or null (unknown, switched off, or deleted). */
+export async function findEstimator(token: string): Promise<string | null> {
+  const parsed = lookupToken.safeParse(token);
+  if (!parsed.success) return null;
+  const database = await checkedDb();
+  const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_estimator_lookup(${parsed.data}) as org_id`);
+  return rows[0]?.org_id ?? null;
+}
+
 /** The company and lead an unsubscribe link belongs to, or null. */
 export async function findLeadForUnsubscribe(token: string): Promise<{ orgId: string; leadId: string } | null> {
   const parsed = lookupToken.safeParse(token);

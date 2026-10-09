@@ -18,6 +18,15 @@ export type Tool = {
 
 export const TOOLS: Tool[] = [
   {
+    slug: "renovation-cost-calculator",
+    name: "Renovation cost calculator",
+    title: "Renovation Cost Calculator UK 2026: Extensions, Lofts, Kitchens",
+    description:
+      "How much will your extension, loft conversion, kitchen or bathroom cost? Get a guide price for your project and region in seconds, with VAT and what's not included.",
+    summary: "Guide prices for extensions, lofts, kitchens and more, by region. Builders can embed it.",
+    updated: "2026-10-09",
+  },
+  {
     slug: "cis-calculator",
     name: "CIS deduction calculator",
     title: "CIS Deduction Calculator for Contractors (UK)",
