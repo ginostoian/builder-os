@@ -26,6 +26,9 @@ function secret(): string {
 
 const hmac = (value: string) => createHmac("sha256", secret()).update(value).digest("hex");
 
+/** A signature for something the server hands out and checks later (cookies, hidden form fields). Say what it is in `value`. */
+export const appSignature = hmac;
+
 /** The caller's IP address as the platform reports it (Vercel sets these; a client can't). */
 export async function clientIp(): Promise<string> {
   const h = await headers();
