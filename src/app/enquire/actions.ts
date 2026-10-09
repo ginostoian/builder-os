@@ -7,13 +7,12 @@ import { enquiryInput } from "@/core/schemas";
 import { findEnquiryForm, withTenant } from "@/db";
 import { and, eq } from "drizzle-orm";
 import { postcodeCovered } from "@/core/surveys";
-import { createLead, enquiryAlertContext, recentWebEnquiries } from "@/db/pipeline";
+import { createLead, recentWebEnquiries } from "@/db/pipeline";
 import { leads } from "@/db/schema";
 import { getSurveySettings, openSlots } from "@/db/surveys";
 import { planAllows } from "@/db/billing";
 import { runCompanyAutomations } from "@/server/automations";
-import { emailConfigured, sendEmail } from "@/server/email";
-import { appOrigin } from "@/server/origin";
+import { alertNewEnquiry } from "@/server/enquiry-alert";
 import { allow, checkFormToken, looksLikeSpam, perIp, spendFormToken } from "@/server/rate-limit";
 
 /** `booking`: the page where they can book a survey straight away, when the company takes bookings online. */
@@ -79,36 +78,8 @@ export async function submitEnquiry(token: string, input: unknown): Promise<Enqu
   if (created === "closed") return { ok: false, message: "This form isn't taking enquiries at the moment." };
   if (!created) return { ok: false, message: "We've had a lot of enquiries in the last few minutes. Please try again shortly, or give us a call." };
   after(async () => {
-    await alertTeam(orgId, created.leadId, d).catch(() => undefined);
+    await alertNewEnquiry(orgId, created.leadId, d).catch(() => undefined);
     await runCompanyAutomations(orgId).catch(() => undefined);
   });
   return { ok: true, booking: created.booking };
-}
-
-async function alertTeam(orgId: string, leadId: string, d: { name: string; email: string; phone?: string; postcode?: string; projectType?: string; budget?: string; description?: string }) {
-  if (!emailConfigured()) return;
-  const ctx = await withTenant(orgId, (tx) => enquiryAlertContext(tx, orgId));
-  if (ctx.to.length === 0) return;
-  const subject = `New enquiry: ${d.name}${d.projectType ? `, ${d.projectType.toLowerCase()}` : ""}`;
-  await sendEmail({
-    to: ctx.to,
-    replyTo: d.email,
-    subject,
-    fromName: "Builder OS",
-    content: {
-      company: { name: ctx.company, brandColour: ctx.brandColour },
-      preheader: d.description?.slice(0, 120) ?? subject,
-      heading: `New enquiry from ${d.name}`,
-      paragraphs: [d.description ? `“${d.description.slice(0, 1_500)}”` : "No details given.", "Call them back while they're still looking: the first to reply usually wins the job. Reply to this email to answer them directly."],
-      details: [
-        ["Email", d.email],
-        ...(d.phone ? ([["Phone", d.phone]] as [string, string][]) : []),
-        ...(d.postcode ? ([["Postcode", d.postcode.toUpperCase()]] as [string, string][]) : []),
-        ...(d.projectType ? ([["Work", d.projectType]] as [string, string][]) : []),
-        ...(d.budget ? ([["Budget", d.budget]] as [string, string][]) : []),
-      ],
-      button: { label: "Open the lead", href: `${await appOrigin()}/app/pipeline/${leadId}` },
-      footer: "You're getting this because you're an admin or in the office, and your website enquiry form is on.",
-    },
-  });
 }

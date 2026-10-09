@@ -8,6 +8,7 @@
  * - Money is integer pence, percentages are basis points, quantities have at most 3 decimals.
  */
 import { CIS_STATUSES } from "./cis";
+import { FINISHES, PROJECT_TYPES } from "./estimator";
 import { z } from "zod";
 import { MAX_VARIATION_LINES } from "./variation";
 import { PROJECT_STATUSES, TASK_STATUSES, WEATHER } from "./projects";
@@ -636,3 +637,22 @@ export const supportInput = z.strictObject({
   formToken: z.string().max(120).optional(),
 });
 export type SupportInput = z.infer<typeof supportInput>;
+
+// ── Website cost estimator ───────────────────────────────────────────────────
+
+/** An enquiry from a company's cost estimator: the person, and the project they priced (re-priced on the server). */
+export const estimateEnquiryInput = z.strictObject({
+  name: singleLine(TEXT.name),
+  email: email,
+  phone: phone.optional(),
+  postcode: singleLine(12).optional(),
+  message: multiLine(TEXT.note).optional(),
+  project: z.strictObject({
+    type: z.enum(PROJECT_TYPES),
+    size: z.number().min(1).max(1000).optional(),
+    variant: z.string().max(40).optional(),
+    finish: z.enum(FINISHES),
+  }),
+  website: z.string().max(200).optional(),
+  formToken: z.string().max(120).optional(),
+});

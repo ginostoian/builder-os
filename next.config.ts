@@ -3,7 +3,7 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 
 /**
  * Security headers on every response. Pages can't be framed by other sites (clickjacking), except the
- * web enquiry form, which companies embed on their own websites. Browsers get HTTPS only, no MIME
+ * web enquiry form and the cost estimator, which companies embed on their own websites. Browsers get HTTPS only, no MIME
  * sniffing, a minimal referrer, and no camera, microphone or payment APIs; location stays available to
  * our own pages (the site app's check-in).
  */
@@ -26,8 +26,9 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
-      { source: "/((?!enquire/).*)", headers: [...common, { key: "X-Frame-Options", value: "DENY" }, { key: "Content-Security-Policy", value: csp("'none'") }] },
+      { source: "/((?!enquire/|estimate/).*)", headers: [...common, { key: "X-Frame-Options", value: "DENY" }, { key: "Content-Security-Policy", value: csp("'none'") }] },
       { source: "/enquire/:path*", headers: [...common, { key: "Content-Security-Policy", value: csp("https:") }] },
+      { source: "/estimate/:path*", headers: [...common, { key: "Content-Security-Policy", value: csp("https:") }] },
     ];
   },
 };

@@ -86,6 +86,18 @@ export function SuffixInput({ id, value, onChange, suffix, placeholder = "0", in
   );
 }
 
+export function DateInput({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <input
+      id={id}
+      type="date"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-12 w-full min-w-0 rounded-xl bg-white px-3.5 text-[16px] text-ink shadow-ring-input outline-none focus:shadow-[0_0_0_1.5px_var(--color-ink),0_0_0_4px_rgb(16_16_15/0.08)]"
+    />
+  );
+}
+
 /** A row of mutually exclusive choices (a radio group that looks like a segmented control). */
 export function Segmented<T extends string>({ label, value, options, onChange, className }: { label: string; value: T; options: { value: T; label: string; sub?: string }[]; onChange: (v: T) => void; className?: string }) {
   return (

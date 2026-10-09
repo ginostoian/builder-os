@@ -18,6 +18,15 @@ export type Tool = {
 
 export const TOOLS: Tool[] = [
   {
+    slug: "renovation-cost-calculator",
+    name: "Renovation cost calculator",
+    title: "Renovation Cost Calculator UK 2026: Extensions, Lofts, Kitchens",
+    description:
+      "How much will your extension, loft conversion, kitchen or bathroom cost? Get a guide price for your project and region in seconds, with VAT and what's not included.",
+    summary: "Guide prices for extensions, lofts, kitchens and more, by region. Builders can embed it.",
+    updated: "2026-10-09",
+  },
+  {
     slug: "cis-calculator",
     name: "CIS deduction calculator",
     title: "CIS Deduction Calculator for Contractors (UK)",
@@ -51,6 +60,51 @@ export const TOOLS: Tool[] = [
     description:
       "Work backwards from the profit you want: the turnover, jobs and quotes you need each year, month and week, your break-even point and what a better margin is worth.",
     summary: "Work back from the profit you want to the turnover, jobs and quotes it takes.",
+    updated: "2026-10-09",
+  },
+  {
+    slug: "retention-calculator",
+    name: "Retention money calculator",
+    title: "Retention Money Calculator for Contractors (UK)",
+    description:
+      "See how much cash retentions are holding back on a job or across a year, when it should come back, what waiting costs you, and what the coming ban changes.",
+    summary: "How much is held back, when it's due back, and what waiting for it costs.",
+    updated: "2026-10-09",
+  },
+  {
+    slug: "late-payment-interest-calculator",
+    name: "Late payment interest calculator",
+    title: "Late Payment Interest Calculator for Builders (UK)",
+    description:
+      "Work out the statutory interest and fixed compensation you can claim on late invoices from business customers, with today's rates and a letter you can send.",
+    summary: "The interest and compensation you can claim on late business invoices, with a letter.",
+    updated: "2026-10-09",
+  },
+  {
+    slug: "day-rate-calculator",
+    name: "Day rate calculator",
+    title: "Day Rate Calculator for Builders and Trades (UK)",
+    description:
+      "Work out the day rate you need from the income you want, your costs and the days you can actually bill, with tax and National Insurance estimated for 2026/27.",
+    summary: "The day and hourly rate you need for the income you want, after costs and tax.",
+    updated: "2026-10-09",
+  },
+  {
+    slug: "builders-quote-template",
+    name: "Builder's quote template",
+    title: "Free Builder's Quote Template (Fill In and Download PDF)",
+    description:
+      "A free builder's quote template you fill in online: your logo, line items, VAT or reverse charge, payment stages and terms. Download it as a PDF. No sign-up.",
+    summary: "Fill in a professional quote online and download it as a PDF.",
+    updated: "2026-10-09",
+  },
+  {
+    slug: "builders-invoice-template",
+    name: "Builder's invoice template",
+    title: "Free Builder's Invoice Template with VAT and CIS (PDF)",
+    description:
+      "A free invoice template for builders: VAT, the reverse charge and CIS handled, bank details and due date. Fill it in online and download a PDF. No sign-up.",
+    summary: "A ready-to-send invoice with VAT, reverse charge and CIS handled.",
     updated: "2026-10-09",
   },
 ];

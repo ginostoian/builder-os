@@ -92,8 +92,9 @@ Postgres (Neon in London for preview and production), Drizzle ORM, and Row-Level
      - `claimDueEmails` reserves each due step before sending, row-locked with `skip locked`, so overlapping runners never send twice.
      - A run stops when the lead leaves its stage, opts out or has no email; when the automation is switched off or its trigger changes; or when the step is over 3 days late.
      - Steps are due at the start of the UK day, `delayDays` after the previous step. Same-day steps go at once, because actions call `runCompanyAutomations` in `after()`.
-   - **Lookups.** Three public entry points use `SECURITY DEFINER` functions owned by `builderos_lookup`, each returning only ids:
+   - **Lookups.** Four public entry points use `SECURITY DEFINER` functions owned by `builderos_lookup`, each returning only ids:
      - `app_enquiry_form_lookup(token)`, for the web form; it matches `organizations.enquiry_token`;
+     - `app_estimator_lookup(token)`, for the website cost estimator (migration 0023); it matches `organizations.estimator_token`. The estimator's settings are `organizations.estimator` (jsonb, checked against `estimatorSettings` in `src/core/estimator.ts` when read);
      - `app_lead_unsubscribe_lookup(token)`, for unsubscribe links; it matches `leads.unsubscribe_token`;
      - `app_orgs_with_due_automations(now)`, for the daily cron.
 
