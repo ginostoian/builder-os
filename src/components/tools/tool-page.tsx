@@ -8,6 +8,7 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { Button } from "@/components/ui/button";
 import { TOOLS, toolPath, type Tool } from "@/lib/content/tools";
 import { breadcrumbSchema, faqSchema, graph, toolSchema, webPageSchema } from "@/lib/seo";
+import { cn } from "@/lib/utils";
 
 export type Faq = { q: string; a: string };
 
@@ -26,6 +27,7 @@ export function ToolPage({
   children,
   faqs,
   disclaimer,
+  printOnlyCalculator = false,
 }: {
   tool: Tool;
   heading: string;
@@ -35,9 +37,13 @@ export function ToolPage({
   children: React.ReactNode;
   faqs: Faq[];
   disclaimer?: string;
+  /** Print just the calculator (a document template), not the page around it. */
+  printOnlyCalculator?: boolean;
 }) {
   const path = toolPath(tool.slug);
-  const related = TOOLS.filter((t) => t.slug !== tool.slug);
+  // The next few tools in the list, wrapping round, so every tool links to a handful of others.
+  const at = TOOLS.findIndex((t) => t.slug === tool.slug);
+  const related = Array.from({ length: Math.min(4, TOOLS.length - 1) }, (_, i) => TOOLS[(at + 1 + i) % TOOLS.length]!);
   return (
     <>
       <JsonLd
@@ -53,7 +59,7 @@ export function ToolPage({
         )}
       />
 
-      <section className="px-6 pt-8 sm:pt-12">
+      <section className={cn("px-6 pt-8 sm:pt-12", printOnlyCalculator && "print:hidden")}>
         <Container className="max-w-[1120px]">
           <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 text-[13px] text-subtle">
             <Link href="/" className="hover:text-ink-2">
@@ -76,7 +82,7 @@ export function ToolPage({
         </Container>
       </section>
 
-      <section className="px-4 pt-8 sm:px-6 sm:pt-10" aria-label={tool.name}>
+      <section className="px-4 pt-8 sm:px-6 sm:pt-10 print:p-0" aria-label={tool.name}>
         <Container className="max-w-[1120px]">{calculator}</Container>
       </section>
 

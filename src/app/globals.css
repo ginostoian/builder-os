@@ -212,3 +212,11 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Printing (the free tools' "Print or save as PDF"): A4 with modest margins. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+}

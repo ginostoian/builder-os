@@ -18,7 +18,7 @@ const cols = [
   },
   {
     title: "Free tools",
-    links: [...TOOLS.map((t) => [t.name, toolPath(t.slug)]), ["All free tools", siteLinks.tools]],
+    links: [...TOOLS.slice(0, 6).map((t) => [t.name, toolPath(t.slug)]), ["All free tools", siteLinks.tools]],
   },
   {
     title: "Company",

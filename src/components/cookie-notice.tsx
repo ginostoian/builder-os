@@ -28,7 +28,7 @@ export function CookieNotice() {
     <div
       role="region"
       aria-label="Cookies"
-      className="fixed inset-x-3 bottom-3 z-[70] mx-auto flex max-w-[560px] flex-col gap-3 rounded-2xl bg-ink p-4 font-sans text-[14px] leading-snug text-white shadow-pop sm:flex-row sm:items-center animate-in fade-in-0 slide-in-from-bottom-2"
+      className="fixed inset-x-3 bottom-3 z-[70] print:hidden mx-auto flex max-w-[560px] flex-col gap-3 rounded-2xl bg-ink p-4 font-sans text-[14px] leading-snug text-white shadow-pop sm:flex-row sm:items-center animate-in fade-in-0 slide-in-from-bottom-2"
     >
       <p className="flex-1 text-white/85">
         We only use cookies the site needs to work, like keeping you signed in. No tracking or advertising.{" "}

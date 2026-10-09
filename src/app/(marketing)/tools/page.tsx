@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Calculator, Percent, ReceiptText, TrendingUp } from "lucide-react";
+import { ArrowRight, CalendarClock, Calculator, FileText, Hammer, Percent, PiggyBank, ReceiptText, TrendingUp } from "lucide-react";
 import { Eyebrow } from "@/components/brand";
 import { Container, DarkCtaBand, H1 } from "@/components/marketing/pieces";
 import { siteLinks } from "@/components/marketing/links";
@@ -15,9 +15,14 @@ export const metadata: Metadata = pageMetadata({ title: TITLE, description: DESC
 
 const ICONS: Record<string, typeof Calculator> = {
   "cis-calculator": Calculator,
-  "reverse-charge-vat-checker": ReceiptText,
-  "markup-margin-calculator": Percent,
+  "reverse-charge-vat-checker": Percent,
+  "markup-margin-calculator": Calculator,
   "revenue-profit-calculator": TrendingUp,
+  "retention-calculator": PiggyBank,
+  "late-payment-interest-calculator": CalendarClock,
+  "day-rate-calculator": Hammer,
+  "builders-quote-template": FileText,
+  "builders-invoice-template": ReceiptText,
 };
 
 /** The free tools hub: every calculator, with a line on what each one answers. */
