@@ -13,15 +13,33 @@ import { formatGBP } from "@/core/money";
 import { quoteTotals, sectionTotal } from "@/core/quote";
 import { JsonLd } from "@/components/seo/json-ld";
 import { articleSchema, breadcrumbSchema, graph, pageMetadata } from "@/lib/seo";
+import { ArticleLayout } from "@/components/blog/article-layout";
+import { ARTICLE_BODIES } from "@/components/blog/articles";
+import { BLOG_ARTICLES, blogArticlePath, findBlogArticle } from "@/lib/content/articles";
+
+export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return [{ slug: featuredPost.slug }];
+  return [{ slug: featuredPost.slug }, ...BLOG_ARTICLES.map((a) => ({ slug: a.slug }))];
 }
 
 const POST_PATH = `/blog/${featuredPost.slug}`;
 const isoDay = (text: string) => new Date(`${text} 12:00 UTC`).toISOString().slice(0, 10);
 
-export const metadata: Metadata = pageMetadata({ title: featuredPost.title, description: featuredPost.excerpt, path: POST_PATH, type: "article" });
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const article = findBlogArticle(slug);
+  if (!article) return pageMetadata({ title: featuredPost.title, description: featuredPost.excerpt, path: POST_PATH, type: "article" });
+  const meta = pageMetadata({ title: article.seoTitle, description: article.description, path: blogArticlePath(article.slug), type: "article" });
+  const image = { url: article.hero.src, width: article.hero.width, height: article.hero.height, alt: article.hero.alt };
+  return {
+    ...meta,
+    keywords: article.keywords,
+    authors: [{ name: article.author.name }],
+    openGraph: { ...meta.openGraph, type: "article", publishedTime: article.published, modifiedTime: article.modified, authors: [article.author.name], images: [image] },
+    twitter: { ...meta.twitter, images: [image] },
+  };
+}
 
 const toc = [
   { id: "structure", label: "Structure it the way it'll be built" },
@@ -71,6 +89,15 @@ function P({ children }: { children: React.ReactNode }) {
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const article = findBlogArticle(slug);
+  const Body = ARTICLE_BODIES[slug];
+  if (article && Body) {
+    return (
+      <ArticleLayout article={article}>
+        <Body />
+      </ArticleLayout>
+    );
+  }
   if (slug !== featuredPost.slug) notFound();
 
   // The breakdown is the real Q-1042 from the demo workspace, so the article and the app agree.

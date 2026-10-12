@@ -139,7 +139,28 @@ export function toolSchema({ path, name, description, category = "FinanceApplica
   };
 }
 
-export function articleSchema({ path, headline, description, datePublished, dateModified, image = "/opengraph-image", type = "Article" }: { path: string; headline: string; description: string; datePublished?: string; dateModified?: string; image?: string; type?: "Article" | "BlogPosting" | "TechArticle" }): Thing {
+/** An article. `author` is a named person (better for E-E-A-T); without one, the company is the author. */
+export function articleSchema({
+  path,
+  headline,
+  description,
+  datePublished,
+  dateModified,
+  image = "/opengraph-image",
+  type = "Article",
+  author,
+  keywords,
+}: {
+  path: string;
+  headline: string;
+  description: string;
+  datePublished?: string;
+  dateModified?: string;
+  image?: string;
+  type?: "Article" | "BlogPosting" | "TechArticle";
+  author?: { name: string; jobTitle?: string; url?: string };
+  keywords?: string[];
+}): Thing {
   return {
     "@type": type,
     "@id": `${absoluteUrl(path)}#article`,
@@ -149,8 +170,9 @@ export function articleSchema({ path, headline, description, datePublished, date
     mainEntityOfPage: absoluteUrl(path),
     inLanguage: "en-GB",
     image: absoluteUrl(image),
-    author: { "@id": ORG_ID },
+    author: author ? { "@type": "Person", name: author.name, ...(author.jobTitle ? { jobTitle: author.jobTitle } : {}), url: absoluteUrl(author.url ?? "/about"), worksFor: { "@id": ORG_ID } } : { "@id": ORG_ID },
     publisher: { "@id": ORG_ID },
+    ...(keywords?.length ? { keywords: keywords.join(", ") } : {}),
     ...(datePublished ? { datePublished } : {}),
     ...(dateModified ?? datePublished ? { dateModified: dateModified ?? datePublished } : {}),
   };

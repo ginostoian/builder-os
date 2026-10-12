@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Search, SearchX } from "lucide-react";
 import { Avatar, Eyebrow, Placeholder } from "@/components/brand";
@@ -114,8 +115,12 @@ export function BlogIndex() {
           {visible.length > 0 ? (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,330px),1fr))] gap-x-5 gap-y-9">
               {visible.map((p) => (
-                <Link key={p.title} href={siteLinks.article} className="group flex flex-col gap-3.5 text-ink hover:text-ink">
-                  <Placeholder label={p.image} variant="sm" className="aspect-[16/10] rounded-2xl text-[11.5px] shadow-ring" />
+                <Link key={p.title} href={p.href ?? siteLinks.article} className="group flex flex-col gap-3.5 text-ink hover:text-ink">
+                  {p.cover ? (
+                    <Image src={p.cover.src} alt={p.cover.alt} width={1200} height={750} sizes="(min-width: 1100px) 380px, 100vw" className="aspect-[16/10] rounded-2xl bg-white object-cover object-top shadow-ring" />
+                  ) : (
+                    <Placeholder label={p.image} variant="sm" className="aspect-[16/10] rounded-2xl text-[11.5px] shadow-ring" />
+                  )}
                   <div className="flex items-center gap-2 text-[13px] text-subtle">
                     <span className="font-medium text-ink-3">{p.category}</span>·<span>{p.read}</span>
                   </div>
