@@ -3,7 +3,7 @@ name: Uptime
 # A free backstop to an uptime monitor: every 10 minutes, check production answers /api/health (app up,
 # database reachable) and that the home page loads. A failed run emails whoever last changed this file
 # (GitHub's own notifications). Set the repository variable PRODUCTION_URL (Settings → Secrets and
-# variables → Actions → Variables), e.g. https://builderos.co.uk; without it the check is skipped.
+# variables → Actions → Variables), e.g. https://builder-os.co.uk; without it the check is skipped.
 on:
   schedule:
     - cron: "*/10 * * * *"

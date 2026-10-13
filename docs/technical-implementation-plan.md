@@ -95,7 +95,7 @@ One Next.js app, with folders that behave like packages. Lint rules enforce the 
 ```
 builder-os/
 ├─ src/
-│  ├─ app/(marketing)/         # builderos.co.uk: Home, Features, Pricing, Blog, Customers, About, Demo
+│  ├─ app/(marketing)/         # builder-os.co.uk: Home, Features, Pricing, Blog, Customers, About, Demo
 │  ├─ app/app/                 # authenticated admin app
 │  ├─ app/q/                   # client quote links & portal (no Clerk)
 │  ├─ app/m/                   # PWA for site staff

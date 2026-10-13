@@ -230,7 +230,7 @@ export default function TradifyAlternativesForBuilders() {
         office still uses in six months.
       </p>
       <p className={styles.p}>
-        Start with the work, not the feature list. A firm doing £40,000 kitchen extensions needs a different tool from one doing 300 boiler services a year, even if both have
+        After 12 years running a UK renovation company, my rule is simple: start with the work, not the feature list. A firm doing £40,000 kitchen extensions needs a different tool from one doing 300 boiler services a year, even if both have
         six staff. Then check what you can’t give up. For most builders that’s the accounting link, and a few need certificates. If Xero sync is non-negotiable today, that
         narrows the list fast.
       </p>

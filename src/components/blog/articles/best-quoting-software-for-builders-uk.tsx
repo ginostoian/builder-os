@@ -51,7 +51,8 @@ export default function BestQuotingSoftwareForBuildersUk() {
       </p>
       <p className={styles.p}>
         Most “best quoting software” lists ranking on Google are written by a vendor that puts itself first and buries the price comparison. We make Builder OS, so treat our
-        enthusiasm for it with the same suspicion. What we can do is show our working. Prices below come from each vendor’s published pricing or UK listings on Capterra, GetApp
+        enthusiasm for it with the same suspicion. I ran a UK home renovation company for 12 years before building it, so I’ve quoted, priced variations and
+        chased stage payments the hard way. That’s the lens here, and we show our working. Prices below come from each vendor’s published pricing or UK listings on Capterra, GetApp
         and the Sage marketplace, checked in October 2026, and they’re shown before VAT. Where a vendor doesn’t publish UK prices we say so rather than guess.
       </p>
       <p className={styles.p}>We judged every tool against the same five questions:</p>

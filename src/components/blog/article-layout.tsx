@@ -33,7 +33,7 @@ export function ArticleLayout({ article, children }: { article: BlogArticle; chi
             dateModified: article.modified,
             image: article.hero.src,
             type: "BlogPosting",
-            author: { name: article.author.name, jobTitle: article.author.role },
+            author: { name: article.author.name, jobTitle: "Founder", description: article.author.description },
             keywords: article.keywords,
           }),
           breadcrumbSchema([

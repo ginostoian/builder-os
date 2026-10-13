@@ -158,7 +158,7 @@ export function articleSchema({
   dateModified?: string;
   image?: string;
   type?: "Article" | "BlogPosting" | "TechArticle";
-  author?: { name: string; jobTitle?: string; url?: string };
+  author?: { name: string; jobTitle?: string; description?: string; url?: string };
   keywords?: string[];
 }): Thing {
   return {
@@ -170,7 +170,7 @@ export function articleSchema({
     mainEntityOfPage: absoluteUrl(path),
     inLanguage: "en-GB",
     image: absoluteUrl(image),
-    author: author ? { "@type": "Person", name: author.name, ...(author.jobTitle ? { jobTitle: author.jobTitle } : {}), url: absoluteUrl(author.url ?? "/about"), worksFor: { "@id": ORG_ID } } : { "@id": ORG_ID },
+    author: author ? { "@type": "Person", name: author.name, ...(author.jobTitle ? { jobTitle: author.jobTitle } : {}), ...(author.description ? { description: author.description } : {}), url: absoluteUrl(author.url ?? "/about"), worksFor: { "@id": ORG_ID } } : { "@id": ORG_ID },
     publisher: { "@id": ORG_ID },
     ...(keywords?.length ? { keywords: keywords.join(", ") } : {}),
     ...(datePublished ? { datePublished } : {}),

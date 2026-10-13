@@ -23,7 +23,7 @@ const team = [
 ];
 
 const contacts = [
-  { icon: Mail, label: "Email", value: "hello@builderos.co.uk", href: "mailto:hello@builderos.co.uk" },
+  { icon: Mail, label: "Email", value: "hello@builder-os.co.uk", href: "mailto:hello@builder-os.co.uk" },
   { icon: Phone, label: "Phone", value: "0117 496 0123", href: "tel:+441174960123" },
   { icon: MapPin, label: "Office", value: "Bristol, United Kingdom" },
 ];

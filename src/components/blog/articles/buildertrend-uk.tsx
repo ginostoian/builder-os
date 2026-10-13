@@ -207,7 +207,7 @@ export default function BuildertrendUk() {
         alt="Scorecard showing Buildertrend’s fit for UK firm types: strong fit for £3 million plus design-and-build firms with high-spec projects and heavy selections; possible fit for £1 million to £3 million firms with a finance team handling CIS; weak fit for 3 to 15 person renovation firms doing extensions, lofts and refurbishments; poor fit for sole traders and reactive repair businesses."
       />
       <p className={styles.p}>
-        Run a quick test. Add up your projects from last year and divide your turnover by the number of jobs. If your average job is above £250,000 and clients make dozens of
+        From 12 years running a UK renovation company, here’s the test I’d use. Add up your projects from last year and divide your turnover by the number of jobs. If your average job is above £250,000 and clients make dozens of
         finish selections, book the demo. If your average is £25,000 to £80,000 (a single-storey rear extension, a dormer loft, a full kitchen-diner), you’ll use perhaps a fifth
         of the platform. At £5,000-plus a year, that fifth is expensive.
       </p>

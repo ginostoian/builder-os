@@ -165,7 +165,7 @@ export default function PricingPage() {
             <p className="max-w-[360px] text-base leading-[1.55] text-ink-2">
               Can&apos;t find what you&apos;re after? Email{" "}
               <Link href={siteLinks.contact} className="text-ink underline">
-                hello@builderos.co.uk
+                hello@builder-os.co.uk
               </Link>{" "}
               — a real person replies, usually within the hour.
             </p>

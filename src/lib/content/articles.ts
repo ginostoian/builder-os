@@ -5,7 +5,15 @@
  */
 import type { BlogCategory } from "./blog";
 
-export type BlogAuthor = { name: string; initials: string; role: string; bio: string };
+export type BlogAuthor = {
+  name: string;
+  initials: string;
+  role: string;
+  /** Follows the name in the byline at the end of an article. */
+  bio: string;
+  /** One sentence for structured data. */
+  description: string;
+};
 
 export type BlogArticle = {
   slug: string;
@@ -35,8 +43,9 @@ export type BlogArticle = {
 const GINO: BlogAuthor = {
   name: "Gino Stoian",
   initials: "GS",
-  role: "Founder, Builder OS",
-  bio: "is the founder of Builder OS. He writes about quoting, pricing and getting paid for UK renovation firms.",
+  role: "Founder, Builder OS · 12 years running a UK renovation company",
+  bio: "ran a UK home renovation company for 12 years before founding Builder OS, the software he wished he’d had. He writes about quoting, pricing and getting paid.",
+  description: "Gino Stoian ran a UK home renovation company for 12 years before founding Builder OS.",
 };
 
 export const BLOG_ARTICLES: BlogArticle[] = [
