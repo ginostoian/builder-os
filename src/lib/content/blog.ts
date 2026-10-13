@@ -1,8 +1,10 @@
 /**
- * Blog index content. Only the featured article has a body so far (see the article page);
- * Phase 1 moves posts to MDX in the repo (Technical Implementation Plan §2).
+ * Blog index content. The featured article and the long-form articles in ./articles have bodies; the
+ * other cards are placeholders from the design and link to the featured article for now.
  */
-export const blogCategories = ["Quoting", "Cash flow", "Running a team", "Client experience", "Guides", "Product updates"] as const;
+import { BLOG_ARTICLES, blogArticlePath } from "./articles";
+
+export const blogCategories = ["Quoting", "Cash flow", "Running a team", "Client experience", "Choosing software", "Guides", "Product updates"] as const;
 export type BlogCategory = (typeof blogCategories)[number];
 
 export type Post = {
@@ -13,6 +15,10 @@ export type Post = {
   date: string;
   read: string;
   image: string;
+  /** Set for posts with a real page; placeholders link to the featured article. */
+  href?: string;
+  /** A real image for the card, instead of the placeholder stripes. */
+  cover?: { src: string; alt: string };
 };
 
 export const featuredPost = {
@@ -40,7 +46,27 @@ const p = (category: BlogCategory, title: string, excerpt: string, author: strin
   image,
 });
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** "2026-10-12" → "12 Oct 2026", the same on the server and in the browser. */
+const shortDate = (iso: string) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+};
+
+const articlePosts: Post[] = BLOG_ARTICLES.map((a) => ({
+  category: a.category,
+  title: a.title,
+  excerpt: a.excerpt,
+  author: a.author.name,
+  date: shortDate(a.published),
+  read: `${a.readMins} min read`,
+  image: a.hero.alt,
+  href: blogArticlePath(a.slug),
+  cover: { src: a.hero.src, alt: a.hero.alt },
+}));
+
 export const posts: Post[] = [
+  ...articlePosts,
   p("Cash flow", "The payment plan that stopped us chasing the last 10%", "Why we moved retention into a snagging stage, and the wording clients actually agree to.", "Tom Ashworth", "17 Sep 2026", 6, "site handover"),
   p("Quoting", "Provisional sums vs PC sums: how to show them so clients get it", "Two terms clients never understand, and a simple way to present both on a quote.", "Hannah Cole", "10 Sep 2026", 5, "worktop samples"),
   p("Running a team", "Daily site diaries your lads will actually fill in", "Three questions, one photo, done before the van leaves. Here's the template.", "Marcus Reid", "3 Sep 2026", 4, "site diary on phone"),

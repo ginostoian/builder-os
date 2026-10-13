@@ -45,7 +45,7 @@ const before: Module[] = [
     body: "Sections, quantities, units and rates in a grid you can fly through with the keyboard. Set markup per line or per section, add notes clients can see, and watch your margin update as you type.",
     points: ["Formulas and per-line markup", "Notes and attachments on any line", "Duplicate past quotes in one click", "Provisional and prime cost sums"],
     screen: "quote",
-    url: "app.builderos.co.uk/quotes/Q-1042",
+    url: "app.builder-os.co.uk/quotes/Q-1042",
   },
   {
     id: "library",
@@ -55,7 +55,7 @@ const before: Module[] = [
     body: "Save every service you price — with units, rates and descriptions — and group them into bundles like a standard bathroom refit. Start typing in a quote and the right item appears.",
     points: ["Services and multi-item bundles", "Import your rates from CSV", "Adjust the rate per job", "See which services win the most work"],
     screen: "templates",
-    url: "app.builderos.co.uk/library",
+    url: "app.builder-os.co.uk/library",
   },
   {
     id: "portal",
@@ -78,7 +78,7 @@ const after: Module[] = [
     body: "Set the payment plan on the quote — deposit, stages, retention — and Builder OS raises each invoice when the stage is ticked off. Clients pay by card or bank transfer, and polite reminders go out for you.",
     points: ["Deposit, stage and retention plans", "VAT and reverse-charge ready", "Card and open-banking payments", "Automatic payment reminders"],
     screen: "invoices",
-    url: "app.builderos.co.uk/payments",
+    url: "app.builder-os.co.uk/payments",
   },
   {
     id: "projects",
@@ -88,7 +88,7 @@ const after: Module[] = [
     body: "Turn an accepted quote into a project with tasks already laid out by section. Assign work, set dates, attach drawings and keep a site diary — the office and the site finally see the same thing.",
     points: ["Board and timeline views", "Tasks created from the quote", "Site diary and photo log", "Files and drawings per job"],
     screen: "board",
-    url: "app.builderos.co.uk/projects/elm-road",
+    url: "app.builder-os.co.uk/projects/elm-road",
   },
   {
     id: "team",
@@ -107,7 +107,7 @@ const after: Module[] = [
     body: "Track every enquiry from first call to signed contract, with reminders so nothing goes cold. Then see win rate, cash position and margin by job on a dashboard that updates itself.",
     points: ["Pipeline by stage and source", "Follow-up reminders and email automations", "Win rate and margin by job type", "Cash flow forecast from payment plans"],
     screen: "crm",
-    url: "app.builderos.co.uk/clients",
+    url: "app.builder-os.co.uk/clients",
   },
 ];
 

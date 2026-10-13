@@ -166,7 +166,7 @@ export default function HomePage() {
         </div>
         <div className="relative mx-auto mt-16 max-w-[1200px]">
           <div className="rounded-[22px] bg-white/60 p-2.5 shadow-[0_0_0_1px_rgb(16_16_15/0.06)]">
-            <Screenshot screen="quote" url="app.builderos.co.uk/quotes/Q-1042" />
+            <Screenshot screen="quote" url="app.builder-os.co.uk/quotes/Q-1042" />
           </div>
           <div className="absolute bottom-14 -left-2 flex w-[300px] max-w-[70%] items-start gap-3 rounded-[14px] bg-white px-4 py-3.5 shadow-[0_0_0_1px_#E8E7E3,0_20px_40px_-16px_rgb(16_16_15/0.25)]">
             <span className="flex size-8 flex-none items-center justify-center rounded-full bg-success-soft text-success">
@@ -358,7 +358,7 @@ export default function HomePage() {
               <Avatar initials="TA" size={44} className="text-base" />
               <div>
                 <div className="font-semibold">Tom Ashworth</div>
-                <div className="text-sm text-subtle">Co-founder · tom@builderos.co.uk</div>
+                <div className="text-sm text-subtle">Co-founder · tom@builder-os.co.uk</div>
               </div>
             </div>
           </div>

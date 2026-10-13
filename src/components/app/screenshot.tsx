@@ -22,7 +22,7 @@ const screenNames: Record<ScreenId, string> = {
  */
 export function Screenshot({
   screen,
-  url = "app.builderos.co.uk",
+  url = "app.builder-os.co.uk",
   chrome = true,
   baseWidth = 1280,
   baseHeight = 800,

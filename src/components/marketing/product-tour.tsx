@@ -7,13 +7,13 @@ import type { ScreenId } from "@/components/app/routes";
 import { cn } from "@/lib/utils";
 
 const tabs: { label: string; icon: typeof Globe; screen: ScreenId; url: string; caption: string }[] = [
-  { label: "Quote builder", icon: FileSpreadsheet, screen: "quote", url: "app.builderos.co.uk/quotes/Q-1042", caption: "Sections, formulas, per-line markup and notes — with your margin always in view." },
-  { label: "Service library", icon: Library, screen: "templates", url: "app.builderos.co.uk/library", caption: "Your rates and bundles, ready to drop into any quote." },
+  { label: "Quote builder", icon: FileSpreadsheet, screen: "quote", url: "app.builder-os.co.uk/quotes/Q-1042", caption: "Sections, formulas, per-line markup and notes — with your margin always in view." },
+  { label: "Service library", icon: Library, screen: "templates", url: "app.builder-os.co.uk/library", caption: "Your rates and bundles, ready to drop into any quote." },
   { label: "Client quote", icon: Globe, screen: "client", url: "builderos.app/q/hale-sons/1042", caption: "What your client sees: a clear, branded quote they can sign on their phone." },
-  { label: "Projects", icon: SquareKanban, screen: "board", url: "app.builderos.co.uk/projects/elm-road", caption: "Every job on a board your whole team can see, from site to office." },
-  { label: "Payments", icon: Receipt, screen: "invoices", url: "app.builderos.co.uk/payments", caption: "Stage payments that invoice themselves — variations included." },
-  { label: "CRM", icon: Contact, screen: "crm", url: "app.builderos.co.uk/clients", caption: "Every enquiry tracked from first call to signed contract." },
-  { label: "Reporting", icon: ChartColumn, screen: "dashboard", url: "app.builderos.co.uk", caption: "Pipeline, cash and margin at a glance, every morning." },
+  { label: "Projects", icon: SquareKanban, screen: "board", url: "app.builder-os.co.uk/projects/elm-road", caption: "Every job on a board your whole team can see, from site to office." },
+  { label: "Payments", icon: Receipt, screen: "invoices", url: "app.builder-os.co.uk/payments", caption: "Stage payments that invoice themselves — variations included." },
+  { label: "CRM", icon: Contact, screen: "crm", url: "app.builder-os.co.uk/clients", caption: "Every enquiry tracked from first call to signed contract." },
+  { label: "Reporting", icon: ChartColumn, screen: "dashboard", url: "app.builder-os.co.uk", caption: "Pipeline, cash and margin at a glance, every morning." },
 ];
 
 /** Home §02: segmented tabs that switch the product screenshot. */

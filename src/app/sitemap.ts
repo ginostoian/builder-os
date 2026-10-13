@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { BLOG_ARTICLES, blogArticlePath } from "@/lib/content/articles";
 import { featuredPost } from "@/lib/content/blog";
 import { ARTICLES } from "@/lib/content/help";
 import { LEGAL } from "@/lib/content/legal";
@@ -28,6 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/demo", 0.6, "yearly"),
     page("/about", 0.5, "yearly"),
     page("/blog", 0.6, "weekly"),
+    ...BLOG_ARTICLES.map((a) => page(blogArticlePath(a.slug), 0.7, "monthly", new Date(`${a.modified}T12:00:00Z`))),
     page(`/blog/${featuredPost.slug}`, 0.6, "yearly", day(featuredPost.longDate)),
     page("/help", 0.6, "weekly"),
     ...ARTICLES.map((a) => page(`/help/${a.slug}`, 0.5, "monthly")),

@@ -11,8 +11,8 @@ export const LEGAL = {
   registeredOffice: "Bristol, United Kingdom",
   /** ICO data protection fee registration number. TO CONFIRM before launch. */
   icoNumber: "to be confirmed",
-  privacyEmail: "privacy@builderos.co.uk",
-  supportEmail: "hello@builderos.co.uk",
+  privacyEmail: "privacy@builder-os.co.uk",
+  supportEmail: "hello@builder-os.co.uk",
   /** Shown as "last updated" on the policies. Change it whenever they change. */
   updated: "5 October 2026",
 } as const;
