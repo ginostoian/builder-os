@@ -31,6 +31,7 @@ export async function emailInvoice(opts: {
       totalPence: inv.totalPence,
       dueDate: inv.dueDate,
       bank: s.bank,
+      reverseChargeVatPence: s.vatTreatment === "reverse_charge" ? s.reverseChargeVat : undefined,
       link: await withSignIn(opts.orgId, opts.token, portalInvoiceUrl(opts.origin, opts.token, inv.number)),
       payOnline: Boolean(await withTenant(opts.orgId, (tx) => onlinePaymentsReady(tx, opts.orgId)).catch(() => null)),
     },

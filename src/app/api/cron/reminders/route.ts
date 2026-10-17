@@ -4,13 +4,14 @@ import { appOrigin } from "@/server/origin";
 import { runAutomations } from "@/server/automations";
 import { runCertificateReminders, runReminders } from "@/server/reminders";
 import { runSurveyReminders } from "@/server/surveys";
+import { runXeroDaily } from "@/server/xero/daily";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /**
  * The daily run: payment reminders to clients, expiring team certificates to the office, and the
- * pipeline's automation emails due today, and reminders for tomorrow's survey visits. Vercel Cron calls this (vercel.json) with `Authorization: Bearer $CRON_SECRET`;
+ * pipeline's automation emails due today, reminders for tomorrow's survey visits, and the Xero catch-up. Vercel Cron calls this (vercel.json) with `Authorization: Bearer $CRON_SECRET`;
  * anything else is refused. Without CRON_SECRET the endpoint is off.
  */
 export async function GET(request: Request) {
@@ -24,8 +25,9 @@ export async function GET(request: Request) {
   const certificates = await runCertificateReminders(origin);
   const automations = await runAutomations(origin);
   const surveys = await runSurveyReminders(origin);
+  const xero = await runXeroDaily().catch((error) => ({ error: error instanceof Error ? error.message : "failed" }));
   const rateLimitsSwept = await sweepRateLimits().catch(() => 0);
-  const result = { ...payments, certificates, automations, surveys, rateLimitsSwept };
+  const result = { ...payments, certificates, automations, surveys, xero, rateLimitsSwept };
   await heartbeat(result);
   return Response.json(result);
 }

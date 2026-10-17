@@ -115,7 +115,7 @@ describe("quotes", () => {
       const client = await createClient(tx, org, { name: "C" });
       const other = await createClient(tx, org, { name: "D" });
       const id = await createQuote(tx, org, { clientId: client, title: "Q" });
-      const header = { clientId: other, title: "Extension", markupBps: 2000, vatRateBps: 500, validUntil: "2026-12-31", siteAddress: { line1: "1 Elm Road", town: "Bristol", postcode: "BS7 8AA" } };
+      const header = { clientId: other, title: "Extension", markupBps: 2000, vatRateBps: 500, vatTreatment: "standard" as const, validUntil: "2026-12-31", siteAddress: { line1: "1 Elm Road", town: "Bristol", postcode: "BS7 8AA" } };
       expect(await saveQuote(tx, org, { quoteId: id, baseVersion: 0, header, ops: [] })).toBe(1);
       expect((await getQuote(tx, org, id))?.quote).toMatchObject({ clientId: other, title: "Extension", markupBps: 2000, vatRateBps: 500, validUntil: "2026-12-31", siteAddress: { postcode: "BS7 8AA" } });
       const works = (await getQuote(tx, org, id))!.sections[0].id;
@@ -214,7 +214,7 @@ describe("quotes", () => {
     expect(await reason(withTenant(a, (tx) => save(tx, a, id, [addTheirs])))).toBe("unknown_service");
     await withTenant(a, async (tx) => {
       const [q] = (await listQuotes(tx, a)).quotes;
-      expect(await reason(save(tx, a, q.id, [], { clientId: theirs.client, title: "X", markupBps: 0, vatRateBps: 0 }))).toBe("unknown_client");
+      expect(await reason(save(tx, a, q.id, [], { clientId: theirs.client, title: "X", markupBps: 0, vatRateBps: 0, vatTreatment: "standard" }))).toBe("unknown_client");
     });
   });
 });

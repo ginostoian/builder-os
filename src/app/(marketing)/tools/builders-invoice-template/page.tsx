@@ -48,7 +48,7 @@ export default function InvoiceTemplatePage() {
       cta={{
         title: "Invoices that get paid faster.",
         body: "Builder OS turns your quote's payment stages into invoices, lets clients pay online by card or bank, and sends polite reminders until they do.",
-        points: ["Invoices straight from your quote", "Online payment by card or bank", "Automatic payment reminders", "CIS deductions worked out for you"],
+        points: ["Invoices straight from your quote", "Online payment by card or bank", "Automatic payment reminders", "In Xero without retyping"],
       }}
       faqs={faqs}
     >

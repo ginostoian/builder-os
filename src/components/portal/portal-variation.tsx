@@ -1,5 +1,6 @@
 "use client";
 
+import { vatLabel } from "@/core/vat";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -64,7 +65,7 @@ export function PortalVariation({
         </div>
         <aside className="flex w-full flex-col gap-3.5 lg:sticky lg:top-6 lg:w-[340px] print:hidden">
           <section className="rounded-[14px] bg-white px-[22px] py-5 shadow-[0_0_0_1px_#E8E7E3,0_12px_32px_-16px_rgb(16_16_15/0.16)]">
-            <div className="text-[12.5px] text-subtle">{total < 0 ? "Credit inc. VAT" : "Extra cost inc. VAT"}</div>
+            <div className="text-[12.5px] text-subtle">{total < 0 ? "Credit" : "Extra cost"} {vatLabel(snapshot.vatTreatment)}</div>
             <div className="mt-0.5 mb-1 text-[32px] font-semibold tracking-[-0.03em] tabular">{formatGBP(Math.abs(total))}</div>
             <div className="text-xs text-subtle">
               Change to {snapshot.quote.ref}, {snapshot.quote.title}
@@ -105,7 +106,7 @@ export function PortalVariation({
         <>
           <div className="sticky bottom-0 z-10 flex items-center gap-3 border-t border-hairline bg-white px-4 py-3 shadow-[0_-8px_24px_-16px_rgb(16_16_15/0.25)] lg:hidden print:hidden">
             <div className="min-w-0 flex-1">
-              <div className="text-[11.5px] text-subtle">{total < 0 ? "Credit" : "Extra cost"} inc. VAT</div>
+              <div className="text-[11.5px] text-subtle">{total < 0 ? "Credit" : "Extra cost"} {vatLabel(snapshot.vatTreatment)}</div>
               <div className="text-[17px] font-semibold tabular">{formatGBP(Math.abs(total))}</div>
             </div>
             <Button className="h-11 rounded-[9px] px-5" onClick={() => setDialog("approve")}>
@@ -119,7 +120,7 @@ export function PortalVariation({
             title="Approve and sign"
             description={
               <>
-                You&apos;re approving variation {snapshot.ref}, {snapshot.title}, {total < 0 ? `a credit of ${formatGBP(-total)}` : `an extra ${formatGBP(total)}`} inc. VAT on your quote from {company}. We record your
+                You&apos;re approving variation {snapshot.ref}, {snapshot.title}, {total < 0 ? `a credit of ${formatGBP(-total)}` : `an extra ${formatGBP(total)}`} {vatLabel(snapshot.vatTreatment)} on your quote from {company}. We record your
                 name, signature, the time and the exact version you sign.
               </>
             }

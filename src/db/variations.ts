@@ -44,7 +44,7 @@ export async function createVariation(tx: Tx, orgId: string, input: { quoteId: s
     .where(and(eq(variations.orgId, orgId), eq(variations.quoteId, input.quoteId)));
   const [row] = await tx
     .insert(variations)
-    .values({ orgId, quoteId: q.id, clientId: q.clientId, number: next, title: `Variation ${next}`, vatRateBps: q.snapshot.quote.vatRateBps, createdByMemberId: input.memberId })
+    .values({ orgId, quoteId: q.id, clientId: q.clientId, number: next, title: `Variation ${next}`, vatRateBps: q.snapshot.quote.vatRateBps, vatTreatment: q.snapshot.quote.vatTreatment ?? "standard", createdByMemberId: input.memberId })
     .returning({ id: variations.id });
   return row.id;
 }
@@ -102,9 +102,9 @@ export async function quoteVariations(tx: Tx, orgId: string, quoteId: string) {
 
 /** Replace a draft's content. Totals are recalculated here, never taken from the browser. */
 export async function saveVariation(tx: Tx, orgId: string, input: VariationSaveInput) {
-  const [v] = await tx.select({ vatRateBps: variations.vatRateBps }).from(variations).where(and(eq(variations.orgId, orgId), eq(variations.id, input.variationId)));
+  const [v] = await tx.select({ vatRateBps: variations.vatRateBps, vatTreatment: variations.vatTreatment }).from(variations).where(and(eq(variations.orgId, orgId), eq(variations.id, input.variationId)));
   if (!v) throw new VariationError("not_found");
-  const t = variationTotals(input.lines, v.vatRateBps);
+  const t = variationTotals(input.lines, v.vatRateBps, v.vatTreatment);
   const rows = await tx
     .update(variations)
     .set({ title: input.title, reason: input.reason || null, lines: input.lines, netPence: t.net, vatPence: t.vat, totalPence: t.total })
@@ -175,6 +175,7 @@ export async function sendVariation(tx: Tx, orgId: string, input: { variationId:
     clientName: found.clientName,
     quote: { number: found.quoteNumber, title: found.quoteTitle },
     vatRateBps: v.vatRateBps,
+    vatTreatment: v.vatTreatment,
     lines: v.lines,
     photoUrls: input.photoUrl ? v.photos.map((p) => input.photoUrl!(p.key)) : [],
   });
@@ -218,7 +219,7 @@ export async function reviseVariation(tx: Tx, orgId: string, variationId: string
   if (v.status === "draft" || v.status === "approved") throw new VariationError("not_open");
   if (v.status === "sent") await withdrawVariation(tx, orgId, v.id);
   const id = await createVariation(tx, orgId, { quoteId: v.quoteId, memberId });
-  const t = variationTotals(v.lines, v.vatRateBps);
+  const t = variationTotals(v.lines, v.vatRateBps, v.vatTreatment);
   await tx
     .update(variations)
     .set({ title: v.title, reason: v.reason, lines: v.lines, photos: v.photos, netPence: t.net, vatPence: t.vat, totalPence: t.total })
@@ -229,7 +230,7 @@ export async function reviseVariation(tx: Tx, orgId: string, variationId: string
 /** Approved variations on a quote that aren't on a live invoice yet. */
 export async function billableVariations(tx: Tx, orgId: string, quoteId: string) {
   return tx
-    .select({ id: variations.id, number: variations.number, title: variations.title, netPence: variations.netPence, vatPence: variations.vatPence, totalPence: variations.totalPence, snapshot: variations.snapshot })
+    .select({ id: variations.id, number: variations.number, title: variations.title, netPence: variations.netPence, vatPence: variations.vatPence, totalPence: variations.totalPence, vatRateBps: variations.vatRateBps, vatTreatment: variations.vatTreatment, snapshot: variations.snapshot })
     .from(variations)
     .leftJoin(invoices, and(eq(invoices.orgId, variations.orgId), eq(invoices.id, variations.invoiceId)))
     .where(and(eq(variations.orgId, orgId), eq(variations.quoteId, quoteId), eq(variations.status, "approved"), or(isNull(variations.invoiceId), eq(invoices.status, "void"))))

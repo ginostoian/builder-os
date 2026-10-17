@@ -9,8 +9,9 @@ import { clientOptions } from "@/db/clients";
 import { getQuote, libraryForQuotes } from "@/db/quotes";
 import { currentPortalToken, latestVersion, quoteActivity } from "@/db/sending";
 import { paymentSettings, quoteSchedule } from "@/db/invoices";
-import { rechargesForQuote } from "@/db/costs";
+import { rechargesForQuote, vatRegistered } from "@/db/costs";
 import { applyBps } from "@/core/money";
+import { chargedVatBps } from "@/core/vat";
 import { billableVariations, quoteVariations } from "@/db/variations";
 import { projectForQuote } from "@/db/projects";
 import { can } from "@/core/roles";
@@ -36,6 +37,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         sentVersions: activity.versions.length,
         clients: await clientOptions(tx, session.orgId, loaded.quote.clientId),
         library: await libraryForQuotes(tx, session.orgId),
+        hasVatNumber: await vatRegistered(tx, session.orgId),
       };
     }
     return {
@@ -72,6 +74,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
             validUntil: q.validUntil,
             markupBps: q.markupBps,
             vatRateBps: q.vatRateBps,
+            vatTreatment: q.vatTreatment,
             sections: data.loaded.sections,
             paymentPlan: q.paymentPlan ?? [],
           }}
@@ -82,6 +85,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
           clientPhone={data.loaded.client?.phone ?? null}
           emailEnabled={emailConfigured()}
           sentVersions={data.sentVersions}
+          hasVatNumber={data.hasVatNumber}
         />
       </LiveAppShell>
     );
@@ -112,7 +116,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         clientPhone={data.loaded.client?.phone ?? null}
         variations={data.variations}
         billable={data.billable.map((v) => ({ id: v.id, number: v.number, title: v.title, totalPence: v.totalPence }))}
-        recharges={data.recharges.map((r) => ({ id: r.id, description: r.description, supplier: r.supplier, totalPence: r.amount + applyBps(r.amount, version.snapshot.quote.vatRateBps) }))}
+        recharges={data.recharges.map((r) => ({ id: r.id, description: r.description, supplier: r.supplier, totalPence: r.amount + applyBps(r.amount, chargedVatBps(version.snapshot.quote.vatRateBps, version.snapshot.quote.vatTreatment)) }))}
         canEdit
         project={{ id: data.projectId, canStart: can(session.role, "projects.edit") }}
       />

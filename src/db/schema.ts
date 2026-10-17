@@ -42,6 +42,8 @@ import { CIS_STATUSES } from "../core/cis";
 import type { EstimatorSettings } from "../core/estimator";
 import { MAX_VARIATION_PHOTOS, VARIATION_STATUSES, type VariationLine, type VariationPhoto } from "../core/variation";
 import { LINE_KINDS, QUOTE_STATUSES, ROLES, SERVICE_KINDS, type Address, type PaymentPlanInput } from "../core/schemas";
+import { VAT_TREATMENTS } from "../core/vat";
+import type { XeroSettings } from "../core/xero";
 
 /** Runtime role. Created (NOLOGIN) in migration 0000; login roles per environment are granted membership. */
 export const appRole = pgRole("builderos_app").existing();
@@ -106,6 +108,7 @@ export const memberRole = pgEnum("member_role", ROLES);
 export const serviceKind = pgEnum("service_kind", SERVICE_KINDS);
 export const quoteStatus = pgEnum("quote_status", QUOTE_STATUSES);
 export const lineKind = pgEnum("line_kind", LINE_KINDS);
+export const vatTreatment = pgEnum("vat_treatment", VAT_TREATMENTS);
 
 // ── Organizations (one row per tenant) ───────────────────────────────────────
 
@@ -250,6 +253,8 @@ export const clients = pgTable(
     source: text("source"),
     notes: text("notes"),
     ownerMemberId: uuid("owner_member_id"),
+    /** How new quotes for this client handle VAT: reverse_charge for a VAT and CIS registered contractor who isn't the end user. */
+    vatTreatment: vatTreatment("vat_treatment").notNull().default("standard"),
     /** Hidden from the client list and pickers. Kept (not deleted) because quotes and invoices point at it. */
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
@@ -337,6 +342,7 @@ export const quotes = pgTable(
     validUntil: date("valid_until"),
     markupBps: integer("markup_bps").notNull(),
     vatRateBps: integer("vat_rate_bps").notNull(),
+    vatTreatment: vatTreatment("vat_treatment").notNull().default("standard"),
     /** Optimistic concurrency for patch-based autosave (plan §4). */
     version: integer("version").notNull().default(0),
     /** The payment plan (validated by paymentPlanInput); frozen into each sent version's snapshot. */
@@ -356,6 +362,7 @@ export const quotes = pgTable(
     check("quotes_site_address_object", sql`${t.siteAddress} is null or jsonb_typeof(${t.siteAddress}) = 'object'`),
     between("quotes_markup_range", t.markupBps, 0, MAX_MARKUP_BPS),
     between("quotes_vat_range", t.vatRateBps, 0, MAX_VAT_BPS),
+    check("quotes_reverse_charge_rate", sql`${t.vatTreatment} = 'standard' or ${t.vatRateBps} > 0`),
     check("quotes_version_nonneg", sql`${t.version} >= 0`),
     check("quotes_payment_plan_array", sql`${t.paymentPlan} is null or jsonb_typeof(${t.paymentPlan}) = 'array'`),
   ],
@@ -589,6 +596,8 @@ export const invoices = pgTable(
     netPence: integer("net_pence").notNull(),
     vatPence: integer("vat_pence").notNull(),
     totalPence: integer("total_pence").notNull(),
+    /** Under the reverse charge, the VAT the client pays to HMRC: shown on the invoice, not part of the total. */
+    reverseChargeVatPence: integer("reverse_charge_vat_pence").notNull().default(0),
     snapshot: jsonb("snapshot").notNull(),
     paidOn: date("paid_on"),
     paidReference: text("paid_reference"),
@@ -613,6 +622,7 @@ export const invoices = pgTable(
     check("invoices_number_positive", sql`${t.number} > 0`),
     between("invoices_total_range", t.totalPence, 0, MAX_RATE_PENCE),
     check("invoices_amounts_add_up", sql`${t.netPence} + ${t.vatPence} = ${t.totalPence} and ${t.netPence} >= 0 and ${t.vatPence} >= 0`),
+    check("invoices_reverse_charge_vat", sql`${t.reverseChargeVatPence} >= 0 and (${t.reverseChargeVatPence} = 0 or ${t.vatPence} = 0)`),
     check("invoices_due_after_issue", sql`${t.dueDate} >= ${t.issueDate}`),
     check("invoices_paid_has_date", sql`(${t.status} = 'paid') = (${t.paidOn} is not null)`),
     check("invoices_snapshot_object", sql`jsonb_typeof(${t.snapshot}) = 'object'`),
@@ -663,6 +673,8 @@ export const variations = pgTable(
     /** Site photos (storage keys). Frozen into the snapshot as URLs when sent. */
     photos: jsonb("photos").$type<VariationPhoto[]>().notNull().default(sql`'[]'::jsonb`),
     vatRateBps: integer("vat_rate_bps").notNull(),
+    /** Copied from the accepted quote when the variation is made. */
+    vatTreatment: vatTreatment("vat_treatment").notNull().default("standard"),
     status: variationStatus("status").notNull().default("draft"),
     netPence: integer("net_pence").notNull().default(0),
     vatPence: integer("vat_pence").notNull().default(0),
@@ -1524,5 +1536,95 @@ export const siteSyncOps = pgTable(
     primaryKey({ name: "site_sync_ops_pkey", columns: [t.orgId, t.id] }),
     foreignKey({ name: "site_sync_ops_member_fk", columns: [t.orgId, t.memberId], foreignColumns: [members.orgId, members.id] }).onDelete("cascade"),
     index("site_sync_ops_created_idx").on(t.createdAt),
+  ],
+).enableRLS();
+
+// ── Xero (migration 0025) ────────────────────────────────────────────────────
+
+export const xeroStatus = pgEnum("xero_status", ["active", "reconnect"]);
+
+/**
+ * A company's connection to its Xero organisation. Tokens are encrypted by the app (AES-256-GCM) before
+ * they're stored; the database never sees them in the clear. `settings` is null until it's set up.
+ */
+export const xeroConnections = pgTable(
+  "xero_connections",
+  {
+    orgId: tenantId()
+      .primaryKey()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    tenantId: text("tenant_id").notNull(),
+    tenantName: text("tenant_name").notNull(),
+    /** Xero's id for this connection (to disconnect it), not the organisation's. */
+    connectionId: text("connection_id").notNull(),
+    accessToken: text("access_token").notNull(),
+    refreshToken: text("refresh_token").notNull(),
+    accessExpiresAt: timestamp("access_expires_at", { withTimezone: true }).notNull(),
+    status: xeroStatus("status").notNull().default("active"),
+    settings: jsonb("settings").$type<XeroSettings>(),
+    /** Whether the Xero organisation is VAT registered (from its tax rates when connected). */
+    vatRegistered: boolean("vat_registered").notNull().default(true),
+    lastError: text("last_error"),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    connectedByMemberId: uuid("connected_by_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    /** Webhooks name the Xero organisation; column grants limit the lookup to org_id and tenant_id. */
+    pgPolicy("xero_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
+    unique("xero_connections_tenant_key").on(t.tenantId),
+    foreignKey({ name: "xero_connections_member_fk", columns: [t.orgId, t.connectedByMemberId], foreignColumns: [members.orgId, members.id] }),
+    len("xero_connections_tenant_name_len", t.tenantName, TEXT.name),
+    len("xero_connections_last_error_len", t.lastError, 1000, 0),
+    check("xero_connections_settings_object", sql`${t.settings} is null or jsonb_typeof(${t.settings}) = 'object'`),
+  ],
+).enableRLS();
+
+export const xeroLinkKind = pgEnum("xero_link_kind", ["contact", "invoice", "payment", "tracking"]);
+
+/** Which Xero record each of ours became (a client's contact, an invoice, its payment, a job's tracking option). */
+export const xeroLinks = pgTable(
+  "xero_links",
+  {
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    kind: xeroLinkKind("kind").notNull(),
+    localId: uuid("local_id").notNull(),
+    xeroId: text("xero_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [tenantPolicy(t.orgId), primaryKey({ name: "xero_links_pkey", columns: [t.orgId, t.kind, t.localId] }), index("xero_links_xero_idx").on(t.orgId, t.kind, t.xeroId)],
+).enableRLS();
+
+export const xeroJobStatus = pgEnum("xero_job_status", ["pending", "done", "failed"]);
+
+/**
+ * Work to send to Xero, so nothing is lost when Xero is slow or down. A job means "make Xero match this
+ * invoice as it is now" (raised, paid, unpaid or void): it reads Xero's copy first, so running it twice
+ * changes nothing. It runs straight away and is retried with backoff until it works or needs someone to act.
+ */
+export const xeroJobs = pgTable(
+  "xero_jobs",
+  {
+    id: pk(),
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    invoiceId: uuid("invoice_id").notNull(),
+    status: xeroJobStatus("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    runAfter: timestamp("run_after", { withTimezone: true }).notNull().defaultNow(),
+    lastError: text("last_error"),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    tenantPolicy(t.orgId),
+    /** The scheduled run finds companies with work due; column grants limit it to org_id, status, run_after. */
+    pgPolicy("xero_jobs_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
+    foreignKey({ name: "xero_jobs_invoice_fk", columns: [t.orgId, t.invoiceId], foreignColumns: [invoices.orgId, invoices.id] }).onDelete("cascade"),
+    uniqueIndex("xero_jobs_one_open").on(t.orgId, t.invoiceId).where(sql`${t.status} <> 'done'`),
+    index("xero_jobs_due_idx").on(t.status, t.runAfter),
+    index("xero_jobs_org_idx").on(t.orgId, t.createdAt),
+    between("xero_jobs_attempts_range", t.attempts, 0, 1000),
+    len("xero_jobs_last_error_len", t.lastError, 1000, 0),
   ],
 ).enableRLS();
