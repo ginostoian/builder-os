@@ -1,5 +1,6 @@
 "use client";
 
+import { vatLabel } from "@/core/vat";
 import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import * as React from "react";
 import Link from "next/link";
@@ -180,12 +181,12 @@ export function SentQuote({
 
       <aside className="flex w-full flex-none flex-col gap-4 border-t border-hairline bg-white p-4 lg:w-[340px] lg:overflow-auto lg:border-t-0 lg:border-l lg:p-[18px]">
         <div>
-          <div className="text-[12.5px] text-subtle">Total inc. VAT</div>
+          <div className="text-[12.5px] text-subtle">Total {vatLabel(snapshot.quote.vatTreatment)}</div>
           <div className="text-[24px] font-semibold tracking-[-0.02em] tabular">{formatGBP(snapshot.totals.total)}</div>
         </div>
         {decision && <DecisionCard decision={decision} />}
         {schedule && schedule.length > 0 && (
-          <PaymentSchedule quoteId={quoteId} rows={schedule} billable={billable} recharges={recharges} canInvoice={canInvoice} bankReady={bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />
+          <PaymentSchedule quoteId={quoteId} rows={schedule} billable={billable} recharges={recharges} canInvoice={canInvoice} bankReady={bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} vatTreatment={snapshot.quote.vatTreatment} />
         )}
         {variations && <VariationsPanel quoteId={quoteId} rows={variations} canEdit={canEdit} />}
         <Conversation quoteId={quoteId} comments={comments} clientName={clientName} snapshot={snapshot} />

@@ -1,4 +1,5 @@
 import { applyBps, type Bps, type Pence } from "./money";
+import { vatFor, type VatTreatment } from "./vat";
 
 export type QuoteLine = {
   id: string;
@@ -45,13 +46,16 @@ export type QuoteTotals = {
   cost: Pence;
   markup: Pence;
   net: Pence;
+  /** VAT charged: none under the reverse charge. */
   vat: Pence;
+  /** Under the reverse charge, the VAT the customer pays to HMRC (shown on documents, not charged). */
+  reverseChargeVat: Pence;
   total: Pence;
   /** Gross margin as basis points of the net price. */
   margin: Bps;
 };
 
-export function quoteTotals(sections: QuoteSection[], vatRate: Bps): QuoteTotals {
+export function quoteTotals(sections: QuoteSection[], vatRate: Bps, treatment: VatTreatment = "standard"): QuoteTotals {
   let cost = 0;
   let net = 0;
   for (const s of sections) {
@@ -60,12 +64,13 @@ export function quoteTotals(sections: QuoteSection[], vatRate: Bps): QuoteTotals
       net += lineTotal(l);
     }
   }
-  const vat = applyBps(net, vatRate);
+  const { vat, reverseChargeVat } = vatFor(net, vatRate, treatment);
   return {
     cost,
     markup: net - cost,
     net,
     vat,
+    reverseChargeVat,
     total: net + vat,
     margin: net === 0 ? 0 : Math.round(((net - cost) / net) * 10_000),
   };

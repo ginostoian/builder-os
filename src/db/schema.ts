@@ -42,6 +42,7 @@ import { CIS_STATUSES } from "../core/cis";
 import type { EstimatorSettings } from "../core/estimator";
 import { MAX_VARIATION_PHOTOS, VARIATION_STATUSES, type VariationLine, type VariationPhoto } from "../core/variation";
 import { LINE_KINDS, QUOTE_STATUSES, ROLES, SERVICE_KINDS, type Address, type PaymentPlanInput } from "../core/schemas";
+import { VAT_TREATMENTS } from "../core/vat";
 
 /** Runtime role. Created (NOLOGIN) in migration 0000; login roles per environment are granted membership. */
 export const appRole = pgRole("builderos_app").existing();
@@ -106,6 +107,7 @@ export const memberRole = pgEnum("member_role", ROLES);
 export const serviceKind = pgEnum("service_kind", SERVICE_KINDS);
 export const quoteStatus = pgEnum("quote_status", QUOTE_STATUSES);
 export const lineKind = pgEnum("line_kind", LINE_KINDS);
+export const vatTreatment = pgEnum("vat_treatment", VAT_TREATMENTS);
 
 // ── Organizations (one row per tenant) ───────────────────────────────────────
 
@@ -250,6 +252,8 @@ export const clients = pgTable(
     source: text("source"),
     notes: text("notes"),
     ownerMemberId: uuid("owner_member_id"),
+    /** How new quotes for this client handle VAT: reverse_charge for a VAT and CIS registered contractor who isn't the end user. */
+    vatTreatment: vatTreatment("vat_treatment").notNull().default("standard"),
     /** Hidden from the client list and pickers. Kept (not deleted) because quotes and invoices point at it. */
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
@@ -337,6 +341,7 @@ export const quotes = pgTable(
     validUntil: date("valid_until"),
     markupBps: integer("markup_bps").notNull(),
     vatRateBps: integer("vat_rate_bps").notNull(),
+    vatTreatment: vatTreatment("vat_treatment").notNull().default("standard"),
     /** Optimistic concurrency for patch-based autosave (plan §4). */
     version: integer("version").notNull().default(0),
     /** The payment plan (validated by paymentPlanInput); frozen into each sent version's snapshot. */
@@ -356,6 +361,7 @@ export const quotes = pgTable(
     check("quotes_site_address_object", sql`${t.siteAddress} is null or jsonb_typeof(${t.siteAddress}) = 'object'`),
     between("quotes_markup_range", t.markupBps, 0, MAX_MARKUP_BPS),
     between("quotes_vat_range", t.vatRateBps, 0, MAX_VAT_BPS),
+    check("quotes_reverse_charge_rate", sql`${t.vatTreatment} = 'standard' or ${t.vatRateBps} > 0`),
     check("quotes_version_nonneg", sql`${t.version} >= 0`),
     check("quotes_payment_plan_array", sql`${t.paymentPlan} is null or jsonb_typeof(${t.paymentPlan}) = 'array'`),
   ],
@@ -589,6 +595,8 @@ export const invoices = pgTable(
     netPence: integer("net_pence").notNull(),
     vatPence: integer("vat_pence").notNull(),
     totalPence: integer("total_pence").notNull(),
+    /** Under the reverse charge, the VAT the client pays to HMRC: shown on the invoice, not part of the total. */
+    reverseChargeVatPence: integer("reverse_charge_vat_pence").notNull().default(0),
     snapshot: jsonb("snapshot").notNull(),
     paidOn: date("paid_on"),
     paidReference: text("paid_reference"),
@@ -613,6 +621,7 @@ export const invoices = pgTable(
     check("invoices_number_positive", sql`${t.number} > 0`),
     between("invoices_total_range", t.totalPence, 0, MAX_RATE_PENCE),
     check("invoices_amounts_add_up", sql`${t.netPence} + ${t.vatPence} = ${t.totalPence} and ${t.netPence} >= 0 and ${t.vatPence} >= 0`),
+    check("invoices_reverse_charge_vat", sql`${t.reverseChargeVatPence} >= 0 and (${t.reverseChargeVatPence} = 0 or ${t.vatPence} = 0)`),
     check("invoices_due_after_issue", sql`${t.dueDate} >= ${t.issueDate}`),
     check("invoices_paid_has_date", sql`(${t.status} = 'paid') = (${t.paidOn} is not null)`),
     check("invoices_snapshot_object", sql`jsonb_typeof(${t.snapshot}) = 'object'`),
@@ -663,6 +672,8 @@ export const variations = pgTable(
     /** Site photos (storage keys). Frozen into the snapshot as URLs when sent. */
     photos: jsonb("photos").$type<VariationPhoto[]>().notNull().default(sql`'[]'::jsonb`),
     vatRateBps: integer("vat_rate_bps").notNull(),
+    /** Copied from the accepted quote when the variation is made. */
+    vatTreatment: vatTreatment("vat_treatment").notNull().default("standard"),
     status: variationStatus("status").notNull().default("draft"),
     netPence: integer("net_pence").notNull().default(0),
     vatPence: integer("vat_pence").notNull().default(0),

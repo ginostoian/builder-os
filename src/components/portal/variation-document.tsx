@@ -1,4 +1,5 @@
 import { formatGBP } from "@/core/money";
+import { VatRow } from "./vat-row";
 import { StoredImage } from "@/components/stored-image";
 import { longDate } from "@/core/quote-snapshot";
 import type { VariationSnapshot } from "@/core/variation";
@@ -55,10 +56,7 @@ export function VariationDocument({ snapshot, sentAt }: { snapshot: VariationSna
             <span>Subtotal</span>
             <span>{formatGBP(snapshot.totals.net)}</span>
           </div>
-          <div className="flex justify-between text-ink-2">
-            <span>VAT {Number((snapshot.vatRateBps / 100).toFixed(2))}%</span>
-            <span>{formatGBP(snapshot.totals.vat)}</span>
-          </div>
+          <VatRow rateBps={snapshot.vatRateBps} vat={snapshot.totals.vat} treatment={snapshot.vatTreatment} reverseChargeVat={snapshot.totals.reverseChargeVat} />
           <div className="mt-1 flex justify-between text-[15px] font-semibold">
             <span>{credit ? "Credit to you" : "Added to your price"}</span>
             <span>{formatGBP(Math.abs(snapshot.totals.total))}</span>

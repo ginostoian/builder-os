@@ -60,6 +60,13 @@ export type SendResult = { versionId: string; versionNo: number; token: string; 
  * send can't race an edit. Throws QuoteError for a stale version, a non-draft, or an empty quote.
  */
 export async function sendQuote(tx: Tx, orgId: string, input: { quoteId: string; baseVersion: number; memberId: string }): Promise<SendResult> {
+  // A reverse charge invoice must show the supplier's VAT number: check before anything changes.
+  const [rc] = await tx
+    .select({ treatment: quotes.vatTreatment, vatNumber: organizations.vatNumber })
+    .from(quotes)
+    .innerJoin(organizations, eq(organizations.id, quotes.orgId))
+    .where(and(eq(quotes.orgId, orgId), eq(quotes.id, input.quoteId)));
+  if (rc?.treatment === "reverse_charge" && !rc.vatNumber?.trim()) throw new QuoteError("no_vat_number");
   const claimed = await tx
     .update(quotes)
     .set({ status: "sent", sentAt: new Date(), version: sql`${quotes.version} + 1` })
@@ -90,7 +97,7 @@ export async function sendQuote(tx: Tx, orgId: string, input: { quoteId: string;
     snapshot = buildSnapshot({
     company: org,
     clientName: loaded.client?.name ?? "",
-    quote: { number: q.number, title: q.title, siteAddress: q.siteAddress, validUntil: q.validUntil, vatRateBps: q.vatRateBps },
+    quote: { number: q.number, title: q.title, siteAddress: q.siteAddress, validUntil: q.validUntil, vatRateBps: q.vatRateBps, vatTreatment: q.vatTreatment },
     versionNo,
     paymentPlan: q.paymentPlan?.length ? q.paymentPlan : DEFAULT_PLAN(randomUUID()),
     sections: loaded.sections,

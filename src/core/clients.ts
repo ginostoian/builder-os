@@ -32,6 +32,7 @@ export function parseClientForm(form: FormData): ClientParseResult {
     address,
     source: text(form, "source"),
     notes: text(form, "notes"),
+    vatTreatment: form.get("reverseCharge") === "on" ? "reverse_charge" : "standard",
   });
   if (parsed.success) return { ok: true, value: parsed.data };
 

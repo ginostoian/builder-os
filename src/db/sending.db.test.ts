@@ -166,7 +166,7 @@ describe("portal", () => {
     // An expired quote can't be accepted.
     const old = await draft(orgId, "Old");
     await withTenant(orgId, async (tx) => {
-      await saveQuote(tx, orgId, { quoteId: old.quoteId, baseVersion: await version(tx, orgId, old.quoteId), ops: [], header: { clientId: old.clientId, title: "Old", markupBps: 0, vatRateBps: 2000, validUntil: "2020-01-01" } });
+      await saveQuote(tx, orgId, { quoteId: old.quoteId, baseVersion: await version(tx, orgId, old.quoteId), ops: [], header: { clientId: old.clientId, title: "Old", markupBps: 0, vatRateBps: 2000, vatTreatment: "standard", validUntil: "2020-01-01" } });
       await sendQuote(tx, orgId, { quoteId: old.quoteId, baseVersion: await version(tx, orgId, old.quoteId), memberId });
     });
     expect(await reason(withTenant(orgId, (tx) => decide(tx, orgId, old.clientId, old.number, { decision: "accepted", fullName: "S", signature: "S", agree: true }, { ip: null, userAgent: null })))).toBe("expired");

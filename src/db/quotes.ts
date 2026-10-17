@@ -11,6 +11,7 @@ import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql } from "driz
 import { likePattern } from "@/core/clients";
 import { MAX_LINES_PER_QUOTE } from "@/core/limits";
 import { placeAt, quoteTotals, type QuoteTotals } from "@/core/quote";
+import type { VatTreatment } from "@/core/vat";
 import type { NewQuoteInput, QuoteOp, QuoteSave } from "@/core/schemas";
 import type { Tx } from "./index";
 import { clients, organizations, quoteLines, quoteSections, quoteVersions, quotes, serviceBundleItems, services } from "./schema";
@@ -28,7 +29,8 @@ export type QuoteErrorReason =
   | "too_many_lines"
   | "empty"
   | "not_sent"
-  | "bad_plan";
+  | "bad_plan"
+  | "no_vat_number";
 
 /** A save that can't be applied. Nothing from it is written (the transaction rolls back). */
 export class QuoteError extends Error {
@@ -46,7 +48,7 @@ const pgCode = (e: unknown) => (e as { code?: string; cause?: { code?: string } 
 type TotalsLine = { quoteId: string; qty: string; ratePence: number; markupBps: number };
 
 /** Totals for several quotes, from their lines. */
-async function totalsFor(tx: Tx, orgId: string, list: { id: string; vatRateBps: number }[]): Promise<Map<string, QuoteTotals>> {
+async function totalsFor(tx: Tx, orgId: string, list: { id: string; vatRateBps: number; vatTreatment: VatTreatment }[]): Promise<Map<string, QuoteTotals>> {
   if (list.length === 0) return new Map();
   const lines: TotalsLine[] = await tx
     .select({ quoteId: quoteSections.quoteId, qty: quoteLines.qty, ratePence: quoteLines.ratePence, markupBps: quoteLines.markupBps })
@@ -61,6 +63,7 @@ async function totalsFor(tx: Tx, orgId: string, list: { id: string; vatRateBps: 
       quoteTotals(
         [{ id: q.id, name: "", lines: (byQuote.get(q.id) ?? []).map((l, i) => ({ id: String(i), name: "", unit: "", qty: Number(l.qty), rate: l.ratePence, markup: l.markupBps })) }],
         q.vatRateBps,
+        q.vatTreatment,
       ),
     ]),
   );
@@ -80,6 +83,7 @@ export async function listQuotes(tx: Tx, orgId: string, { search, clientId, page
       title: quotes.title,
       status: quotes.status,
       vatRateBps: quotes.vatRateBps,
+      vatTreatment: quotes.vatTreatment,
       updatedAt: quotes.updatedAt,
       clientId: clients.id,
       clientName: clients.name,
@@ -204,7 +208,7 @@ export type LibraryEntry = Awaited<ReturnType<typeof libraryForQuotes>>[number];
  */
 export async function createQuote(tx: Tx, orgId: string, input: NewQuoteInput): Promise<string> {
   const [client] = await tx
-    .select({ id: clients.id })
+    .select({ id: clients.id, vatTreatment: clients.vatTreatment })
     .from(clients)
     .where(and(eq(clients.orgId, orgId), eq(clients.id, input.clientId), isNull(clients.archivedAt)));
   if (!client) throw new QuoteError("unknown_client");
@@ -220,11 +224,14 @@ export async function createQuote(tx: Tx, orgId: string, input: NewQuoteInput): 
     .where(eq(quotes.orgId, orgId));
   const [quote] = await tx
     .insert(quotes)
-    .values({ orgId, clientId: input.clientId, number: next, title: input.title, markupBps: org?.markup ?? 0, vatRateBps: org?.vat ?? 2000 })
+    .values({ orgId, clientId: input.clientId, number: next, title: input.title, markupBps: org?.markup ?? 0, vatRateBps: org?.vat ?? 2000, ...reverseChargeDefault(client.vatTreatment, org?.vat ?? 2000) })
     .returning({ id: quotes.id });
   await tx.insert(quoteSections).values({ orgId, quoteId: quote.id, position: 0, name: "Works" });
   return quote.id;
 }
+
+/** A reverse charge client's new quote uses the reverse charge, at 20% if the company's default rate is 0%. */
+const reverseChargeDefault = (t: VatTreatment, vat: number) => (t === "reverse_charge" ? { vatTreatment: t, vatRateBps: vat > 0 ? vat : 2000 } : {});
 
 /** Delete a draft and everything in it. Sent quotes are records and can't be deleted. */
 export async function deleteDraft(tx: Tx, orgId: string, quoteId: string): Promise<"deleted" | "not_found" | "not_draft" | "was_sent"> {
@@ -281,6 +288,7 @@ export async function saveQuote(tx: Tx, orgId: string, save: QuoteSave): Promise
           validUntil: save.header.validUntil ?? null,
           markupBps: save.header.markupBps,
           vatRateBps: save.header.vatRateBps,
+          vatTreatment: save.header.vatTreatment,
         })
         .where(and(eq(quotes.orgId, orgId), eq(quotes.id, save.quoteId)));
     }
@@ -475,7 +483,7 @@ export async function duplicateQuote(tx: Tx, orgId: string, quoteId: string): Pr
   const newId = await createQuote(tx, orgId, { clientId: q.clientId, title });
   await tx
     .update(quotes)
-    .set({ siteAddress: q.siteAddress, markupBps: q.markupBps, vatRateBps: q.vatRateBps, paymentPlan: q.paymentPlan })
+    .set({ siteAddress: q.siteAddress, markupBps: q.markupBps, vatRateBps: q.vatRateBps, vatTreatment: q.vatTreatment, paymentPlan: q.paymentPlan })
     .where(and(eq(quotes.orgId, orgId), eq(quotes.id, newId)));
   // Replace the starter section with copies of the source's sections and lines.
   await tx.delete(quoteSections).where(and(eq(quoteSections.orgId, orgId), eq(quoteSections.quoteId, newId)));

@@ -84,6 +84,7 @@ const columns = (input: ClientInput) => ({
   address: input.address ?? null,
   source: input.source ?? null,
   notes: input.notes ?? null,
+  vatTreatment: input.vatTreatment ?? "standard",
 });
 
 export async function createClient(tx: Tx, orgId: string, input: ClientInput): Promise<string> {
@@ -137,7 +138,7 @@ export async function deleteClient(tx: Tx, orgId: string, clientId: string): Pro
 /** Clients for a picker: active ones alphabetically, plus `includeId` even if it's archived. */
 export async function clientOptions(tx: Tx, orgId: string, includeId?: string) {
   return tx
-    .select({ id: clients.id, name: clients.name, address: clients.address })
+    .select({ id: clients.id, name: clients.name, address: clients.address, vatTreatment: clients.vatTreatment })
     .from(clients)
     .where(and(eq(clients.orgId, orgId), includeId ? or(isNull(clients.archivedAt), eq(clients.id, includeId)) : isNull(clients.archivedAt)))
     .orderBy(asc(sql`lower(${clients.name})`))

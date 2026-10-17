@@ -7,7 +7,7 @@
  */
 import "server-only";
 import { and, asc, desc, eq, inArray, lte, ne, sql } from "drizzle-orm";
-import { applyBps } from "@/core/money";
+import { chargedVatBps, vatFor, type VatTreatment } from "@/core/vat";
 import { addDays, invoiceRef, splitVat, ukToday, type ReminderKind } from "@/core/payment-plan";
 import type { QuoteSnapshot, SnapshotStage } from "@/core/quote-snapshot";
 import type { VariationSnapshot } from "@/core/variation";
@@ -34,12 +34,16 @@ export type InvoiceSnapshot = {
   quote: { ref: string; title: string } | null;
   description: string;
   vatRateBps: number;
+  /** Older invoices have none: standard. Under the reverse charge, VAT is shown but not charged. */
+  vatTreatment?: VatTreatment;
+  /** The VAT the client pays to HMRC under the reverse charge (not in the total). */
+  reverseChargeVat?: number;
   bank: { accountName: string; sortCode: string; accountNumber: string };
   /** What's billed, line by line (a stage and/or variations). Older invoices have one line: the description. */
   lines?: InvoiceLine[];
 };
 
-export type InvoiceLine = { description: string; net: number; vat: number; total: number };
+export type InvoiceLine = { description: string; net: number; vat: number; total: number; reverseChargeVat?: number };
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 
@@ -130,23 +134,29 @@ export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: str
   if (pickedRecharges.some((r) => !r)) throw new InvoiceError("unknown_recharge");
 
   const s = accepted.snapshot;
+  const treatment = s.quote.vatTreatment ?? "standard";
+  const rate = s.quote.vatRateBps;
+  const rc = (net: number) => (treatment === "reverse_charge" ? { reverseChargeVat: vatFor(net, rate, treatment).reverseChargeVat } : {});
   const lines: InvoiceLine[] = [];
   if (stage) {
-    const { net, vat } = splitVat(stage.amount, s.quote.vatRateBps);
-    lines.push({ description: stage.label, net, vat, total: stage.amount });
+    // Stage amounts include whatever VAT is charged (none under the reverse charge).
+    const { net, vat } = splitVat(stage.amount, chargedVatBps(rate, treatment));
+    lines.push({ description: stage.label, net, vat, total: stage.amount, ...rc(net) });
   }
   for (const v of chosen as NonNullable<(typeof chosen)[number]>[]) {
     const ref = (v.snapshot as VariationSnapshot).ref;
-    lines.push({ description: `Variation ${ref.split("-").at(-1)}: ${v.title}`, net: v.netPence, vat: v.vatPence, total: v.totalPence });
+    const vrc = v.vatTreatment === "reverse_charge" ? { reverseChargeVat: vatFor(v.netPence, v.vatRateBps, v.vatTreatment).reverseChargeVat } : {};
+    lines.push({ description: `Variation ${ref.split("-").at(-1)}: ${v.title}`, net: v.netPence, vat: v.vatPence, total: v.totalPence, ...vrc });
   }
   for (const r of pickedRecharges as NonNullable<(typeof pickedRecharges)[number]>[]) {
-    const vatLine = applyBps(r.amount, s.quote.vatRateBps);
-    lines.push({ description: `Purchased on your behalf: ${r.description}${r.supplier ? ` (${r.supplier})` : ""}`, net: r.amount, vat: vatLine, total: r.amount + vatLine });
+    const { vat: vatLine } = vatFor(r.amount, rate, treatment);
+    lines.push({ description: `Purchased on your behalf: ${r.description}${r.supplier ? ` (${r.supplier})` : ""}`, net: r.amount, vat: vatLine, total: r.amount + vatLine, ...rc(r.amount) });
   }
   const net = lines.reduce((a, l) => a + l.net, 0);
   const vat = lines.reduce((a, l) => a + l.vat, 0);
   const total = net + vat;
-  if (net < 0 || vat < 0 || total <= 0) throw new InvoiceError("credit_too_big");
+  const reverseChargeVat = lines.reduce((a, l) => a + (l.reverseChargeVat ?? 0), 0);
+  if (net < 0 || vat < 0 || total <= 0 || reverseChargeVat < 0) throw new InvoiceError("credit_too_big");
 
   const [{ next }] = await tx
     .select({ next: sql<number>`coalesce(max(${invoices.number}), 0) + 1`.mapWith(Number) })
@@ -163,6 +173,7 @@ export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: str
     quote: { ref: s.quote.ref, title: s.quote.title },
     description: `${headline}: ${s.quote.title} (${s.quote.ref})`,
     vatRateBps: s.quote.vatRateBps,
+    ...(treatment === "reverse_charge" ? { vatTreatment: treatment, reverseChargeVat } : {}),
     bank: { accountName: org.bankAccountName, sortCode: org.bankSortCode, accountNumber: org.bankAccountNumber },
     lines,
   };
@@ -179,6 +190,7 @@ export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: str
       netPence: net,
       vatPence: vat,
       totalPence: total,
+      reverseChargeVatPence: reverseChargeVat,
       snapshot,
       createdByMemberId: input.memberId,
     })

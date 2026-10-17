@@ -10,7 +10,7 @@ const form = (fields: Record<string, string>) => {
 
 describe("parseClientForm", () => {
   it("accepts a name on its own", () => {
-    expect(parseClientForm(form({ name: "  Sarah Hale " }))).toEqual({ ok: true, value: { name: "Sarah Hale" } });
+    expect(parseClientForm(form({ name: "  Sarah Hale " }))).toEqual({ ok: true, value: { name: "Sarah Hale", vatTreatment: "standard" } });
   });
 
   it("tidies a full record", () => {
@@ -36,8 +36,13 @@ describe("parseClientForm", () => {
         address: { line1: "14 Elm Road", town: "Bristol", postcode: "BS7 8AA" },
         source: "Referral",
         notes: "Prefers calls after 5pm.\nDog on site.",
+        vatTreatment: "standard",
       },
     });
+  });
+
+  it("records a reverse charge client when the box is ticked", () => {
+    expect(parseClientForm(form({ name: "Main Contractor Ltd", reverseCharge: "on" }))).toEqual({ ok: true, value: { name: "Main Contractor Ltd", vatTreatment: "reverse_charge" } });
   });
 
   it("asks for the rest of a half-filled address", () => {
@@ -60,7 +65,7 @@ describe("parseClientForm", () => {
 
   it("ignores fields it doesn't know, like a smuggled tenant", () => {
     const result = parseClientForm(form({ name: "Sarah", orgId: "00000000-0000-0000-0000-000000000000", id: "x" }));
-    expect(result).toEqual({ ok: true, value: { name: "Sarah" } });
+    expect(result).toEqual({ ok: true, value: { name: "Sarah", vatTreatment: "standard" } });
   });
 
   it("rejects control characters", () => {

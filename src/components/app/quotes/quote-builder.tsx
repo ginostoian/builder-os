@@ -38,6 +38,7 @@ import { PaymentPlanEditor } from "./payment-plan-editor";
 import { DuplicateButton } from "./duplicate-button";
 import { SendDialog } from "./send-dialog";
 import { useQuoteSaver, type SaveStatus } from "./use-quote-saver";
+import type { VatTreatment } from "@/core/vat";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -67,6 +68,7 @@ export type BuilderQuote = {
   validUntil: string | null;
   markupBps: number;
   vatRateBps: number;
+  vatTreatment: VatTreatment;
   sections: BuilderSection[];
   paymentPlan: PlanStage[];
 };
@@ -81,7 +83,7 @@ export type LibraryOption = {
   defaultMarkupBps: number | null;
   items: { serviceId: string; qty: number; name: string; unit: string; ratePence: number; defaultMarkupBps: number | null }[];
 };
-type ClientOption = { id: string; name: string; address: Address | null };
+type ClientOption = { id: string; name: string; address: Address | null; vatTreatment?: VatTreatment };
 
 const KIND_LABEL: Record<LineKind, string> = { normal: "Item", pc_sum: "PC sum", provisional: "Provisional sum" };
 const GRID = "grid grid-cols-[44px_minmax(0,1fr)_76px_64px_100px_72px_108px_64px]";
@@ -115,6 +117,7 @@ export function QuoteBuilder({
   clientPhone,
   emailEnabled,
   sentVersions,
+  hasVatNumber = true,
 }: {
   initial: BuilderQuote;
   clients: ClientOption[];
@@ -125,6 +128,8 @@ export function QuoteBuilder({
   emailEnabled: boolean;
   /** How many versions were sent before (a revision in progress when > 0). */
   sentVersions: number;
+  /** A reverse charge quote can't be sent without the company's VAT number. */
+  hasVatNumber?: boolean;
 }) {
   const saver = useQuoteSaver(initial.id, initial.version);
   const [sections, setSections] = React.useState<BuilderSection[]>(initial.sections);
@@ -133,6 +138,7 @@ export function QuoteBuilder({
     title: initial.title,
     markupBps: initial.markupBps,
     vatRateBps: initial.vatRateBps,
+    vatTreatment: initial.vatTreatment,
     siteAddress: initial.siteAddress ?? undefined,
     validUntil: initial.validUntil ?? undefined,
   }));
@@ -141,7 +147,7 @@ export function QuoteBuilder({
   const [plan, setPlan] = React.useState<PlanStage[]>(initial.paymentPlan);
   const blocked = saver.status === "blocked";
 
-  const totals = quoteTotals(toCore(sections), header.vatRateBps);
+  const totals = quoteTotals(toCore(sections), header.vatRateBps, header.vatTreatment);
   const lineNumbers = new Map<string, string>();
   sections.forEach((s, si) => s.lines.forEach((l, li) => lineNumbers.set(l.id, `${si + 1}.${li + 1}`)));
   const client = clients.find((c) => c.id === header.clientId);
@@ -310,7 +316,7 @@ export function QuoteBuilder({
           <div className="flex-1" />
           <div className="hidden gap-1.5 text-xs text-ink-2 sm:flex">
             <span className="rounded-md bg-muted px-2 py-[3px]">Default markup {formatBps(header.markupBps)}</span>
-            <span className="rounded-md bg-muted px-2 py-[3px]">VAT {formatBps(header.vatRateBps)}</span>
+            <span className="rounded-md bg-muted px-2 py-[3px]">VAT {formatBps(header.vatRateBps)}{header.vatTreatment === "reverse_charge" ? ", reverse charge" : ""}</span>
           </div>
         </div>
 
@@ -376,13 +382,32 @@ export function QuoteBuilder({
             <SummaryRow label="Cost" value={formatGBP(totals.cost)} />
             <SummaryRow label="Markup" value={formatGBP(totals.markup)} />
             <SummaryRow label="Subtotal" value={formatGBP(totals.net)} />
-            <SummaryRow label={`VAT ${formatBps(header.vatRateBps)}`} value={formatGBP(totals.vat)} />
+            {header.vatTreatment === "reverse_charge" ? (
+              <SummaryRow label={`VAT ${formatBps(header.vatRateBps)}, reverse charge`} value={`${formatGBP(totals.reverseChargeVat)} not charged`} />
+            ) : (
+              <SummaryRow label={`VAT ${formatBps(header.vatRateBps)}`} value={formatGBP(totals.vat)} />
+            )}
             <div className="my-1 h-px bg-hairline" />
             <div className="flex items-baseline justify-between">
               <dt className="font-medium">Total</dt>
               <dd className="text-[22px] font-semibold tracking-[-0.02em]">{formatGBP(totals.total)}</dd>
             </div>
           </dl>
+          {header.vatTreatment === "reverse_charge" && (
+            <p className={cn("mt-2.5 text-[12px] leading-[1.45]", hasVatNumber ? "text-ink-2" : "text-danger")}>
+              {hasVatNumber ? (
+                "Reverse charge: the client pays the VAT to HMRC. Your quote and invoices say so."
+              ) : (
+                <>
+                  Add your VAT number in{" "}
+                  <Link href="/app/settings" className="underline underline-offset-2">
+                    Settings
+                  </Link>{" "}
+                  before sending: a reverse charge invoice must show it.
+                </>
+              )}
+            </p>
+          )}
         </div>
         <div className="rounded-[10px] bg-white px-3.5 py-3 shadow-ring">
           <div className="flex justify-between text-[12.5px]">
@@ -1005,7 +1030,15 @@ function DetailsTab({
             <input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={commitTitle} maxLength={TEXT.name} className={control} />
           </Field>
           <Field label="Client">
-            <select value={header.clientId} onChange={(e) => onChange({ ...header, clientId: e.target.value })} className={control}>
+            <select
+              value={header.clientId}
+              onChange={(e) => {
+                const next = clients.find((c) => c.id === e.target.value);
+                const rc = next?.vatTreatment === "reverse_charge";
+                onChange({ ...header, clientId: e.target.value, vatTreatment: rc ? "reverse_charge" : "standard", vatRateBps: rc && header.vatRateBps === 0 ? 2000 : header.vatRateBps });
+              }}
+              className={control}
+            >
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -1025,13 +1058,27 @@ function DetailsTab({
           <Field label="VAT rate">
             <select value={header.vatRateBps} onChange={(e) => onChange({ ...header, vatRateBps: Number(e.target.value) })} className={control}>
               {[...new Set([...VAT_OPTIONS, header.vatRateBps])]
-                .filter((b) => b >= 0 && b <= MAX_VAT_BPS)
+                .filter((b) => b >= 0 && b <= MAX_VAT_BPS && (header.vatTreatment === "standard" || b > 0))
                 .map((b) => (
                   <option key={b} value={b}>
                     {formatBps(b)}
                     {b === 2000 ? " (standard)" : b === 500 ? " (reduced)" : b === 0 ? " (zero-rated)" : ""}
                   </option>
                 ))}
+            </select>
+          </Field>
+          <Field
+            label="VAT treatment"
+            className="sm:col-span-2"
+            hint={
+              header.vatTreatment === "reverse_charge"
+                ? "The client pays the VAT to HMRC, not you. Quotes and invoices show the VAT and the wording HMRC needs, and the total doesn't include it."
+                : "Use the reverse charge for a VAT and CIS registered builder or contractor who isn't the end user."
+            }
+          >
+            <select value={header.vatTreatment} onChange={(e) => onChange({ ...header, vatTreatment: e.target.value as VatTreatment, vatRateBps: e.target.value === "reverse_charge" && header.vatRateBps === 0 ? 2000 : header.vatRateBps })} className={control}>
+              <option value="standard">Charge VAT as normal</option>
+              <option value="reverse_charge">Domestic reverse charge (client pays the VAT to HMRC)</option>
             </select>
           </Field>
         </div>

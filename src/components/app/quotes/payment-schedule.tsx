@@ -1,5 +1,6 @@
 "use client";
 
+import { vatLabel, type VatTreatment } from "@/core/vat";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,6 +33,7 @@ export function PaymentSchedule({
   emailEnabled,
   clientName,
   clientEmail,
+  vatTreatment,
 }: {
   quoteId: string;
   rows: ScheduleRow[];
@@ -42,6 +44,7 @@ export function PaymentSchedule({
   emailEnabled: boolean;
   clientName: string;
   clientEmail: string | null;
+  vatTreatment?: VatTreatment;
 }) {
   const today = ukToday();
   const paid = rows.reduce((a, r) => a + (r.invoice?.status === "paid" ? r.amount : 0), 0);
@@ -89,7 +92,7 @@ export function PaymentSchedule({
                 ) : (
                   <>
                     <span>{dueText(r)}</span>
-                    {canInvoice && <CreateInvoiceButton quoteId={quoteId} row={r} billable={billable} recharges={recharges} disabled={!bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />}
+                    {canInvoice && <CreateInvoiceButton quoteId={quoteId} row={r} billable={billable} recharges={recharges} disabled={!bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} vatTreatment={vatTreatment} />}
                   </>
                 )}
               </div>
@@ -101,9 +104,9 @@ export function PaymentSchedule({
         <div className="mt-2 flex items-center justify-between gap-2 rounded-[10px] bg-warning-soft/50 px-3 py-2.5 text-[12.5px]">
           <span>
             <span className="font-medium">{recharges.length} purchase{recharges.length > 1 ? "s" : ""} made for the client</span>
-            <span className="text-ink-2"> to bill back, {formatGBP(recharges.reduce((a, r) => a + r.totalPence, 0))} inc. VAT</span>
+            <span className="text-ink-2"> to bill back, {formatGBP(recharges.reduce((a, r) => a + r.totalPence, 0))} {vatLabel(vatTreatment)}</span>
           </span>
-          <CreateInvoiceButton quoteId={quoteId} billable={billable} recharges={recharges} disabled={!bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} />
+          <CreateInvoiceButton quoteId={quoteId} billable={billable} recharges={recharges} disabled={!bankReady} emailEnabled={emailEnabled} clientName={clientName} clientEmail={clientEmail} vatTreatment={vatTreatment} />
         </div>
       )}
     </div>
@@ -119,8 +122,10 @@ function CreateInvoiceButton({
   emailEnabled,
   clientName,
   clientEmail,
+  vatTreatment,
 }: {
   quoteId: string;
+  vatTreatment?: VatTreatment;
   /** The payment to invoice; without one, it's an invoice for purchases (and variations) on their own. */
   row?: ScheduleRow;
   billable: BillableVariation[];
@@ -160,7 +165,7 @@ function CreateInvoiceButton({
         <DialogDescription>
           {row ? (
             <>
-              {formatGBP(row.amount)} inc. VAT, payable by bank transfer (or online, if you take payments online). {row.dueKind === "date" && row.dueDate ? `Due ${shortDate(row.dueDate)} (or after your payment terms if that's passed).` : "Due after your payment terms."} It also appears in {clientName}&apos;s portal.
+              {formatGBP(row.amount)} {vatLabel(vatTreatment)}, payable by bank transfer (or online, if you take payments online). {row.dueKind === "date" && row.dueDate ? `Due ${shortDate(row.dueDate)} (or after your payment terms if that's passed).` : "Due after your payment terms."} It also appears in {clientName}&apos;s portal.
             </>
           ) : (
             <>Things you bought on {clientName}&apos;s behalf, on an invoice of their own. Due after your payment terms, and it appears in their portal.</>

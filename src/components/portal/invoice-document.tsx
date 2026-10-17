@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { VatRow } from "./vat-row";
 import { formatAddress } from "@/core/clients";
 import { formatGBP } from "@/core/money";
 import { formatSortCode, invoiceState, ukToday } from "@/core/payment-plan";
@@ -88,10 +89,7 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceView }) {
               <span>Subtotal</span>
               <span>{formatGBP(invoice.netPence)}</span>
             </div>
-            <div className="flex justify-between text-ink-2">
-              <span>VAT {Number((s.vatRateBps / 100).toFixed(2))}%</span>
-              <span>{formatGBP(invoice.vatPence)}</span>
-            </div>
+            <VatRow rateBps={s.vatRateBps} vat={invoice.vatPence} treatment={s.vatTreatment} reverseChargeVat={s.reverseChargeVat} />
             <div className="mt-1 flex justify-between text-[17px] font-semibold">
               <span>{state === "paid" ? "Total paid" : "Amount due"}</span>
               <span>{formatGBP(invoice.totalPence)}</span>

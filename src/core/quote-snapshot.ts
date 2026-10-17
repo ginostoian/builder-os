@@ -6,6 +6,7 @@
 import type { Address } from "./schemas";
 import { computePlan, type DueKind, type PlanStage } from "./payment-plan";
 import { lineTotal, quoteRef, quoteTotals, sellRate } from "./quote";
+import type { VatTreatment } from "./vat";
 
 export type SnapshotLine = { id: string; name: string; qty: number; unit: string; unitPrice: number; total: number; note: string | null; kind: string };
 export type SnapshotSection = { id: string; name: string; total: number; lines: SnapshotLine[] };
@@ -14,9 +15,11 @@ export type QuoteSnapshot = {
   v: 1;
   company: { name: string; tradingName: string | null; vatNumber: string | null; logoUrl: string | null; brandColour: string | null; terms: string | null };
   client: { name: string };
-  quote: { number: number; ref: string; title: string; siteAddress: Address | null; validUntil: string | null; vatRateBps: number; versionNo: number };
+  /** vatTreatment: older snapshots have none, meaning standard. */
+  quote: { number: number; ref: string; title: string; siteAddress: Address | null; validUntil: string | null; vatRateBps: number; vatTreatment?: VatTreatment; versionNo: number };
   sections: SnapshotSection[];
-  totals: { net: number; vat: number; total: number };
+  /** reverseChargeVat: under the reverse charge, the VAT the client pays to HMRC (shown, not charged). */
+  totals: { net: number; vat: number; total: number; reverseChargeVat?: number };
   /** How the client will pay: amounts worked out at send time, adding up to the total. */
   paymentPlan?: SnapshotStage[];
 };
@@ -26,7 +29,7 @@ export type SnapshotStage = { id: string; label: string; amount: number; dueKind
 export type SnapshotInput = {
   company: QuoteSnapshot["company"];
   clientName: string;
-  quote: { number: number; title: string; siteAddress: Address | null; validUntil: string | null; vatRateBps: number };
+  quote: { number: number; title: string; siteAddress: Address | null; validUntil: string | null; vatRateBps: number; vatTreatment?: VatTreatment };
   versionNo: number;
   /** The quote's plan; buildSnapshot throws PlanError if it doesn't add up. Empty means the default. */
   paymentPlan: PlanStage[];
@@ -59,6 +62,7 @@ export function buildSnapshot(input: SnapshotInput): QuoteSnapshot {
   const totals = quoteTotals(
     input.sections.map((s) => ({ id: s.id, name: s.name, lines: s.lines.map((l) => ({ id: l.id, name: l.name, unit: l.unit, qty: l.qty, rate: l.ratePence, markup: l.markupBps })) })),
     input.quote.vatRateBps,
+    input.quote.vatTreatment,
   );
   const plan = computePlan(input.paymentPlan, totals.total);
   if (!plan.ok) throw new PlanError(plan.error);
@@ -66,9 +70,9 @@ export function buildSnapshot(input: SnapshotInput): QuoteSnapshot {
     v: 1,
     company: input.company,
     client: { name: input.clientName },
-    quote: { ...input.quote, ref: quoteRef(input.quote.number), versionNo: input.versionNo },
+    quote: { ...input.quote, vatTreatment: input.quote.vatTreatment === "reverse_charge" ? "reverse_charge" : undefined, ref: quoteRef(input.quote.number), versionNo: input.versionNo },
     sections,
-    totals: { net: totals.net, vat: totals.vat, total: totals.total },
+    totals: { net: totals.net, vat: totals.vat, total: totals.total, ...(totals.reverseChargeVat ? { reverseChargeVat: totals.reverseChargeVat } : {}) },
     paymentPlan: plan.stages.map((st) => ({ id: st.id, label: st.label, amount: st.amount, dueKind: st.dueKind, dueDate: st.dueKind === "date" ? (st.dueDate ?? null) : null })),
   };
 }
