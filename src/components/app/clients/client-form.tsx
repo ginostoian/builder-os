@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CLIENT_SOURCES, type ClientField } from "@/core/clients";
 import { TEXT } from "@/core/limits";
 import type { Address } from "@/core/schemas";
+import type { VatTreatment } from "@/core/vat";
 import { cn } from "@/lib/utils";
 import { Panel } from "../app-shell";
 import { Field, SectionHeading, control } from "../form-fields";
@@ -19,6 +20,7 @@ export type ClientValues = {
   address: Address | null;
   source: string | null;
   notes: string | null;
+  vatTreatment?: VatTreatment;
 };
 
 type FormValues = Record<ClientField, string>;
@@ -42,6 +44,7 @@ export function ClientForm({ clientId, initial, canEdit }: { clientId?: string; 
   // Controlled and submitted from onSubmit, like the settings form: a <form action> reset would wipe what
   // the user typed when the server sends back an error.
   const [values, setValues] = React.useState<FormValues>(() => toForm(initial));
+  const [reverseCharge, setReverseCharge] = React.useState(initial?.vatTreatment === "reverse_charge");
   const set = (key: ClientField) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setValues((v) => ({ ...v, [key]: e.target.value }));
     if (state.status === "saved") setState({ status: "idle" });
@@ -114,6 +117,27 @@ export function ClientForm({ clientId, initial, canEdit }: { clientId?: string; 
           <Field label="Notes" hint="Only your team sees these." error={error("notes")}>
             <textarea name="notes" value={values.notes} onChange={set("notes")} maxLength={TEXT.note} rows={4} className={cn(control, "h-auto resize-y py-2 leading-normal")} />
           </Field>
+          <label className="flex items-start gap-2.5">
+            <input
+              type="checkbox"
+              name="reverseCharge"
+              checked={reverseCharge}
+              onChange={(e) => {
+                setReverseCharge(e.target.checked);
+                if (state.status === "saved") setState({ status: "idle" });
+              }}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="font-medium">Use the VAT reverse charge on their quotes</span>
+              <span className="block text-[12.5px] text-ink-2">
+                For a builder or contractor who is VAT and CIS registered and passes the work on to their own customer. Their invoices show the VAT but don&apos;t charge it, with the wording HMRC needs.{" "}
+                <Link href="/tools/reverse-charge-vat-checker" target="_blank" className="underline underline-offset-2">
+                  Not sure?
+                </Link>
+              </span>
+            </span>
+          </label>
         </Panel>
       </fieldset>
 

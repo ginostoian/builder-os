@@ -38,6 +38,7 @@ const MESSAGES: Record<QuoteErrorReason, string> = {
   empty: "Add at least one line before sending.",
   not_sent: "This quote hasn't been sent yet.",
   bad_plan: "The payment plan doesn't add up to the quote total. Check the Payment plan tab.",
+  no_vat_number: "A reverse charge quote must show your VAT number. Add it in Settings, then send again.",
 };
 
 async function editor(): Promise<Session | null> {

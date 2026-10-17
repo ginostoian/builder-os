@@ -6,6 +6,7 @@ import type { EmailContent } from "./email-template";
 import { formatGBP } from "./money";
 import { formatSortCode, type ReminderKind } from "./payment-plan";
 import { longDate } from "./quote-snapshot";
+import { REVERSE_CHARGE_WORDING } from "./vat";
 
 export type InvoiceEmailFacts = {
   ref: string;
@@ -18,6 +19,8 @@ export type InvoiceEmailFacts = {
   link: string;
   /** The company takes card and bank payments online: the button pays the invoice. */
   payOnline?: boolean;
+  /** Under the reverse charge: the VAT the client pays to HMRC themselves (not in the amount due). */
+  reverseChargeVatPence?: number;
 };
 
 const COPY: Record<"new" | ReminderKind, { subject: (f: InvoiceEmailFacts, c: string) => string; heading: (f: InvoiceEmailFacts) => string; intro: (f: InvoiceEmailFacts, c: string) => string }> = {
@@ -63,9 +66,11 @@ export function invoiceEmail(kind: "new" | ReminderKind, f: InvoiceEmailFacts, s
         f.payOnline
           ? `You can pay online by card or from your bank with the button below, or by bank transfer using ${f.ref} as the payment reference.`
           : `Please pay by bank transfer, using ${f.ref} as the payment reference so we can match it.`,
+        ...(f.reverseChargeVatPence ? [`This invoice is under the VAT domestic reverse charge: the amount due doesn't include VAT. ${REVERSE_CHARGE_WORDING}.`] : []),
       ],
       details: [
         ["Amount due", formatGBP(f.totalPence)],
+        ...(f.reverseChargeVatPence ? [["VAT you pay to HMRC", formatGBP(f.reverseChargeVatPence)] as [string, string]] : []),
         ["Due date", longDate(f.dueDate)],
         ["Account name", f.bank.accountName],
         ["Sort code", formatSortCode(f.bank.sortCode)],

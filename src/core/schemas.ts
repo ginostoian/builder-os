@@ -7,6 +7,7 @@
  * - Tenant (`orgId`) is never part of an input schema. It always comes from the session on the server.
  * - Money is integer pence, percentages are basis points, quantities have at most 3 decimals.
  */
+import { VAT_TREATMENTS } from "./vat";
 import { CIS_STATUSES } from "./cis";
 import { FINISHES, PROJECT_TYPES } from "./estimator";
 import { z } from "zod";
@@ -112,6 +113,8 @@ export const clientInput = z.strictObject({
   address: address.optional(),
   source: singleLine(TEXT.short).optional(),
   notes: multiLine(TEXT.note).optional(),
+  /** Default VAT for new quotes: reverse_charge for a VAT and CIS registered contractor who isn't the end user. */
+  vatTreatment: z.enum(VAT_TREATMENTS).optional(),
 });
 export type ClientInput = z.infer<typeof clientInput>;
 
@@ -155,7 +158,8 @@ export const quoteHeaderInput = z.strictObject({
   validUntil: isoDate.optional(),
   markupBps: markupBps,
   vatRateBps: vatBps,
-});
+  vatTreatment: z.enum(VAT_TREATMENTS).default("standard"),
+}).refine((h) => h.vatTreatment === "standard" || h.vatRateBps > 0, { message: "The reverse charge needs a VAT rate", path: ["vatTreatment"] });
 export type QuoteHeaderInput = z.infer<typeof quoteHeaderInput>;
 
 export const quoteLineInput = z.strictObject({

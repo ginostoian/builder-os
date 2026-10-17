@@ -1,5 +1,6 @@
 "use client";
 
+import { VatRow } from "./vat-row";
 import * as React from "react";
 import { ChevronDown, ChevronRight, MapPin, MessageSquare, StickyNote } from "lucide-react";
 import { formatAddress } from "@/core/clients";
@@ -122,10 +123,7 @@ export function QuoteDocument({
             <span>Subtotal</span>
             <span>{formatGBP(snapshot.totals.net)}</span>
           </div>
-          <div className="flex justify-between text-ink-2">
-            <span>VAT {Number((q.vatRateBps / 100).toFixed(2))}%</span>
-            <span>{formatGBP(snapshot.totals.vat)}</span>
-          </div>
+          <VatRow rateBps={q.vatRateBps} vat={snapshot.totals.vat} treatment={q.vatTreatment} reverseChargeVat={snapshot.totals.reverseChargeVat} />
           <div className="mt-1 flex justify-between text-[15px] font-semibold">
             <span>Total</span>
             <span>{formatGBP(snapshot.totals.total)}</span>

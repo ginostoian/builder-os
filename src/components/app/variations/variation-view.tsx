@@ -1,5 +1,6 @@
 "use client";
 
+import { vatLabel } from "@/core/vat";
 import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import * as React from "react";
 import Link from "next/link";
@@ -110,7 +111,7 @@ export function VariationView(p: VariationViewProps) {
 
       <aside className="flex w-full flex-none flex-col gap-4 border-t border-hairline bg-white p-4 lg:w-[320px] lg:overflow-auto lg:border-t-0 lg:border-l lg:p-[18px]">
         <div>
-          <div className="text-[12.5px] text-subtle">{p.snapshot.totals.total < 0 ? "Credit inc. VAT" : "Total inc. VAT"}</div>
+          <div className="text-[12.5px] text-subtle">{p.snapshot.totals.total < 0 ? "Credit" : "Total"} {vatLabel(p.snapshot.vatTreatment)}</div>
           <div className="text-[24px] font-semibold tracking-[-0.02em] tabular">{formatGBP(p.snapshot.totals.total)}</div>
         </div>
         {p.status === "sent" && <div className="rounded-[10px] bg-warning-soft px-3.5 py-3 text-warning">Waiting for {p.clientName} to approve or reject it.</div>}

@@ -18,6 +18,7 @@ import { withTenant } from "@/db";
 import { billingFacts, markPaidOnline, refundOnline } from "@/db/billing";
 import { membersWithRoles, notify } from "@/db/notifications";
 import { orgIdFrom, stripe, syncConnectAccount, syncSubscription } from "./stripe";
+import { xeroLater } from "./xero/sync";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -52,7 +53,7 @@ export async function invoicePaid(accountId: string, cs: Stripe.Checkout.Session
   const invoiceId = cs.metadata?.invoiceId;
   if (!orgId || typeof invoiceId !== "string" || !UUID.test(invoiceId)) return "ignored";
   const paymentId = typeof cs.payment_intent === "string" ? cs.payment_intent : (cs.payment_intent?.id ?? cs.id);
-  return withTenant(orgId, async (tx) => {
+  const outcome = await withTenant(orgId, async (tx) => {
     // The payment must have happened on this company's own account, for this invoice's amount.
     const facts = await billingFacts(tx, orgId);
     if (facts.connectAccountId !== accountId) return "wrong account";
@@ -66,6 +67,9 @@ export async function invoicePaid(accountId: string, cs: Stripe.Checkout.Session
     });
     return "invoice paid";
   });
+  // Recorded in Xero against the Stripe account, if the company uses Xero.
+  if (outcome === "invoice paid") xeroLater(orgId, invoiceId);
+  return outcome;
 }
 
 /** A payment on a company's own account was refunded (from their Stripe dashboard). */
@@ -76,7 +80,7 @@ export async function chargeRefunded(accountId: string, chargeId: string): Promi
   const orgId = orgIdFrom(pi.metadata);
   const invoiceId = pi.metadata?.invoiceId;
   if (!orgId || typeof invoiceId !== "string" || !UUID.test(invoiceId)) return "ignored";
-  return withTenant(orgId, async (tx) => {
+  const outcome = await withTenant(orgId, async (tx) => {
     const facts = await billingFacts(tx, orgId);
     if (facts.connectAccountId !== accountId) return "wrong account";
     const full = charge.refunded === true || charge.amount_refunded >= charge.amount;
@@ -91,4 +95,7 @@ export async function chargeRefunded(accountId: string, chargeId: string): Promi
     });
     return result.reopened ? "invoice reopened" : "part refund noted";
   });
+  // The payment comes off in Xero too.
+  if (outcome === "invoice reopened") xeroLater(orgId, invoiceId);
+  return outcome;
 }

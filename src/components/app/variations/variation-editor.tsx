@@ -16,6 +16,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, Dia
 import { MAX_MARKUP_BPS, TEXT } from "@/core/limits";
 import { formatBps, formatGBP, parsePence, parsePercentToBps } from "@/core/money";
 import { qty as qtySchema } from "@/core/schemas";
+import { vatLabel, type VatTreatment } from "@/core/vat";
 import { MAX_VARIATION_LINES, MAX_VARIATION_PHOTOS, variationLineTotal, variationTotals, type VariationLine } from "@/core/variation";
 import { cn } from "@/lib/utils";
 import { Field, control } from "../form-fields";
@@ -56,7 +57,7 @@ export function VariationEditor({
   photos,
   storageEnabled,
 }: {
-  variation: { id: string; ref: string; title: string; reason: string | null; lines: VariationLine[]; vatRateBps: number; quoteId: string; quoteRef: string; quoteTitle: string };
+  variation: { id: string; ref: string; title: string; reason: string | null; lines: VariationLine[]; vatRateBps: number; vatTreatment?: VatTreatment; quoteId: string; quoteRef: string; quoteTitle: string };
   defaultMarkupBps: number;
   clientName: string;
   clientEmail: string | null;
@@ -76,7 +77,7 @@ export function VariationEditor({
 
   const parsed = rows.map(parseRow);
   const valid = parsed.filter((l): l is VariationLine => l !== null);
-  const totals = variationTotals(valid, variation.vatRateBps);
+  const totals = variationTotals(valid, variation.vatRateBps, variation.vatTreatment);
   const allValid = parsed.every((l) => l !== null) && title.trim() !== "";
 
   const edit = (i: number, patch: Partial<Row>) => {
@@ -129,6 +130,7 @@ export function VariationEditor({
               clientPhone={clientPhone}
               title={variation.title}
               emailEnabled={emailEnabled}
+              vatTreatment={variation.vatTreatment}
               total={totals.total}
               beforeSend={save}
               onSend={(email) => sendVariationToClient({ variationId: variation.id, email })}
@@ -222,7 +224,11 @@ export function VariationEditor({
           <dl className="flex flex-col gap-2 tabular">
             <Row2 label="Your cost" value={formatGBP(totals.cost)} />
             <Row2 label="Subtotal" value={formatGBP(totals.net)} />
-            <Row2 label={`VAT ${formatBps(variation.vatRateBps)}`} value={formatGBP(totals.vat)} />
+            {variation.vatTreatment === "reverse_charge" ? (
+              <Row2 label={`VAT ${formatBps(variation.vatRateBps)}, reverse charge`} value={`${formatGBP(totals.reverseChargeVat)} not charged`} />
+            ) : (
+              <Row2 label={`VAT ${formatBps(variation.vatRateBps)}`} value={formatGBP(totals.vat)} />
+            )}
             <div className="my-1 h-px bg-hairline" />
             <div className="flex items-baseline justify-between">
               <dt className="font-medium">{totals.total < 0 ? "Credit" : "Total"}</dt>
@@ -266,6 +272,7 @@ function SendVariationDialog({
   title,
   emailEnabled,
   total,
+  vatTreatment,
   beforeSend,
   onSend,
   onDone,
@@ -277,6 +284,7 @@ function SendVariationDialog({
   title: string;
   emailEnabled: boolean;
   total: number;
+  vatTreatment?: VatTreatment;
   beforeSend: () => Promise<boolean>;
   onSend: (email: boolean) => ReturnType<typeof sendVariationToClient>;
   onDone: () => void;
@@ -325,7 +333,7 @@ function SendVariationDialog({
             <DialogTitle>Send this variation?</DialogTitle>
             <DialogDescription>
               {clientName} gets a link to approve or reject it ({total < 0 ? "a credit of " : ""}
-              {formatGBP(Math.abs(total))} inc. VAT). Once sent it can&apos;t be edited, only withdrawn or revised.
+              {formatGBP(Math.abs(total))} {vatLabel(vatTreatment)}). Once sent it can&apos;t be edited, only withdrawn or revised.
             </DialogDescription>
             <label className="mt-4 flex items-center gap-2">
               <input type="checkbox" checked={email && canEmail} disabled={!canEmail} onChange={(e) => setEmail(e.target.checked)} />

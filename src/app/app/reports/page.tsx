@@ -10,6 +10,7 @@ import { PROJECT_STATUS_LABEL } from "@/core/projects";
 import { formatMinutes } from "@/core/team";
 import { costingReport } from "@/db/costs";
 import { cisSettings } from "@/db/cis";
+import { getXeroConnection } from "@/db/xero";
 import { Button } from "@/components/ui/button";
 import { requirePermission, withSession } from "@/auth/session";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const session = await requirePermission("costs.view");
   const raw = (await searchParams).filter;
   const filter = FILTERS.find((f) => f.key === (Array.isArray(raw) ? raw[0] : raw))?.key ?? "current";
-  const { report, cis } = await withSession(session, async (tx) => ({ report: await costingReport(tx, session.orgId), cis: (await cisSettings(tx, session.orgId)).enabled }));
+  const { report, cis, xero } = await withSession(session, async (tx) => ({
+    report: await costingReport(tx, session.orgId),
+    cis: (await cisSettings(tx, session.orgId)).enabled,
+    xero: Boolean((await getXeroConnection(tx, session.orgId))?.settings),
+  }));
   const rows = report.rows.filter((r) => (filter === "all" ? true : filter === "complete" ? r.status === "complete" : r.status !== "complete"));
   const sum = (f: (r: (typeof rows)[number]) => number) => rows.reduce((a, r) => a + f(r), 0);
   const income = sum((r) => r.incomeNet ?? 0);
@@ -45,6 +50,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           {cis && (
             <Button variant="secondary" asChild>
               <Link href="/app/reports/cis">CIS monthly figures</Link>
+            </Button>
+          )}
+          {xero && (
+            <Button variant="secondary" asChild>
+              <Link href="/app/reports/xero">Xero figures</Link>
             </Button>
           )}
         </ScreenTitle>

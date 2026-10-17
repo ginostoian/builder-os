@@ -81,7 +81,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,720px)_300px] items-start gap-4">
           <ClientForm
             clientId={client.id}
-            initial={{ name: client.name, email: client.email, phone: client.phone, address: client.address, source: client.source, notes: client.notes }}
+            initial={{ name: client.name, email: client.email, phone: client.phone, address: client.address, source: client.source, notes: client.notes, vatTreatment: client.vatTreatment }}
             canEdit={canManage}
           />
           <div className="flex flex-col gap-4">

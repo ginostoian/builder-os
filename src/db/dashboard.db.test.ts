@@ -82,7 +82,7 @@ describe("duplicate quote", () => {
       await saveQuote(tx, o.orgId, {
         quoteId,
         baseVersion: 0,
-        header: { clientId, title: "Original", markupBps: 1750, vatRateBps: 500, siteAddress: { line1: "1 A St", town: "Bath", postcode: "BA1 1AA" } },
+        header: { clientId, title: "Original", markupBps: 1750, vatRateBps: 500, vatTreatment: "standard", siteAddress: { line1: "1 A St", town: "Bath", postcode: "BA1 1AA" } },
         ops: [
           { op: "addLine", sectionId: q.sections[0].id, lineId: randomUUID(), position: 0, line: line("Skim", 6.2, 1_450, { serviceId: svc, note: "n", noteVisible: true }) },
           { op: "addSection", sectionId: extra, name: "Extras", position: 1 },

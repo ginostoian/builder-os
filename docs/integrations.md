@@ -148,6 +148,25 @@ How it works:
 
 Code: `src/core/plans.ts` (plans and features), `src/server/stripe.ts`, `src/server/stripe-events.ts`, `src/app/api/webhooks/stripe/route.ts`, `src/db/billing.ts`, `scripts/stripe-setup.ts`.
 
+## Accounting: Xero
+
+Companies on Essentials or Pro connect their own Xero organisation (Settings → Xero, Admins only). Then:
+- **Invoices go to Xero as they're raised.** The client becomes a contact (our client id is its ContactNumber, so it's always found again; an existing contact with the same email or name is reused), every line goes across net with our VAT to the penny, on the chosen sales account, with Xero's UK tax type: `OUTPUT2`, `RROUTPUT`, `ZERORATEDOUTPUT`, or `DRCHARGESUPPLY20` / `DRCHARGESUPPLY5` under the domestic reverse charge (`NONE` if the Xero organisation isn't VAT registered). The invoice number is ours (with an optional prefix, set to `BOS-` automatically when Xero already has its own INV-0001), the reference is the quote, and each line is tagged with the job in a "Jobs" tracking category (made at connect time if there's room).
+- **Payments both ways, never twice.** Marked paid here: a payment is recorded in Xero against the chosen bank account (online payments against a Stripe account, so the Stripe payout isn't counted again). Marked unpaid: our payment is removed. Voided: voided in Xero (a draft is deleted). Paid in Xero (bank reconciliation): marked paid here, by webhook and a daily check. Every step reads Xero's copy first, so a retry or a lost reply never duplicates anything.
+- **Reports.** Reports → Xero figures shows cash in the bank, the last 12 months' profit, money owed and profit per job (Profit and Loss by the Jobs tracking category, so costs entered in Xero count too).
+- **Queue and log.** Each change queues a job that runs straight away (`after()`), retries with backoff (1, 5, 30 minutes, 2 and 12 hours) when Xero is down or rate-limited, and stops with a plain-English explanation when someone has to act (reverse charge rates switched off in Xero, a lock date, a number clash). Settings → Xero shows the log with Retry. The daily cron retries what's due and checks unpaid invoices against Xero.
+
+Setup:
+1. At developer.xero.com, create a **Web app**. Redirect URI: `https://<your-domain>/api/xero/callback` (add `http://localhost:3000/api/xero/callback` for development).
+2. Set `XERO_CLIENT_ID` and `XERO_CLIENT_SECRET` in Vercel. The app asks for granular scopes (`offline_access accounting.contacts accounting.invoices accounting.payments accounting.settings accounting.reports.profitandloss.read accounting.reports.banksummary.read`, plus `openid profile email`); apps made after 2 March 2026 can't use the old broad ones.
+3. Webhooks: in the Xero app, add `https://<your-domain>/api/webhooks/xero` with the **Invoices** event, and set `XERO_WEBHOOK_KEY` to its signing key. Xero's "Intent to receive" check then passes (200 for a good signature, 401 otherwise, empty bodies).
+4. Optional: `XERO_TOKEN_KEY` (64 hex characters) to encrypt stored tokens; otherwise a key derived from `APP_SECRET` is used. Changing either means companies connect again.
+5. Xero pricing (from 2 March 2026): the free Starter tier allows 5 connections; Core (about AUD 35 a month) 50; Plus (about AUD 245) 1,000, with app certification. Webhooks keep the data we read (egress) small.
+
+Tokens: access tokens last 30 minutes, refresh tokens 60 days unused. Each refresh replaces the refresh token, so refreshing happens under a row lock and the new token is saved before anything else can fail. If Xero rejects it, the connection shows "Needs connecting again" and nothing is lost: the queue waits.
+
+Code: `src/core/xero.ts` (payloads, VAT codes, errors, report parsing), `src/server/xero/*` (client, setup, sync, reports, daily run), `src/db/xero.ts`, `src/app/api/xero/callback`, `src/app/api/webhooks/xero`, `src/app/app/settings/xero`, migration 0025.
+
 ## Private files: expiring links (recommended)
 
 By default, photos, project files and receipts are served from the same CDN links as logos. Those links are long and random, so they can't be guessed, but anyone who has one can open it for good. To make private files open only through links that expire (after 12 hours; pages hand out fresh ones each time they load):

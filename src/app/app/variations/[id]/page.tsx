@@ -44,7 +44,7 @@ export default async function VariationPage({ params }: { params: Promise<{ id: 
       <LiveAppShell active="quote" crumbs={crumbs}>
         <VariationEditor
           key={v.id}
-          variation={{ id: v.id, ref, title: v.title, reason: v.reason, lines: v.lines, vatRateBps: v.vatRateBps, quoteId: v.quoteId, quoteRef: quoteRef(found.quoteNumber), quoteTitle: found.quoteTitle }}
+          variation={{ id: v.id, ref, title: v.title, reason: v.reason, lines: v.lines, vatRateBps: v.vatRateBps, vatTreatment: v.vatTreatment, quoteId: v.quoteId, quoteRef: quoteRef(found.quoteNumber), quoteTitle: found.quoteTitle }}
           defaultMarkupBps={found.quoteMarkupBps}
           clientName={found.clientName}
           clientEmail={found.clientEmail}

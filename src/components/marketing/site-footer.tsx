@@ -11,6 +11,7 @@ const cols = [
       ["Variations", "/features#variations"],
       ["Client portal", "/features#portal"],
       ["Payments & invoicing", "/features#payments"],
+      ["Xero integration", "/integrations/xero"],
       ["Projects", "/features#projects"],
       ["Team app", "/features#team"],
       ["CRM & reporting", "/features#crm"],

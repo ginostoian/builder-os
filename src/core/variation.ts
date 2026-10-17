@@ -4,8 +4,9 @@
  * line is a credit. The client approves or rejects it in their portal, and approved ones are invoiced on
  * their own or added to a payment's invoice. Pure rules shared by the editor, sending and invoicing.
  */
-import { applyBps, type Pence } from "./money";
+import type { Pence } from "./money";
 import { lineCost, lineTotal, quoteRef, sellRate } from "./quote";
+import { vatFor, type VatTreatment } from "./vat";
 
 export const VARIATION_STATUSES = ["draft", "sent", "approved", "rejected", "withdrawn"] as const;
 export type VariationStatus = (typeof VARIATION_STATUSES)[number];
@@ -27,10 +28,8 @@ export const variationRef = (quoteNumber: number, n: number) => `${quoteRef(quot
 /** A line's signed client price, excluding VAT: omissions are credits. */
 export const variationLineTotal = (l: VariationLine): Pence => (l.omit ? -1 : 1) * lineTotal({ qty: l.qty, rate: l.ratePence, markup: l.markupBps });
 
-/** VAT on a signed amount, rounded symmetrically so a credit is the mirror of the same charge. */
-const signedVat = (net: Pence, vatBps: number): Pence => Math.sign(net) * applyBps(Math.abs(net), vatBps);
-
-export function variationTotals(lines: VariationLine[], vatBps: number) {
+/** VAT is rounded symmetrically on a signed amount, so a credit is the mirror of the same charge. */
+export function variationTotals(lines: VariationLine[], vatBps: number, treatment: VatTreatment = "standard") {
   let cost = 0;
   let net = 0;
   for (const l of lines) {
@@ -38,8 +37,8 @@ export function variationTotals(lines: VariationLine[], vatBps: number) {
     cost += sign * lineCost({ qty: l.qty, rate: l.ratePence });
     net += variationLineTotal(l);
   }
-  const vat = signedVat(net, vatBps);
-  return { cost, net, vat, total: net + vat, margin: net === 0 ? 0 : Math.round(((net - cost) / Math.abs(net)) * 10_000) };
+  const { vat, reverseChargeVat } = vatFor(net, vatBps, treatment);
+  return { cost, net, vat, reverseChargeVat, total: net + vat, margin: net === 0 ? 0 : Math.round(((net - cost) / Math.abs(net)) * 10_000) };
 }
 
 /** What the client sees and signs: selling prices only, frozen when it's sent. */
@@ -53,8 +52,11 @@ export type VariationSnapshot = {
   client: { name: string };
   quote: { number: number; ref: string; title: string };
   vatRateBps: number;
+  /** Older snapshots have none: standard. */
+  vatTreatment?: VatTreatment;
   lines: { id: string; name: string; qty: number; unit: string; unitPrice: number; total: number; omit: boolean }[];
-  totals: { net: number; vat: number; total: number };
+  /** reverseChargeVat: the VAT the customer pays to HMRC under the reverse charge (not charged). */
+  totals: { net: number; vat: number; total: number; reverseChargeVat?: number };
   /** Site photos, as public URLs (random, unguessable names). Older snapshots have none. */
   photos?: { url: string }[];
 };
@@ -67,10 +69,12 @@ export function buildVariationSnapshot(input: {
   clientName: string;
   quote: { number: number; title: string };
   vatRateBps: number;
+  vatTreatment?: VatTreatment;
   lines: VariationLine[];
   photoUrls?: string[];
 }): VariationSnapshot {
-  const totals = variationTotals(input.lines, input.vatRateBps);
+  const treatment = input.vatTreatment ?? "standard";
+  const totals = variationTotals(input.lines, input.vatRateBps, treatment);
   return {
     v: 1,
     ref: variationRef(input.quote.number, input.number),
@@ -81,8 +85,9 @@ export function buildVariationSnapshot(input: {
     client: { name: input.clientName },
     quote: { number: input.quote.number, ref: quoteRef(input.quote.number), title: input.quote.title },
     vatRateBps: input.vatRateBps,
+    ...(treatment === "reverse_charge" ? { vatTreatment: treatment } : {}),
     lines: input.lines.map((l) => ({ id: l.id, name: l.name, qty: l.qty, unit: l.unit, unitPrice: sellRate({ rate: l.ratePence, markup: l.markupBps }), total: variationLineTotal(l), omit: l.omit })),
-    totals: { net: totals.net, vat: totals.vat, total: totals.total },
+    totals: { net: totals.net, vat: totals.vat, total: totals.total, ...(totals.reverseChargeVat ? { reverseChargeVat: totals.reverseChargeVat } : {}) },
     photos: (input.photoUrls ?? []).map((url) => ({ url })),
   };
 }

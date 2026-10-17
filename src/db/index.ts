@@ -246,6 +246,29 @@ export async function findOrgsWithDueAutomations(now: Date): Promise<string[]> {
   return rows.map((row) => row.org_id);
 }
 
+/** The company connected to this Xero organisation, or null. For Xero's webhooks, which have no session. */
+export async function findOrgByXeroTenant(tenantId: string): Promise<string | null> {
+  const parsed = z.string().min(1).max(64).regex(/^[A-Za-z0-9-]+$/).safeParse(tenantId);
+  if (!parsed.success) return null;
+  const database = await checkedDb();
+  const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_xero_org_by_tenant(${parsed.data}) as org_id`);
+  return rows[0]?.org_id ?? null;
+}
+
+/** Companies with Xero work due by `now`. The scheduled run calls this, then works in each tenant. */
+export async function findOrgsWithDueXeroJobs(now: Date): Promise<string[]> {
+  const database = await checkedDb();
+  const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_orgs_with_due_xero_jobs(${now.toISOString()}::timestamptz) as org_id`);
+  return rows.map((row) => row.org_id);
+}
+
+/** Companies connected to Xero (the daily check for invoices paid in Xero). */
+export async function findOrgsWithXero(): Promise<string[]> {
+  const database = await checkedDb();
+  const rows = await database.execute<{ org_id: string }>(sql`select org_id from app_orgs_with_xero() as org_id`);
+  return rows.map((row) => row.org_id);
+}
+
 /** Close the pool (scripts and tests; Next.js keeps it for the process lifetime). */
 export async function closeDb(): Promise<void> {
   await client?.end();
