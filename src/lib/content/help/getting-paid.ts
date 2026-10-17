@@ -338,4 +338,111 @@ export const GETTING_PAID_ARTICLES: HelpArticle[] = [
     ],
     related: ["raising-invoices", "payment-reminders", "taking-payments-online"],
   },
+  {
+    slug: "reverse-charge-vat",
+    title: "The VAT reverse charge",
+    summary: "Quote and invoice main contractors under the construction reverse charge, with the VAT shown and HMRC's wording, done for you.",
+    category: "getting-paid",
+    who: "Admins and the office",
+    keywords: ["reverse charge", "drc", "domestic reverse charge", "vat", "main contractor", "subcontractor", "cis", "hmrc", "section 55a"],
+    body: [
+      {
+        type: "p",
+        text: "When you work for another builder or contractor who is VAT and CIS registered and passes your work on to their own customer, you usually don't charge them VAT. They pay it to HMRC instead. This is the **domestic reverse charge**, and Builder OS handles it for you.",
+      },
+      { type: "h", text: "Set it once on the client" },
+      {
+        type: "steps",
+        items: [
+          "Open the client in [Clients](/app/clients).",
+          "Tick **Use the VAT reverse charge on their quotes**, then **Save changes**.",
+          "New quotes for them use the reverse charge from the start.",
+        ],
+      },
+      {
+        type: "p",
+        text: "You can also change it on any draft quote: open the quote, go to **Details**, and set **VAT treatment** to **Domestic reverse charge**. Not sure if it applies? Our free [reverse charge checker](/tools/reverse-charge-vat-checker) asks six questions and tells you.",
+      },
+      { type: "h", text: "What changes" },
+      {
+        type: "list",
+        items: [
+          "No VAT is added to the total, so payment stages and invoices are the net amounts.",
+          "Quotes, variations and invoices still show the VAT rate and the VAT amount, marked **not charged**, with the wording HMRC needs: \"Reverse charge: customer to pay the VAT to HMRC\".",
+          "Invoice emails explain it and show the VAT your client pays to HMRC.",
+          "Variations on the job follow the quote, so they're reverse charge too.",
+          "If you use [Xero](/help/xero), invoices go across with Xero's reverse charge VAT codes.",
+        ],
+      },
+      { type: "h", text: "Before you send" },
+      {
+        type: "p",
+        text: "A reverse charge invoice must show your VAT number, so add it in [Settings](/app/settings) first. The reverse charge also needs a VAT rate (20% or 5%), because the invoice shows the VAT even though it isn't charged.",
+      },
+      {
+        type: "note",
+        text: "The reverse charge doesn't apply to work for homeowners (end users) or to work that's zero-rated. If you're unsure, check with your accountant.",
+      },
+    ],
+    related: ["raising-invoices", "cis", "xero"],
+  },
+  {
+    slug: "xero",
+    title: "Connecting Xero",
+    summary: "Your invoices and payments go into Xero by themselves, with the right VAT codes and each job tagged, so you never type them in twice.",
+    category: "getting-paid",
+    plan: "essentials",
+    who: "Admins set it up",
+    keywords: ["xero", "accounting", "bookkeeping", "accountant", "sync", "reconcile", "tracking category", "profit per job"],
+    body: [
+      {
+        type: "p",
+        text: "Connect Xero once and your books keep themselves up to date. Raise an invoice here and it's in Xero within seconds. Get paid and the payment is there too, ready to match to your bank statement.",
+      },
+      { type: "h", text: "Connecting" },
+      {
+        type: "steps",
+        items: [
+          "Go to [Settings → Xero](/app/settings/xero) and click **Connect to Xero**.",
+          "Sign in to Xero, choose your organisation and click **Allow access**.",
+          "You come back to Builder OS. We pick sensible choices for you: your Sales account, your bank account, a Stripe account if you have one, and a **Jobs** tracking category. Check them and click **Save**.",
+        ],
+      },
+      { type: "h", text: "What goes to Xero" },
+      {
+        type: "list",
+        items: [
+          "**Invoices**, as you raise them: the client (we use their existing Xero contact if there is one), every line, the VAT, and the job they're for.",
+          "**Payments** you mark here, or that clients make online. Online payments go against your Stripe account in Xero, so the Stripe payout to your bank isn't counted twice.",
+          "**Changes**: mark an invoice unpaid and our payment comes off in Xero; cancel an invoice and it's voided in Xero.",
+        ],
+      },
+      { type: "h", text: "What comes back" },
+      {
+        type: "p",
+        text: "When a client pays by bank transfer and you (or your bookkeeper) match it in Xero, the invoice is marked paid here and the reminders stop. You can switch this off in Settings → Xero.",
+      },
+      { type: "h", text: "Profit per job" },
+      {
+        type: "p",
+        text: "Each invoice is tagged with its job in Xero. Ask your bookkeeper to tag supplier bills with the job too, and [Reports → Xero figures](/app/reports/xero) shows real profit for every job, alongside your cash in the bank and what you're owed.",
+      },
+      { type: "h", text: "If something can't go" },
+      {
+        type: "p",
+        text: "Settings → Xero lists everything that's been sent. If Xero is busy, we try again by ourselves. If something needs you, like switching on Xero's reverse charge VAT rates, it says exactly what to do. Fix it and click **Retry**.",
+      },
+      { type: "h", text: "Good to know" },
+      {
+        type: "list",
+        items: [
+          "Only invoices from the start date you choose go to Xero. To send older ones, set the date and click **Send invoices from**. Anything already in Xero is matched, not copied twice.",
+          "If Xero already has its own INV-0001, ours get a prefix (BOS-INV-0001) so they never clash. Searching INV-0001 in Xero still finds it.",
+          "Using the reverse charge? In Xero, switch on its reverse charge rates once: Accounting, Advanced, Tax rates, **Add Domestic Reverse Charge Tax Rates**.",
+          "Disconnecting never deletes anything in Xero.",
+        ],
+      },
+    ],
+    related: ["raising-invoices", "marking-invoices-paid", "taking-payments-online", "reverse-charge-vat"],
+  },
 ];

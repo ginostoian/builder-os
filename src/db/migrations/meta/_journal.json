@@ -176,6 +176,13 @@
       "when": 1792247084217,
       "tag": "0024_reverse_charge",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792248217902,
+      "tag": "0025_xero",
+      "breakpoints": true
     }
   ]
 }

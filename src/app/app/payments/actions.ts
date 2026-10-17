@@ -10,6 +10,7 @@ import { getSession, withSession, type Session } from "@/auth/session";
 import { emailConfigured } from "@/server/email";
 import { emailInvoice } from "@/server/invoice-mail";
 import { appOrigin } from "@/server/origin";
+import { xeroLater } from "@/server/xero/sync";
 
 const NOT_ALLOWED = "Your role can't manage invoices.";
 
@@ -82,6 +83,7 @@ export async function createInvoice(input: unknown): Promise<InvoiceActionResult
     if (error instanceof InvoiceError) return { ok: false, message: MESSAGES[error.reason] };
     throw error;
   }
+  xeroLater(session.orgId, created.id);
   const mail = parsed.data.email ? await deliver(session, created.id) : { emailed: false };
   refresh(created.id, parsed.data.quoteId);
   if (parsed.data.expenseIds?.length) revalidatePath("/app/purchases");
@@ -109,6 +111,8 @@ async function change(invoiceId: string, fn: (session: Session) => Promise<strin
     throw error;
   }
   refresh(invoiceId, quoteId);
+  // Paid, unpaid or void: Xero follows.
+  xeroLater(session.orgId, invoiceId);
   return { ok: true };
 }
 
