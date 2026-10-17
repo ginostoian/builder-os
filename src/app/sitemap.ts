@@ -22,6 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     page("/", 1, "weekly"),
     page("/features", 0.9, "monthly"),
+    page("/integrations/xero", 0.8, "monthly"),
     page("/pricing", 0.9, "monthly"),
     page("/tools", 0.8, "monthly"),
     ...TOOLS.map((t) => page(toolPath(t.slug), 0.8, "monthly", new Date(`${t.updated}T12:00:00Z`))),

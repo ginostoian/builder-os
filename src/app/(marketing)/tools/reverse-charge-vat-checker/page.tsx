@@ -58,9 +58,9 @@ export default function ReverseChargeCheckerPage() {
       }
       calculator={<ReverseChargeChecker />}
       cta={{
-        title: "Quotes and invoices with the sums done for you.",
-        body: "Builder OS adds the VAT to every quote and invoice, works out CIS on subcontractor payments and lets clients pay online, so the figures are right before anything goes out.",
-        points: ["VAT worked out on every quote and invoice", "CIS deductions on subcontractor payments", "Invoices paid online by card or bank", "Automatic payment reminders"],
+        title: "Never check the reverse charge rules again.",
+        body: "Mark a client as a reverse charge contractor once. Every quote, variation and invoice for them then shows the VAT without charging it, with HMRC's wording, and goes to Xero with the right tax code.",
+        points: ["The reverse charge on every quote and invoice", "HMRC's wording added for you", "Synced to Xero with the right VAT codes", "CIS deductions on subcontractor payments"],
       }}
       faqs={faqs}
       disclaimer="This checker follows HMRC's VAT domestic reverse charge guidance as of October 2026. It's a guide, not tax advice: for unusual cases, check HMRC's technical guide or ask your accountant."

@@ -22,6 +22,7 @@ import { Screenshot } from "@/components/app/screenshot";
 import { siteLinks } from "@/components/marketing/links";
 import { ArrowLink, Container, DarkCtaBand, H1, H2, PrimaryCta } from "@/components/marketing/pieces";
 import { ProductTour } from "@/components/marketing/product-tour";
+import { ReverseChargeInvoice, XeroFlow } from "@/components/marketing/books";
 import { Button } from "@/components/ui/button";
 import { plans } from "@/lib/content/pricing";
 import { cn } from "@/lib/utils";
@@ -58,7 +59,7 @@ const modules = [
   { icon: FileDiff, name: "Variations", desc: "Capture changes on site and get them signed off the same day.", href: "/features#variations" },
   { icon: Globe, name: "Client portal", desc: "Progress photos, documents and approvals in one tidy link.", href: "/features#portal" },
   { icon: CalendarRange, name: "Payment plans", desc: "Deposit, stages, retention — set once from the quote.", href: "/features#payments" },
-  { icon: Receipt, name: "Invoicing", desc: "VAT-ready invoices with card and bank payments, and polite auto-chasers.", href: "/features#payments" },
+  { icon: Receipt, name: "Invoicing", desc: "Invoices paid by card or bank, chased for you, and in Xero without retyping.", href: "/features#payments" },
   { icon: SquareKanban, name: "Projects", desc: "A board for every job, with tasks, files and site diary.", href: "/features#projects" },
   { icon: HardHat, name: "Team & employee app", desc: "Who's where, what they're doing, hours and certificates.", href: "/features#team" },
   { icon: ChartColumn, name: "Reporting", desc: "Win rates, cash flow and margin by job, without a spreadsheet.", href: "/features#crm" },
@@ -337,6 +338,36 @@ export default function HomePage() {
                 <div className="text-sm leading-normal text-night-text">{m.desc}</div>
               </Link>
             ))}
+          </div>
+        </Container>
+      </section>
+
+      {/* 04 The paperwork */}
+      <section className="px-6 pt-32">
+        <Container>
+          <div className="mb-10 flex max-w-[720px] flex-col gap-4">
+            <Eyebrow>04 · The paperwork</Eyebrow>
+            <H2 className="text-[clamp(32px,4vw,48px)] leading-[1.05]">Your books, done before you&apos;re home.</H2>
+            <p className="text-[17px] leading-[1.6] text-ink-2">
+              No more Sunday nights typing invoices into Xero or looking up VAT rules. Raise the invoice once and your accounts, your VAT and your bookkeeper are already up to date.
+            </p>
+          </div>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] gap-4">
+            <FeatureCard
+              title="Invoices and payments in Xero by themselves"
+              body="Every invoice lands in Xero with the right VAT code and its job tagged. Paid in Builder OS, the payment's there too; matched in Xero, it's marked paid here. Nothing typed twice, nothing counted twice."
+            >
+              <XeroFlow />
+            </FeatureCard>
+            <FeatureCard
+              title="Main contractor work, invoiced right first time"
+              body="Tick one box on the client and every quote, variation and invoice uses the VAT reverse charge: the VAT shown but not charged, with HMRC's exact wording. No rejected invoices, no awkward credit notes."
+            >
+              <ReverseChargeInvoice />
+            </FeatureCard>
+          </div>
+          <div className="mt-6">
+            <ArrowLink href="/integrations/xero">How Builder OS works with Xero</ArrowLink>
           </div>
         </Container>
       </section>

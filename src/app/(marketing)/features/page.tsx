@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  BookCheck,
   CalendarDays,
   ChartColumn,
   Check,
@@ -21,6 +22,7 @@ import type { ScreenId } from "@/components/app/routes";
 import { siteLinks } from "@/components/marketing/links";
 import { CheckItem, Container, H1, H2, LightCtaCard, PrimaryCta, SecondaryCta } from "@/components/marketing/pieces";
 import { Badge } from "@/components/ui/badge";
+import { ReverseChargeInvoice, XeroFlow } from "@/components/marketing/books";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({ title: "Features: quoting, invoicing, projects and CRM for builders", description: "Quoting, variations, client portal, payment plans, invoicing, projects, team app, CRM and reporting for UK renovation companies.", path: "/features" });
@@ -76,7 +78,7 @@ const after: Module[] = [
     eyebrow: "Payment plans & invoicing",
     title: "Stage payments that invoice themselves.",
     body: "Set the payment plan on the quote — deposit, stages, retention — and Builder OS raises each invoice when the stage is ticked off. Clients pay by card or bank transfer, and polite reminders go out for you.",
-    points: ["Deposit, stage and retention plans", "VAT and reverse-charge ready", "Card and open-banking payments", "Automatic payment reminders"],
+    points: ["Deposit, stage and retention plans", "The VAT reverse charge done for you", "Card and open-banking payments", "Automatic payment reminders"],
     screen: "invoices",
     url: "app.builder-os.co.uk/payments",
   },
@@ -117,6 +119,7 @@ const jump: [string, LucideIcon, string][] = [
   ["Client portal", Globe, "portal"],
   ["Variations", FileDiff, "variations"],
   ["Payments", Receipt, "payments"],
+  ["Xero & VAT", BookCheck, "accounts"],
   ["Projects", SquareKanban, "projects"],
   ["Team", HardHat, "team"],
   ["CRM & reporting", ChartColumn, "crm"],
@@ -265,7 +268,44 @@ export default function FeaturesPage() {
         </Container>
       </section>
 
-      {after.map((m) => (
+      <ModuleSection m={after[0]} />
+
+      <section id="accounts" className="scroll-mt-[100px] px-6 pt-28">
+        <Container>
+          <div className="mb-11 grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] gap-x-16 gap-y-6">
+            <div className="flex flex-col gap-3.5">
+              <Eyebrow className="flex items-center gap-2">
+                <BookCheck className="size-3.5" />
+                Xero & VAT
+              </Eyebrow>
+              <H2 className="text-[clamp(30px,3.6vw,44px)] leading-[1.05]">Books that keep themselves.</H2>
+            </div>
+            <div className="flex flex-col gap-[18px] pt-1">
+              <p className="text-[17px] leading-[1.6] text-pretty text-ink-2">
+                Raise an invoice and it&apos;s in Xero seconds later, with the right VAT code and the job it belongs to. Payments go across the moment they&apos;re in, and anything reconciled in Xero is marked paid here. Working for a main contractor? The reverse charge is handled on every quote and invoice, with HMRC&apos;s wording.
+              </p>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-5 gap-y-2.5">
+                {["Never type an invoice into Xero again", "Payments matched both ways, never twice", "Reverse charge invoices right first time", "Real profit per job from Xero's figures"].map((p) => (
+                  <CheckItem key={p} iconClassName="text-ink">
+                    {p}
+                  </CheckItem>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] items-start gap-4 rounded-[22px] bg-line p-[clamp(16px,3vw,32px)] shadow-[inset_0_0_0_1px_#E8E7E3]">
+            <XeroFlow />
+            <div className="flex flex-col gap-3">
+              <ReverseChargeInvoice />
+              <Link href="/integrations/xero" className="rounded-[14px] bg-white px-4 py-3 text-[14px] font-medium shadow-ring hover:bg-surface">
+                How Builder OS works with Xero →
+              </Link>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {after.slice(1).map((m) => (
         <ModuleSection key={m.id} m={m} />
       ))}
 
