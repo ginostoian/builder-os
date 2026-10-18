@@ -22,14 +22,19 @@ export function PostUpdate({ projectId, projectName, photosEnabled }: { projectI
   const urls = React.useRef(new Set<string>());
   React.useEffect(() => () => urls.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
+  // Copy the files out straight away: on iPhones, clearing the input afterwards empties the same list.
   const add = (files: FileList | null) => {
-    if (!files) return;
-    const room = MAX_DIARY_PHOTOS - photos.length;
-    setPhotos((p) => [...p, ...[...files].slice(0, room).map((file) => {
+    const picked = [...(files ?? [])].slice(0, MAX_DIARY_PHOTOS - photos.length);
+    if (picked.length === 0) return;
+    setStatus(undefined);
+    setPhotos((p) => [
+      ...p,
+      ...picked.map((file) => {
         const url = URL.createObjectURL(file);
         urls.current.add(url);
         return { file, url };
-      })]);
+      }),
+    ]);
   };
 
   const submit = () =>
@@ -52,8 +57,9 @@ export function PostUpdate({ projectId, projectName, photosEnabled }: { projectI
       setBody("");
       setPhotos([]);
       if (r.status === "queued") return setStatus({ ok: true, text: "No signal, so it's saved on this phone. It'll post by itself when you're back online." });
-      const problem = r.warning ?? (unreadable ? "A photo couldn't be read." : undefined);
-      setStatus(problem ? { ok: false, text: `Posted, but not every photo went up. ${problem}` } : { ok: true, text: "Posted to the site diary." });
+      const problem = r.warning ?? (unreadable ? "A photo couldn't be read. Try taking it again." : undefined);
+      const sent = ready.length === 1 ? " with 1 photo" : ready.length > 1 ? ` with ${ready.length} photos` : "";
+      setStatus(problem ? { ok: false, text: `Posted, but not every photo went up. ${problem}` } : { ok: true, text: `Posted to the site diary${sent}.` });
       router.refresh();
     });
 
@@ -73,6 +79,7 @@ export function PostUpdate({ projectId, projectName, photosEnabled }: { projectI
         placeholder="What got done today? Any problems?"
         className="w-full resize-none rounded-xl bg-surface px-3 py-2.5 text-[15px] leading-normal shadow-ring-input outline-none"
       />
+      {photos.length > 0 && <p className="text-[13px] text-ink-2">{photos.length === 1 ? "1 photo added." : `${photos.length} photos added.`} They go up when you press Post update.</p>}
       {photos.length > 0 && (
         <div className="grid grid-cols-4 gap-1.5">
           {photos.map((p, i) => (
