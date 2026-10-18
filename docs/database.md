@@ -220,3 +220,7 @@ The test roles (`builderos_owner_test`, `builderos_app_test`) get fresh random p
 ## Still to do
 
 - A purge job for soft-deleted companies after the grace period, built with the per-company GDPR export (plan §7).
+
+## Example data (migration 0026)
+
+A new company's Admin is asked once, on the dashboard, whether to add example data (`src/db/sample-data.ts`). Every record it adds is listed in `sample_records`. Invoices, sent quotes and their history are records the app role can never delete, so "Remove example data" calls `app_remove_sample_data(org)`, owned by the NOLOGIN role `builderos_sample`: it sees and deletes rows only in the current tenant (the `sample_cleanup` policies), refuses any other company, deletes only listed records (example invoices must also have `is_sample`), and a foreign key stops it if real work was built on an example. Example invoices never go to Xero and example quotes don't count towards the Free plan's allowance.

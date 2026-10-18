@@ -1,15 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { can, clerkRoleKey, homePath, roleFromClerk } from "./roles";
+import { can, clerkRoleKey, effectiveRole, homePath, roleFromClerk } from "./roles";
 
 describe("roleFromClerk", () => {
-  it("maps our Clerk role keys", () => {
+  it("only reads Admin or not from Clerk (custom roles are a paid Clerk feature)", () => {
     expect(roleFromClerk("org:admin")).toBe("admin");
-    expect(roleFromClerk("org:site_lead")).toBe("site_lead");
-    expect(roleFromClerk(clerkRoleKey("estimator"))).toBe("estimator");
+    for (const key of ["org:member", "org:site_lead", clerkRoleKey("estimator"), "admin", "org:owner", "org:", "", null, undefined]) expect(roleFromClerk(key)).toBe("employee");
   });
+});
 
-  it("gives anything unknown the least access", () => {
-    for (const key of ["org:member", "admin", "org:owner", "org:", "", null, undefined]) expect(roleFromClerk(key)).toBe("employee");
+describe("effectiveRole", () => {
+  it("is Admin exactly when Clerk says so, otherwise the role chosen in Builder OS", () => {
+    expect(effectiveRole("org:admin", "employee")).toBe("admin");
+    expect(effectiveRole("org:member", "estimator")).toBe("estimator");
+    expect(effectiveRole("org:member", "site_lead")).toBe("site_lead");
+    // Our table can never make someone an Admin, and anything odd gets the least access.
+    expect(effectiveRole("org:member", "admin")).toBe("employee");
+    expect(effectiveRole(null, "office")).toBe("office");
+    expect(effectiveRole("org:member", undefined)).toBe("employee");
+    expect(effectiveRole("org:member", "owner" as never)).toBe("employee");
   });
 });
 

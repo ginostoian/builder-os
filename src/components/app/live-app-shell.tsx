@@ -8,7 +8,8 @@ import { getGuide } from "@/server/onboarding";
 import { Onboarding } from "./onboarding/onboarding";
 import { SCREEN_FEATURE } from "./shell/screen-features";
 import { UpgradePanel } from "./shell/upgrade";
-import { requirePermission } from "@/auth/session";
+import { requirePermission, withSession } from "@/auth/session";
+import { shouldOfferSampleData } from "@/db/sample-data";
 import { CompanySwitcher, UserMenu } from "./account";
 import { AppShell } from "./app-shell";
 import { CommandSearch } from "./shell/command-search";
@@ -70,7 +71,11 @@ export async function LiveAppShell({
         banner,
         guide: (
           <Suspense>
-            <Onboarding guide={await getGuide()} autoTour={active === "dashboard"} />
+            <Onboarding
+              guide={await getGuide()}
+              autoTour={active === "dashboard"}
+              offerSample={active === "dashboard" && can(session.role, "settings.manage") && (await withSession(session, (tx) => shouldOfferSampleData(tx, session.orgId)))}
+            />
           </Suspense>
         ),
       }}

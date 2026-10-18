@@ -20,17 +20,20 @@ Only `src/auth`, the proxy and the components that render Clerk's own UI may imp
 
 ## Roles
 
-| Role | Clerk key | Can |
+Clerk's free plan has no custom roles in production, so Clerk only says who is an **Admin** (`org:admin`, its built-in role). Everyone else is a Clerk **Member**, and their Builder OS role lives in `members.role`, chosen by an Admin in Settings → Team (new people start as Employee).
+
+| Role | Where it's set | Can |
 |---|---|---|
-| Admin | `org:admin` | Everything, including company settings, team and billing. Whoever creates the company gets this. |
-| Office | `org:office` | Clients, quotes, invoices and payments. No company settings. |
-| Estimator | `org:estimator` | Builds and sends quotes, manages the service library. |
-| Site lead | `org:site_lead` | Projects, tasks, photos, variations. **No prices or margins.** |
-| Employee | `org:employee` | The employee app (`/m`) only. Default for new invitations. |
+| Admin | Clerk (`org:admin`) | Everything, including company settings, team and billing. Whoever creates the company gets this. |
+| Office | Settings → Team | Clients, quotes, invoices and payments. No company settings. |
+| Estimator | Settings → Team | Builds and sends quotes, manages the service library. |
+| Site lead | Settings → Team | Projects, tasks, photos, variations. **No prices or margins.** |
+| Employee | Settings → Team (the default) | The employee app (`/m`) only. Default for new invitations. |
 
 - Check permissions with `can(role, permission)` from `src/core/roles.ts`, never by comparing role names. The permission list lives there.
-- Anything Clerk sends that we don't recognise, including Clerk's built-in `org:member`, is treated as Employee. A misconfigured Clerk instance can only give people less access, never more.
-- The role comes from the Clerk session on each request. The `members.role` column is a synced copy for reporting and history.
+- Admin comes from the Clerk session on each request (`effectiveRole`), so taking Admin away in Clerk works at once. Our table can never make someone an Admin.
+- Every other role comes from `members.role`. Clerk's webhooks only touch it when someone becomes or stops being an Admin (stopping drops them to Employee); a Member update never undoes a role chosen here. Custom role keys left in an older Clerk instance grant nothing.
+- `setMemberRole` refuses Admins, people who've left, and your own login.
 
 ## How a request finds its company
 
@@ -53,7 +56,7 @@ Do this once per instance: Development now, Production before launch.
 
 1. **Configure → Organizations:** enable organizations. Leave "Allow personal accounts" off, because every session must be in a company.
 2. **Configure → User & authentication:** email + password, email magic link and code, Google, Microsoft. SMS costs extra, so leave it off for now.
-3. **Roles:** run `pnpm clerk:roles` with that instance's secret key. It creates the four extra roles, makes Employee the default for new members, and replaces Clerk's built-in Member role. It's safe to run again. It refuses production keys unless you pass `--live`.
+3. **Roles:** nothing to do. Keep Clerk's built-in Admin and Member roles (custom roles need a paid Clerk plan in production). `pnpm clerk:roles` is from before this change; don't run it on production.
 4. **Webhook** (needs a public URL, so deployed environments only):
    - **Configure → Webhooks → Add endpoint:** `https://<domain>/api/webhooks/clerk`.
    - **Events:** `organization.created`, `organization.updated`, `organization.deleted`, `organizationMembership.created`, `organizationMembership.updated`, `organizationMembership.deleted`, `user.updated`, `user.deleted`.

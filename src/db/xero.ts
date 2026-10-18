@@ -135,6 +135,9 @@ export async function invoiceForXeroId(tx: Tx, orgId: string, xeroInvoiceId: str
 export async function queueXeroInvoice(tx: Tx, orgId: string, invoiceId: string) {
   const connected = await getXeroConnection(tx, orgId);
   if (!connected?.settings) return false;
+  // Example invoices from onboarding never go to Xero.
+  const [inv] = await tx.select({ isSample: invoices.isSample }).from(invoices).where(and(eq(invoices.orgId, orgId), eq(invoices.id, invoiceId)));
+  if (!inv || inv.isSample) return false;
   const reopened = await tx
     .update(xeroJobs)
     .set({ status: "pending", runAfter: new Date(), attempts: sql`case when ${xeroJobs.status} = 'failed' then 0 else ${xeroJobs.attempts} end` })
@@ -149,7 +152,7 @@ export async function queueXeroInvoicesSince(tx: Tx, orgId: string, from: string
   const rows = await tx
     .select({ id: invoices.id })
     .from(invoices)
-    .where(and(eq(invoices.orgId, orgId), sql`${invoices.issueDate} >= ${from}`))
+    .where(and(eq(invoices.orgId, orgId), eq(invoices.isSample, false), sql`${invoices.issueDate} >= ${from}`))
     .orderBy(asc(invoices.number))
     .limit(2_000);
   for (const r of rows) await queueXeroInvoice(tx, orgId, r.id);

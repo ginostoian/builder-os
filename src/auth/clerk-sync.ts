@@ -79,6 +79,7 @@ export async function deleteOrganization(clerkOrgId: string, at: Date): Promise<
 export type MemberSnapshot = {
   org: OrgSnapshot;
   clerkUserId: string;
+  /** "admin" if Clerk says they're an Admin, otherwise "employee" (their real role is kept in our table). */
   role: Role;
   name: string;
   email: string | null;
@@ -106,7 +107,9 @@ export async function syncMember(member: MemberSnapshot): Promise<string | null>
       .onConflictDoUpdate({
         target: [members.orgId, members.clerkUserId],
         set: {
-          role: sql`excluded.role`,
+          // Clerk only knows Admin or not. Becoming Admin makes them Admin; losing it drops them to Employee;
+          // otherwise the role chosen in Builder OS stays.
+          role: sql`case when excluded.role = 'admin' then 'admin'::member_role when ${members.role} = 'admin' then 'employee'::member_role else ${members.role} end`,
           name: sql`excluded.name`,
           email: sql`excluded.email`,
           active: sql`excluded.active`,

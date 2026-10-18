@@ -300,4 +300,39 @@ export const GETTING_STARTED_ARTICLES: HelpArticle[] = [
     ],
     related: ["project-board-and-timeline", "project-stages-and-tasks", "online-survey-booking", "weekly-schedule"],
   },
+  {
+    slug: "example-data",
+    title: "Example data",
+    summary: "Explore Builder OS with example clients, quotes, invoices and a job, then remove them in one click.",
+    category: "getting-started",
+    who: "Admins",
+    keywords: ["example", "sample", "demo", "test data", "dummy data", "remove", "clear"],
+    body: [
+      {
+        type: "p",
+        text: "When you first open Builder OS, we ask if you'd like some example work to explore. Say yes and every screen has something in it to try, before you add anything of your own.",
+      },
+      { type: "h", text: "What you get" },
+      {
+        type: "list",
+        items: [
+          "Six services in your library, from a skim coat to skip hire.",
+          "Three clients, including a main contractor set up for the VAT reverse charge, and two leads in your pipeline.",
+          "A kitchen extension that's been quoted, accepted and part paid, with its project under way and tasks on the board.",
+          "A bathroom quote waiting on the client.",
+        ],
+      },
+      { type: "p", text: "Everything is marked \"(example)\". Nothing is emailed to anyone, example invoices never go to Xero, and example quotes don't count towards the Free plan's monthly allowance." },
+      { type: "h", text: "Removing it" },
+      {
+        type: "steps",
+        items: ["Go to [Settings, Getting started](/app/settings/getting-started).", "Under **Example data**, click **Remove example data**.", "Everything you added yourself stays."],
+      },
+      {
+        type: "note",
+        text: "If you've built real work on an example (an invoice or job on an example quote, say), void or delete that first. Said no and changed your mind? You can add the examples from the same page, as long as you haven't started your own work yet.",
+      },
+    ],
+    related: ["welcome", "getting-started-guide"],
+  },
 ];
