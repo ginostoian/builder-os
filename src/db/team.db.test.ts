@@ -21,7 +21,9 @@ import {
   listVisits,
   listWorkers,
   markCertificatesReminded,
+  setMemberRole,
   setWorkerArchived,
+  teamLogins,
   teamSchedule,
   unlinkedMembers,
   updateCertificate,
@@ -263,3 +265,29 @@ describe("isolation", () => {
     });
   });
 });
+
+describe("roles set in Builder OS", () => {
+  it("lets an Admin change other people's roles, never Admins, leavers, their own, or another company's", async () => {
+    const a = await newOrg("Roles A");
+    const b = await newOrg("Roles B");
+    const boss = await member(a, "Boss", "boss@a.co", "admin");
+    const dan = await member(a, "Dan", "dan@a.co");
+    const other = await member(a, "Other Admin", null, "admin");
+    const theirs = await member(b, "Theirs", null);
+    await withTenant(a, async (tx) => {
+      expect(await setMemberRole(tx, a, dan, "estimator", boss)).toBe(true);
+      expect(await setMemberRole(tx, a, other, "employee", boss)).toBe(false); // Admins change in Clerk
+      expect(await setMemberRole(tx, a, boss, "office", boss)).toBe(false); // not yourself
+      expect(await setMemberRole(tx, a, dan, "admin" as never, boss)).toBe(false); // never Admin from here
+      expect(await setMemberRole(tx, a, theirs, "office", boss)).toBe(false); // other company: invisible
+      expect((await teamLogins(tx, a)).map((m) => [m.name, m.role])).toEqual([
+        ["Boss", "admin"],
+        ["Other Admin", "admin"],
+        ["Dan", "estimator"],
+      ]);
+      await tx.execute(sql`update members set active = false where id = ${dan}`);
+      expect(await setMemberRole(tx, a, dan, "office", boss)).toBe(false); // has left
+    });
+  });
+});
+

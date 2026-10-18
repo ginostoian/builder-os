@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
 import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { emailOrNull, personName } from "@/core/clerk";
-import { can, roleFromClerk, type Permission, type Role } from "@/core/roles";
+import { can, effectiveRole, roleFromClerk, type Permission, type Role } from "@/core/roles";
 import { findOrgByClerkId, withTenant, type Tx } from "@/db";
 import { members, organizations } from "@/db/schema";
 import { FILL_ONLY, syncMember, syncOrganization } from "./clerk-sync";
@@ -38,7 +38,7 @@ export const getSession = cache(async (): Promise<Session> => {
   const { userId, orgId: clerkOrgId, orgRole, redirectToSignIn } = await auth();
   if (!userId) return redirectToSignIn();
   if (!clerkOrgId) redirect(SELECT_COMPANY_PATH);
-  const role = roleFromClerk(orgRole);
+  const clerkRole = roleFromClerk(orgRole);
 
   const orgId = (await resolveOrg(clerkOrgId)) ?? redirect(SELECT_COMPANY_PATH);
   const member = await withTenant(orgId, async (tx) => {
@@ -55,7 +55,7 @@ export const getSession = cache(async (): Promise<Session> => {
     await syncMember({
       org: { clerkOrgId, name: member.orgName, at: FILL_ONLY },
       clerkUserId: userId,
-      role,
+      role: clerkRole,
       name: personName(user?.firstName, user?.lastName, primary ?? user?.username),
       email: emailOrNull(primary),
       active: true,
@@ -69,6 +69,7 @@ export const getSession = cache(async (): Promise<Session> => {
   // Free includes one login (src/core/plans.ts): everyone else is asked to have the company upgrade.
   if (!(await withTenant(orgId, (tx) => hasSeat(tx, orgId, found.id)))) redirect(PLAN_LIMIT_PATH);
 
+  const role = effectiveRole(orgRole, found.role);
   return { orgId, orgName: member.orgName, clerkOrgId, clerkUserId: userId, memberId: found.id, memberName: found.name, role };
 });
 
@@ -83,7 +84,7 @@ async function resolveOrg(clerkOrgId: string): Promise<string | null> {
 
 async function findMember(tx: Tx, orgId: string, clerkUserId: string) {
   const [row] = await tx
-    .select({ id: members.id, name: members.name, active: members.active })
+    .select({ id: members.id, name: members.name, active: members.active, role: members.role })
     .from(members)
     .where(and(eq(members.orgId, orgId), eq(members.clerkUserId, clerkUserId)));
   return row;

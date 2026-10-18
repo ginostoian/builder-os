@@ -27,7 +27,7 @@ async function member(orgId: string, clerkUserId: string) {
 const memberSnapshot = (clerkOrgId: string, clerkUserId: string, overrides: Partial<MemberSnapshot> = {}): MemberSnapshot => ({
   org: { clerkOrgId, name: "Hale & Sons", at: t(0) },
   clerkUserId,
-  role: "estimator",
+  role: "employee",
   name: "Dan Hale",
   email: "dan@halesons.co.uk",
   active: true,
@@ -197,36 +197,44 @@ describe("members", () => {
     const clerkUserId = newClerkUser();
     const memberId = await syncMember(memberSnapshot(clerkOrgId, clerkUserId));
     const orgId = (await findOrgByClerkId(clerkOrgId))!.id;
-    expect(await member(orgId, clerkUserId)).toMatchObject({ id: memberId, role: "estimator", name: "Dan Hale", active: true });
+    expect(await member(orgId, clerkUserId)).toMatchObject({ id: memberId, role: "employee", name: "Dan Hale", active: true });
     // Everyone with a login is on the team, once, however many times the membership is synced.
     await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { at: new Date(Date.now() + 1_000) }));
     const team = await withTenant(orgId, (tx) => listWorkers(tx, orgId, { today: "2026-10-05" }));
     expect(team.map((w) => [w.name, w.memberId])).toEqual([["Dan Hale", memberId]]);
   });
 
-  it("orders role changes and removal by Clerk time", async () => {
+  it("orders Admin changes and removal by Clerk time, and keeps the role chosen in Builder OS", async () => {
     const clerkOrgId = newClerkOrg();
     const clerkUserId = newClerkUser();
-    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { role: "estimator", at: t(10) }));
+    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { at: t(10) }));
+    const orgId = (await findOrgByClerkId(clerkOrgId))!.id;
+    const memberId = (await member(orgId, clerkUserId)).id;
+    // An Admin chooses Estimator in Settings → Team; Clerk's later "Member" updates don't undo it.
+    await withTenant(orgId, (tx) => tx.update(members).set({ role: "estimator" }).where(eq(members.id, memberId)));
+    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { name: "Dan H", at: t(15) }));
+    expect(await member(orgId, clerkUserId)).toMatchObject({ role: "estimator", name: "Dan H" });
+
     await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { role: "admin", at: t(30) }));
     await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { role: "employee", at: t(20) })); // late, older
-    const orgId = (await findOrgByClerkId(clerkOrgId))!.id;
     expect((await member(orgId, clerkUserId)).role).toBe("admin");
 
     await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { role: "admin", active: false, at: t(40) }));
-    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { role: "office", at: t(35) })); // late update after removal
+    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { at: t(35) })); // late update after removal
     expect(await member(orgId, clerkUserId)).toMatchObject({ active: false, role: "admin" });
 
-    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { role: "office", at: t(50) })); // invited back
-    expect(await member(orgId, clerkUserId)).toMatchObject({ active: true, role: "office" });
+    // Invited back as a Member: no longer an Admin, so they start as Employee.
+    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { at: t(50) }));
+    expect(await member(orgId, clerkUserId)).toMatchObject({ active: true, role: "employee" });
   });
 
   it("first sign-in fills gaps but never overwrites synced data", async () => {
     const clerkOrgId = newClerkOrg();
     const clerkUserId = newClerkUser();
-    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { role: "site_lead", at: t(10) }));
-    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { role: "admin", name: "Other", org: { clerkOrgId, name: "x", at: FILL_ONLY }, at: FILL_ONLY }));
+    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { at: t(10) }));
     const orgId = (await findOrgByClerkId(clerkOrgId))!.id;
+    await withTenant(orgId, (tx) => tx.update(members).set({ role: "site_lead" }).where(and(eq(members.orgId, orgId), eq(members.clerkUserId, clerkUserId))));
+    await syncMember(memberSnapshot(clerkOrgId, clerkUserId, { role: "admin", name: "Other", org: { clerkOrgId, name: "x", at: FILL_ONLY }, at: FILL_ONLY }));
     expect(await member(orgId, clerkUserId)).toMatchObject({ role: "site_lead", name: "Dan Hale" });
   });
 
@@ -282,7 +290,8 @@ describe("webhook events", () => {
     expect(await handleClerkEvent(event("organization.created", orgJson(clerkOrgId, "Hale & Sons", t(1).getTime())))).toBe("synced");
     expect(await handleClerkEvent(event("organizationMembership.created", membershipJson(clerkOrgId, userId, "org:site_lead", t(2).getTime())))).toBe("synced");
     const orgId = (await findOrgByClerkId(clerkOrgId))!.id;
-    expect(await member(orgId, userId)).toMatchObject({ role: "site_lead", name: "Sam", email: "site@halesons.co.uk", active: true });
+    // Clerk's custom role keys (from an older instance) don't grant anything: roles are set in Builder OS.
+    expect(await member(orgId, userId)).toMatchObject({ role: "employee", name: "Sam", email: "site@halesons.co.uk", active: true });
 
     await handleClerkEvent(event("organizationMembership.deleted", membershipJson(clerkOrgId, userId, "org:site_lead", t(2).getTime()), t(3).getTime()));
     expect((await member(orgId, userId)).active).toBe(false);

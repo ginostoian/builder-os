@@ -3,17 +3,19 @@ import { LiveAppShell } from "@/components/app/live-app-shell";
 import { SettingsFrame } from "@/components/app/settings/settings-frame";
 import { TeamSettings } from "@/components/app/settings/team-settings";
 import { can } from "@/core/roles";
-import { requirePermission } from "@/auth/session";
+import { requirePermission, withSession } from "@/auth/session";
+import { teamLogins } from "@/db/team";
 import Link from "next/link";
 import { FREE_USERS } from "@/core/plans";
 import { getEntitlement } from "@/server/plan";
 
 export const metadata: Metadata = { title: "Team" };
 
-/** Members, invitations and roles, managed by Clerk. Only Admins can invite or change roles (Clerk enforces it). */
+/** Roles are set here; members, invitations and who's an Admin are managed by Clerk. Only Admins can change either. */
 export default async function TeamSettingsPage() {
   const session = await requirePermission("settings.view");
   const free = (await getEntitlement()).plan === "free";
+  const logins = await withSession(session, (tx) => teamLogins(tx, session.orgId));
   return (
     <LiveAppShell active="settings" crumbs={["Settings", "Team"]}>
       <SettingsFrame
@@ -34,7 +36,7 @@ export default async function TeamSettingsPage() {
             .
           </div>
         )}
-        <TeamSettings />
+        <TeamSettings logins={logins} meId={session.memberId} canManage={can(session.role, "team.manage")} />
       </SettingsFrame>
     </LiveAppShell>
   );

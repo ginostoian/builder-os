@@ -1,6 +1,7 @@
 /**
- * Roles and what each may do (plan §7.3). Identity and membership live in Clerk; the role key on the Clerk
- * membership (`org:estimator`) is the source of truth, and this file decides what it allows.
+ * Roles and what each may do (plan §7.3). Identity and membership live in Clerk, which only says who is an
+ * Admin (`org:admin`): custom roles are a paid Clerk feature, so every other role is kept in our own
+ * `members.role` and set in Settings → Team. This file decides what each role allows.
  *
  * Site staff (site lead, employee) never see margins or cost prices.
  */
@@ -24,17 +25,28 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   employee: "The employee app only: today's site, tasks, check-in and photos.",
 };
 
-/** Clerk role key for one of our roles, e.g. `org:site_lead`. */
+/** Clerk role key for one of our roles, e.g. `org:site_lead` (only used by the development roles script). */
 export const clerkRoleKey = (role: Role) => `org:${role}` as const;
 
 /**
- * Our role for a Clerk role key. Anything unknown (including Clerk's built-in `org:member`) gets the least
- * privileged role, so a misconfigured Clerk instance can never grant more than intended.
+ * What a Clerk membership role says about us: Admin, or not. Everything else (Clerk's Member, or custom
+ * roles left in an older instance) is "not Admin", stored as Employee until an Admin picks a role here.
  */
 export function roleFromClerk(key: string | null | undefined): Role {
-  const bare = key?.startsWith("org:") ? key.slice(4) : undefined;
-  return (ROLES as readonly string[]).includes(bare ?? "") ? (bare as Role) : "employee";
+  return key === "org:admin" ? "admin" : "employee";
 }
+
+/**
+ * The role a signed-in person has: Admin exactly when Clerk says so (Clerk's live session is the final word
+ * on who can manage the company), otherwise the role chosen for them in Builder OS, never Admin.
+ */
+export function effectiveRole(clerkKey: string | null | undefined, stored: Role | null | undefined): Role {
+  if (clerkKey === "org:admin") return "admin";
+  return stored && stored !== "admin" && (ROLES as readonly string[]).includes(stored) ? stored : "employee";
+}
+
+/** The roles an Admin can give someone in Settings → Team (Admin itself is given in Clerk). */
+export const ASSIGNABLE_ROLES = ["office", "estimator", "site_lead", "employee"] as const satisfies readonly Role[];
 
 const OFFICE: readonly Role[] = ["admin", "office", "estimator", "site_lead"];
 

@@ -5,6 +5,7 @@
 import "server-only";
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, ne, sql } from "drizzle-orm";
 import { addDays } from "@/core/payment-plan";
+import { ASSIGNABLE_ROLES } from "@/core/roles";
 import type { CertificateInput, WorkerInput } from "@/core/schemas";
 import type { Tx } from "./index";
 import { members, organizations, projectTasks, projects, siteVisits, workerCertificates, workers } from "./schema";
@@ -355,4 +356,29 @@ export async function editVisit(tx: Tx, orgId: string, visitId: string, editorMe
     .update(siteVisits)
     .set({ checkedInAt: times.checkedInAt, checkedOutAt: times.checkedOutAt, editedAt: new Date(), editedByMemberId: editorMemberId })
     .where(and(eq(siteVisits.orgId, orgId), eq(siteVisits.id, visitId)));
+}
+
+// ── Roles (kept here, not in Clerk: see src/core/roles.ts) ───────────────────
+
+/** Everyone with a login, for Settings → Team: name, email, role, Admins first. */
+export async function teamLogins(tx: Tx, orgId: string) {
+  return tx
+    .select({ id: members.id, name: members.name, email: members.email, role: members.role })
+    .from(members)
+    .where(and(eq(members.orgId, orgId), eq(members.active, true)))
+    .orderBy(sql`${members.role} = 'admin' desc`, asc(members.name));
+}
+
+/**
+ * Give someone a role (not Admin: that's given in Clerk). Refuses Admins, people who've left, and your own
+ * login, so nobody can lock themselves out or promote themselves. Returns false if nothing changed.
+ */
+export async function setMemberRole(tx: Tx, orgId: string, memberId: string, role: (typeof ASSIGNABLE_ROLES)[number], byMemberId: string): Promise<boolean> {
+  if (!(ASSIGNABLE_ROLES as readonly string[]).includes(role) || memberId === byMemberId) return false;
+  const rows = await tx
+    .update(members)
+    .set({ role })
+    .where(and(eq(members.orgId, orgId), eq(members.id, memberId), eq(members.active, true), ne(members.role, "admin")))
+    .returning({ id: members.id });
+  return rows.length > 0;
 }
