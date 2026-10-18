@@ -5,15 +5,19 @@ import { SettingsFrame } from "@/components/app/settings/settings-frame";
 import { GuideChapters } from "@/components/app/onboarding/guide-chapters";
 import { GuideControls } from "@/components/app/onboarding/guide-controls";
 import { ProgressRing } from "@/components/app/onboarding/progress-ring";
-import { requirePermission } from "@/auth/session";
+import { SampleDataPanel } from "@/components/app/onboarding/sample-data-panel";
+import { can } from "@/core/roles";
+import { requirePermission, withSession } from "@/auth/session";
+import { sampleDataState, sampleDataCanBeAdded } from "@/db/sample-data";
 import { getGuide } from "@/server/onboarding";
 
 export const metadata: Metadata = { title: "Getting started" };
 
 /** Your getting-started guide: progress, every chapter, and the tour and checklist switches. */
 export default async function GettingStartedPage() {
-  await requirePermission("settings.view");
+  const session = await requirePermission("settings.view");
   const guide = await getGuide();
+  const sample = await withSession(session, async (tx) => ({ state: await sampleDataState(tx, session.orgId), canAdd: await sampleDataCanBeAdded(tx, session.orgId) }));
   const current = guide.chapters.filter((c) => !c.locked)[guide.level - 1];
   return (
     <LiveAppShell active="settings" crumbs={["Settings", "Getting started"]}>
@@ -31,6 +35,7 @@ export default async function GettingStartedPage() {
             <GuideControls hidden={guide.hidden} tourDone={guide.tourDone} hasSkipped={guide.chapters.some((c) => c.steps.some((s) => s.state === "skipped"))} />
           </div>
         </Panel>
+        <SampleDataPanel state={sample.state} canAdd={sample.canAdd} canManage={can(session.role, "settings.manage")} />
         <div className="max-w-[760px]">
           <GuideChapters chapters={guide.chapters} />
         </div>

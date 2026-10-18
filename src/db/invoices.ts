@@ -111,7 +111,14 @@ export async function quoteSchedule(tx: Tx, orgId: string, quoteId: string): Pro
  * company's payment terms. Needs bank details (it's paid by bank transfer). Omissions (credits) can reduce
  * an invoice but not take it below zero.
  */
-export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: string; stageId?: string; variationIds?: string[]; expenseIds?: string[]; memberId: string }, today = ukToday()) {
+export async function createInvoice(
+  tx: Tx,
+  orgId: string,
+  input: { quoteId: string; stageId?: string; variationIds?: string[]; expenseIds?: string[]; memberId: string },
+  today = ukToday(),
+  /** Example data from onboarding: placeholder bank details if there are none yet, and marked as an example. */
+  opts: { sample?: boolean } = {},
+) {
   const variationIds = input.variationIds ?? [];
   const expenseIds = input.expenseIds ?? [];
   if (!input.stageId && variationIds.length === 0 && expenseIds.length === 0) throw new InvoiceError("unknown_stage");
@@ -120,7 +127,13 @@ export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: str
   const stage = input.stageId ? accepted.snapshot.paymentPlan?.find((st) => st.id === input.stageId) : undefined;
   if (input.stageId && !stage) throw new InvoiceError("unknown_stage");
   const [org] = await tx.select().from(organizations).where(eq(organizations.id, orgId));
-  if (!org.bankAccountName || !org.bankSortCode || !org.bankAccountNumber) throw new InvoiceError("no_bank_details");
+  const bankDetails =
+    org.bankAccountName && org.bankSortCode && org.bankAccountNumber
+      ? { accountName: org.bankAccountName, sortCode: org.bankSortCode, accountNumber: org.bankAccountNumber }
+      : opts.sample
+        ? { accountName: org.tradingName ?? org.name, sortCode: "000000", accountNumber: "00000000" }
+        : null;
+  if (!bankDetails) throw new InvoiceError("no_bank_details");
   const [quote] = await tx.select({ clientId: quotes.clientId }).from(quotes).where(and(eq(quotes.orgId, orgId), eq(quotes.id, input.quoteId)));
   const [client] = await tx.select({ name: clients.name, email: clients.email, address: clients.address }).from(clients).where(and(eq(clients.orgId, orgId), eq(clients.id, quote.clientId)));
 
@@ -174,7 +187,7 @@ export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: str
     description: `${headline}: ${s.quote.title} (${s.quote.ref})`,
     vatRateBps: s.quote.vatRateBps,
     ...(treatment === "reverse_charge" ? { vatTreatment: treatment, reverseChargeVat } : {}),
-    bank: { accountName: org.bankAccountName, sortCode: org.bankSortCode, accountNumber: org.bankAccountNumber },
+    bank: bankDetails,
     lines,
   };
   const inserted = await tx
@@ -191,6 +204,7 @@ export async function createInvoice(tx: Tx, orgId: string, input: { quoteId: str
       vatPence: vat,
       totalPence: total,
       reverseChargeVatPence: reverseChargeVat,
+      isSample: opts.sample ?? false,
       snapshot,
       createdByMemberId: input.memberId,
     })

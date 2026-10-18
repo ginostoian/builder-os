@@ -68,6 +68,15 @@ export const billingRole = pgRole("builderos_billing").existing();
  */
 export const metricsRole = pgRole("builderos_metrics").existing();
 
+/**
+ * Owner of `app_remove_sample_data` (migration 0026). NOLOGIN, no BYPASSRLS. It can read and delete rows
+ * only in the current tenant (the `sample_cleanup` policies), and the function only deletes the records
+ * listed in `sample_records`: the example data a new company asked for.
+ */
+export const sampleRole = pgRole("builderos_sample").existing();
+const sampleCleanup = (column: AnyPgColumn) =>
+  pgPolicy("sample_cleanup", { as: "permissive", for: "all", to: sampleRole, using: sql`${column} = (select nullif(current_setting('app.org_id', true), '')::uuid)` });
+
 /** Read-only, all rows, for the metrics role only. Column grants (migration 0019) limit what it can see. */
 const metricsPolicy = () => pgPolicy("platform_metrics", { as: "permissive", for: "select", to: metricsRole, using: sql`true` });
 
@@ -120,6 +129,8 @@ export const organizations = pgTable(
     name: text("name").notNull(),
     tradingName: text("trading_name"),
     vatNumber: text("vat_number"),
+    /** Onboarding's "add example data?" answer: null (not asked yet), added, declined, or removed. */
+    sampleData: text("sample_data"),
     logoUrl: text("logo_url"),
     /** The public web enquiry form's link (/enquire/{token}); null until the company turns it on. */
     enquiryToken: text("enquiry_token").unique("organizations_enquiry_token_key"),
@@ -190,6 +201,7 @@ export const organizations = pgTable(
     check("organizations_brand_colour_hex", sql`${t.brandColour} is null or ${t.brandColour} ~ '^#[0-9a-fA-F]{6}$'`),
     between("organizations_default_markup_range", t.defaultMarkupBps, 0, MAX_MARKUP_BPS),
     between("organizations_default_vat_range", t.defaultVatRateBps, 0, MAX_VAT_BPS),
+    check("organizations_sample_data_value", sql`${t.sampleData} is null or ${t.sampleData} in ('added', 'declined', 'removed')`),
     len("organizations_quote_terms_len", t.quoteTerms, TEXT.terms, 0),
     len("organizations_bank_account_name_len", t.bankAccountName, TEXT.name),
     check("organizations_bank_sort_code_format", sql`${t.bankSortCode} is null or ${t.bankSortCode} ~ '^[0-9]{6}$'`),
@@ -261,6 +273,7 @@ export const clients = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    sampleCleanup(t.orgId),
     /** "Find my portal" by email (migration 0017); column grants limit it to id, org_id, email, archived_at. */
     pgPolicy("portal_email_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
     index("clients_email_lower_idx").on(sql`lower(${t.email})`),
@@ -297,6 +310,7 @@ export const services = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    sampleCleanup(t.orgId),
     unique("services_org_id_id_key").on(t.orgId, t.id),
     index("services_org_category_idx").on(t.orgId, t.category),
     len("services_category_len", t.category, TEXT.short),
@@ -353,6 +367,7 @@ export const quotes = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    sampleCleanup(t.orgId),
     unique("quotes_org_id_id_key").on(t.orgId, t.id),
     unique("quotes_org_number_key").on(t.orgId, t.number),
     foreignKey({ name: "quotes_client_fk", columns: [t.orgId, t.clientId], foreignColumns: [clients.orgId, clients.id] }),
@@ -473,6 +488,7 @@ export const quoteVersions = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    sampleCleanup(t.orgId),
     metricsPolicy(),
     unique("quote_versions_org_id_id_key").on(t.orgId, t.id),
     unique("quote_versions_quote_version_key").on(t.orgId, t.quoteId, t.versionNo),
@@ -499,6 +515,7 @@ export const quoteEvents = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    sampleCleanup(t.orgId),
     foreignKey({ name: "quote_events_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
     foreignKey({ name: "quote_events_version_fk", columns: [t.orgId, t.versionId], foreignColumns: [quoteVersions.orgId, quoteVersions.id] }),
     index("quote_events_quote_idx").on(t.orgId, t.quoteId, t.createdAt),
@@ -524,6 +541,7 @@ export const quoteComments = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    sampleCleanup(t.orgId),
     foreignKey({ name: "quote_comments_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
     foreignKey({ name: "quote_comments_version_fk", columns: [t.orgId, t.versionId], foreignColumns: [quoteVersions.orgId, quoteVersions.id] }),
     foreignKey({ name: "quote_comments_member_fk", columns: [t.orgId, t.memberId], foreignColumns: [members.orgId, members.id] }),
@@ -557,6 +575,7 @@ export const quoteDecisions = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    sampleCleanup(t.orgId),
     unique("quote_decisions_version_key").on(t.orgId, t.versionId),
     foreignKey({ name: "quote_decisions_quote_fk", columns: [t.orgId, t.quoteId], foreignColumns: [quotes.orgId, quotes.id] }),
     foreignKey({ name: "quote_decisions_version_fk", columns: [t.orgId, t.versionId], foreignColumns: [quoteVersions.orgId, quoteVersions.id] }),
@@ -596,6 +615,8 @@ export const invoices = pgTable(
     netPence: integer("net_pence").notNull(),
     vatPence: integer("vat_pence").notNull(),
     totalPence: integer("total_pence").notNull(),
+    /** Example data from onboarding: kept out of Xero, and removable with the rest of the examples. */
+    isSample: boolean("is_sample").notNull().default(false),
     /** Under the reverse charge, the VAT the client pays to HMRC: shown on the invoice, not part of the total. */
     reverseChargeVatPence: integer("reverse_charge_vat_pence").notNull().default(0),
     snapshot: jsonb("snapshot").notNull(),
@@ -609,6 +630,7 @@ export const invoices = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    sampleCleanup(t.orgId),
     metricsPolicy(),
     pgPolicy("reminder_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
     unique("invoices_org_id_id_key").on(t.orgId, t.id),
@@ -642,6 +664,7 @@ export const invoiceReminders = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    sampleCleanup(t.orgId),
     unique("invoice_reminders_once").on(t.orgId, t.invoiceId, t.kind),
     foreignKey({ name: "invoice_reminders_invoice_fk", columns: [t.orgId, t.invoiceId], foreignColumns: [invoices.orgId, invoices.id] }),
     check("invoice_reminders_kind", sql`${t.kind} in ('before', 'due', 'overdue_3', 'overdue_7')`),
@@ -830,6 +853,7 @@ export const projects = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    sampleCleanup(t.orgId),
     metricsPolicy(),
     unique("projects_org_id_id_key").on(t.orgId, t.id),
     uniqueIndex("projects_one_per_quote").on(t.orgId, t.quoteId).where(sql`${t.quoteId} is not null`),
@@ -1150,6 +1174,7 @@ export const leads = pgTable(
   },
   (t) => [
     tenantPolicy(t.orgId),
+    sampleCleanup(t.orgId),
     metricsPolicy(),
     pgPolicy("lead_lookup", { as: "permissive", for: "select", to: lookupRole, using: sql`true` }),
     unique("leads_org_id_id_key").on(t.orgId, t.id),
@@ -1628,3 +1653,20 @@ export const xeroJobs = pgTable(
     len("xero_jobs_last_error_len", t.lastError, 1000, 0),
   ],
 ).enableRLS();
+
+// ── Example data (migration 0026) ────────────────────────────────────────────
+
+export const sampleKind = pgEnum("sample_kind", ["service", "client", "lead", "quote", "invoice", "project"]);
+
+/** The example records added at onboarding, so "Remove example data" deletes exactly those and nothing else. */
+export const sampleRecords = pgTable(
+  "sample_records",
+  {
+    orgId: tenantId().references(() => organizations.id, { onDelete: "cascade" }),
+    kind: sampleKind("kind").notNull(),
+    recordId: uuid("record_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [tenantPolicy(t.orgId), sampleCleanup(t.orgId), primaryKey({ name: "sample_records_pkey", columns: [t.orgId, t.kind, t.recordId] })],
+).enableRLS();
+

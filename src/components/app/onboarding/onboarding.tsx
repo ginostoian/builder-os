@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Dialog } from "radix-ui";
 import { ArrowRight, Check, EyeOff, PlayCircle, Sparkles, X } from "lucide-react";
 import type { ChapterState, StepState } from "@/core/onboarding";
-import { onboardingAction } from "@/app/onboarding-actions";
+import { onboardingAction, sampleDataAction } from "@/app/onboarding-actions";
 import { cn } from "@/lib/utils";
 import { GuideChapters } from "./guide-chapters";
 import { OPEN_GUIDE, START_TOUR } from "./events";
@@ -30,12 +30,14 @@ export type GuideProps = {
  * Getting started, in the office app's top bar: a progress pill that opens the guide, the guided tour
  * (first visit to the dashboard, or on request), and a short note when a chapter is finished.
  */
-export function Onboarding({ guide, autoTour }: { guide: GuideProps; autoTour: boolean }) {
+export function Onboarding({ guide, autoTour, offerSample = false }: { guide: GuideProps; autoTour: boolean; offerSample?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [open, setOpen] = React.useState(false);
   const [touring, setTouring] = React.useState(false);
+  // A brand-new company is asked about example data first; the tour follows the answer.
+  const [asking, setAsking] = React.useState(offerSample);
 
   // Asked for by link (?tour=1, ?guide=1), by event, or the first time someone lands on the dashboard.
   React.useEffect(() => {
@@ -49,11 +51,11 @@ export function Onboarding({ guide, autoTour }: { guide: GuideProps; autoTour: b
       const t = window.setTimeout(() => (wantsTour ? setTouring(true) : setOpen(true)), 0);
       return () => window.clearTimeout(t);
     }
-    if (autoTour && !guide.tourDone) {
+    if (autoTour && !guide.tourDone && !offerSample) {
       const t = window.setTimeout(() => setTouring(true), 700);
       return () => window.clearTimeout(t);
     }
-  }, [params, pathname, router, autoTour, guide.tourDone]);
+  }, [params, pathname, router, autoTour, guide.tourDone, offerSample]);
 
   React.useEffect(() => {
     const onGuide = () => setOpen(true);
@@ -103,7 +105,68 @@ export function Onboarding({ guide, autoTour }: { guide: GuideProps; autoTour: b
         />
       )}
       <ChapterToast chapters={guide.chapters} level={guide.level} levels={guide.levels} />
+      {asking && (
+        <SampleDataQuestion
+          firstName={guide.firstName}
+          onDone={() => {
+            setAsking(false);
+            router.refresh();
+            if (!guide.tourDone) window.setTimeout(() => setTouring(true), 500);
+          }}
+        />
+      )}
     </>
+  );
+}
+
+// ── Example data ─────────────────────────────────────────────────────────────
+
+function SampleDataQuestion({ firstName, onDone }: { firstName: string; onDone: () => void }) {
+  const [pending, startTransition] = React.useTransition();
+  const [choice, setChoice] = React.useState<"add" | "decline" | null>(null);
+  const [error, setError] = React.useState<string>();
+  const answer = (c: "add" | "decline") => {
+    setChoice(c);
+    setError(undefined);
+    startTransition(async () => {
+      const r = await sampleDataAction(c).catch(() => ({ ok: false, message: "That didn't work. Please try again." }));
+      if (r.ok) onDone();
+      else setError(r.message ?? "That didn't work. Please try again.");
+    });
+  };
+  return (
+    <Dialog.Root open onOpenChange={(o) => !o && !pending && answer("decline")}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/30 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(480px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 text-[13.5px] text-ink shadow-pop outline-none">
+          <Sparkles className="size-5 text-brand" />
+          <Dialog.Title className="mt-3 text-[19px] font-semibold tracking-[-0.01em]">Welcome to Builder OS{firstName ? `, ${firstName}` : ""}</Dialog.Title>
+          <Dialog.Description className="mt-2 leading-[1.55] text-ink-2">
+            Would you like to look around with some example work first? We&apos;ll add three clients, a few services, a quote waiting on a client, and a kitchen extension that&apos;s been accepted, part paid
+            and is under way with its tasks. Every screen then has something in it to try.
+          </Dialog.Description>
+          <ul className="mt-3 flex flex-col gap-1.5 text-ink-2">
+            <li className="flex items-start gap-2">
+              <Check className="mt-0.5 size-3.5 flex-none text-success" />
+              Nothing is emailed to anyone, and it never goes to Xero.
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="mt-0.5 size-3.5 flex-none text-success" />
+              Remove it all in one click from Settings, Getting started.
+            </li>
+          </ul>
+          {error && <p className="mt-3 text-danger">{error}</p>}
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button type="button" disabled={pending} onClick={() => answer("add")} className="h-10 rounded-[10px] bg-ink px-4 font-medium text-white hover:bg-ink/90 disabled:opacity-60">
+              {pending && choice === "add" ? "Adding examples…" : "Yes, add example data"}
+            </button>
+            <button type="button" disabled={pending} onClick={() => answer("decline")} className="h-10 rounded-[10px] px-4 font-medium text-ink shadow-ring-input hover:bg-surface disabled:opacity-60">
+              No thanks, start empty
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 

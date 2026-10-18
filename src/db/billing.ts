@@ -8,7 +8,7 @@ import "server-only";
 import { and, count, eq, gte, sql } from "drizzle-orm";
 import { FREE_USERS, entitlement, planHas, type BillingFacts, type Feature, type Plan } from "@/core/plans";
 import type { Tx } from "./index";
-import { invoices, members, organizations, quoteVersions, services } from "./schema";
+import { invoices, members, organizations, quoteVersions, sampleRecords, services } from "./schema";
 
 export async function billingFacts(tx: Tx, orgId: string): Promise<BillingFacts & { stripeCustomerId: string | null; connectAccountId: string | null; connectChargesEnabled: boolean; connectDetailsSubmitted: boolean }> {
   const [o] = await tx
@@ -87,7 +87,15 @@ export async function firstSendsSince(tx: Tx, orgId: string, since: Date): Promi
   const [{ n }] = await tx
     .select({ n: count() })
     .from(quoteVersions)
-    .where(and(eq(quoteVersions.orgId, orgId), eq(quoteVersions.versionNo, 1), gte(quoteVersions.sentAt, since)));
+    .where(
+      and(
+        eq(quoteVersions.orgId, orgId),
+        eq(quoteVersions.versionNo, 1),
+        gte(quoteVersions.sentAt, since),
+        // Example quotes from onboarding don't use up the Free plan's allowance.
+        sql`not exists (select 1 from ${sampleRecords} s where s.org_id = ${quoteVersions.orgId} and s.kind = 'quote' and s.record_id = ${quoteVersions.quoteId})`,
+      ),
+    );
   return n;
 }
 
