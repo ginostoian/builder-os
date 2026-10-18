@@ -189,8 +189,13 @@ export async function uploadSitePhoto(form: FormData): Promise<SiteActionResult>
   const opId = optionalOpId(form);
   if (opId === "bad") return { ok: false, message: MESSAGES.not_found };
   return run(async (m) => {
-    const mine = await withSession(m.session, async (tx) => (await isMyJob(tx, m.session.orgId, m, projectId)) && !(opId && (await syncSeen(tx, m, opId))));
-    if (!mine) return;
+    const state = await withSession(m.session, async (tx) => {
+      if (!(await isMyJob(tx, m.session.orgId, m, projectId))) return "not_yours" as const;
+      return opId && (await syncSeen(tx, m, opId)) ? ("seen" as const) : ("new" as const);
+    });
+    // Say so rather than report a photo as saved when it wasn't. A resend that already went through is fine.
+    if (state === "not_yours") throw new SiteError("not_yours");
+    if (state === "seen") return;
     const key = orgFileKey(m.session.orgId, "photos", randomName(), type.ext);
     const stored = await putObject(key, bytes, type.mime);
     if (!stored.ok) throw new StoreError(stored.message);
